@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "XoskhPXJIBs=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\isaia\\umg-sistema-alerta-climatica-DESAWEB\\backend\\src\\AlertaClimatica.Api\\AlertaClimatica.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\isaia\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.11\\microsoft.aspnetcore.openapi.10.0.11.nupkg.sha512",
+    "C:\\Users\\isaia\\.nuget\\packages\\microsoft.openapi\\2.7.5\\microsoft.openapi.2.7.5.nupkg.sha512"
+  ],
+  "logs": []
+}

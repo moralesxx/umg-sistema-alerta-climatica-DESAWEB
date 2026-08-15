@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AlertaClimatica.Api/AlertaClimatica.Api.csproj" />
+    <Project Path="src/AlertaClimatica.Application/AlertaClimatica.Application.csproj" />
+    <Project Path="src/AlertaClimatica.Domain/AlertaClimatica.Domain.csproj" />
+    <Project Path="src/AlertaClimatica.Infrastructure/AlertaClimatica.Infrastructure.csproj" />
+  </Folder>
+</Solution>
