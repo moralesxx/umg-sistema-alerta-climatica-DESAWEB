@@ -1,8 +1,9 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/AlertaClimatica.Api/AlertaClimatica.Api.csproj" />
-    <Project Path="src/AlertaClimatica.Application/AlertaClimatica.Application.csproj" />
-    <Project Path="src/AlertaClimatica.Domain/AlertaClimatica.Domain.csproj" />
-    <Project Path="src/AlertaClimatica.Infrastructure/AlertaClimatica.Infrastructure.csproj" />
-  </Folder>
+  <Project Path="../tests/AlertaClimatica.Api.Tests/AlertaClimatica.Api.Tests.csproj" />
+  <Project Path="../tests/AlertaClimatica.Application.Tests/AlertaClimatica.Application.Tests.csproj" />
+  <Project Path="../tests/AlertaClimatica.Domain.Tests/AlertaClimatica.Domain.Tests.csproj" />
+  <Project Path="AlertaClimatica.Api/AlertaClimatica.Api.csproj" />
+  <Project Path="AlertaClimatica.Application/AlertaClimatica.Application.csproj" />
+  <Project Path="AlertaClimatica.Domain/AlertaClimatica.Domain.csproj" />
+  <Project Path="AlertaClimatica.Infrastructure/AlertaClimatica.Infrastructure.csproj" />
 </Solution>
