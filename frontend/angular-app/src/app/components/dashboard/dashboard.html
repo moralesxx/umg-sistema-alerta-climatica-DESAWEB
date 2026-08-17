@@ -1,0 +1,117 @@
+<div class="container-fluid p-4" style="background-color: #f8f9fa; min-height: 100vh;">
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
+    <div>
+      <h2 class="m-0 text-primary fw-bold">🌊 Monitoreo Climático y Alerta Temprana</h2>
+      <small class="text-muted">Sistema para Comunidades Rurales - Actualización en Tiempo Real</small>
+    </div>
+    <div>
+      <span class="badge fs-6 p-2 fw-semibold" [ngClass]="getBadgeClass(nivelAlertaGlobal)">
+        Estado de Riesgo: {{ nivelAlertaGlobal | uppercase }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Tarjetas de Indicadores Climáticos -->
+  <div class="row g-3 mb-4">
+    <!-- 1. Temperatura -->
+    <div class="col-md-4 col-lg-2">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="text-muted small">Temperatura</div>
+        <h3 class="fw-bold my-2 text-danger">{{ temperatura }} °C</h3>
+        <span class="badge bg-light text-dark">Ambiente</span>
+      </div>
+    </div>
+
+    <!-- 2. Humedad -->
+    <div class="col-md-4 col-lg-2">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="text-muted small">Humedad Relativa</div>
+        <h3 class="fw-bold my-2 text-info">{{ humedad }} %</h3>
+        <span class="badge bg-light text-dark">Humedad</span>
+      </div>
+    </div>
+
+    <!-- 3. Velocidad del Viento -->
+    <div class="col-md-4 col-lg-2">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="text-muted small">Velocidad Viento</div>
+        <h3 class="fw-bold my-2 text-secondary">{{ velocidadViento }} km/h</h3>
+        <span class="badge bg-light text-dark">Viento</span>
+      </div>
+    </div>
+
+    <!-- 4. Nivel de Lluvia -->
+    <div class="col-md-4 col-lg-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="text-muted small">Nivel de Lluvia</div>
+        <h3 class="fw-bold my-2 text-primary">{{ nivelLluvia }} mm</h3>
+        <span class="badge bg-light text-dark">Pluviómetro</span>
+      </div>
+    </div>
+
+    <!-- 5. Nivel del Río -->
+    <div class="col-md-4 col-lg-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="text-muted small">Nivel de Río / Cauce</div>
+        <h3 class="fw-bold my-2 text-primary">{{ nivelRio }} m</h3>
+        <span class="badge bg-light text-dark">Reservorio</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Sensores e Historial -->
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm p-3">
+        <h5 class="fw-bold text-dark mb-3">📡 Sensores Activos en la Comunidad</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Nombre del Sensor</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of sensores">
+                <td>#{{ s.sensorId }}</td>
+                <td class="fw-semibold">{{ s.nombreSensor }}</td>
+                <td>{{ s.ubicacion }}</td>
+                <td>
+                  <span class="badge" [ngClass]="s.estado ? 'bg-success' : 'bg-secondary'">
+                    {{ s.estado ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="sensores.length === 0">
+                <td colspan="4" class="text-center text-muted">Conectando con la base de datos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Lateral de Alertas -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm p-3">
+        <h5 class="fw-bold text-dark mb-3">🚨 Historial Reciente de Alertas</h5>
+        <div class="list-group list-group-flush">
+          <div *ngFor="let a of alertasRecientes" class="list-group-item px-0">
+            <div class="d-flex w-100 justify-content-between">
+              <span class="badge" [ngClass]="getBadgeClass(a.nivelRiesgo)">{{ a.nivelRiesgo }}</span>
+              <small class="text-muted">{{ a.fechaEmision | date:'shortTime' }}</small>
+            </div>
+            <p class="mb-1 small mt-1">{{ a.mensaje }}</p>
+          </div>
+          <div *ngIf="alertasRecientes.length === 0" class="text-muted small text-center py-3">
+            Sin alertas críticas registradas por el momento.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
