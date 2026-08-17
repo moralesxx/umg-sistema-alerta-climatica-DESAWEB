@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AlertaClimatica.Application\AlertaClimatica.Application.csproj" />
+    <ProjectReference Include="..\AlertaClimatica.Domain\AlertaClimatica.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
