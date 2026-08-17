@@ -31,7 +31,7 @@ public static class DbInitializer
         {
             Nombre = "Administrador del Sistema",
             Correo = "admin@alerta.com",
-            ContraseniaHash = "Admin123!", // En la Fase 2 integraremos BCrypt para encriptación
+            ContraseniaHash = "Admin123!",
             RolId = adminRole.RolId,
             Estado = true,
             FechaCreacion = DateTime.Now

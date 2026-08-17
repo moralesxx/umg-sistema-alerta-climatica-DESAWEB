@@ -1,40 +1,58 @@
-using Microsoft.EntityFrameworkCore;
 using AlertaClimatica.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Obtener la cadena de conexión
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// 2. Registrar ApplicationDbContext con Resiliencia de Reintentos
+// 1. Agregar DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(5),
-            errorNumbersToAdd: null)));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 3. Registrar Controladores y OpenAPI
+// 2. Agregar Controladores
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+
+// 3. Agregar SignalR para tiempo real
+builder.Services.AddSignalR();
+
+// 4. Configurar CORS para permitir peticiones desde Angular (http://localhost:4200)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Necesario para WebSockets / SignalR
+    });
+});
+
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-// --- EJECUTAR DATOS SEMILLA (SEED DATA) ---
+// Inicializar y poblar la Base de Datos al arrancar
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    DbInitializer.Seed(dbContext);
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        // Corrección aquí: invocamos DbInitializer.Seed
+        DbInitializer.Seed(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error al inicializar la base de datos.");
+    }
 }
 
-// 4. Configurar el pipeline HTTP
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseRouting();
 
-app.UseHttpsRedirection();
+// Habilitar CORS
+app.UseCors("AllowAngular");
+
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
