@@ -1,14 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using AlertaClimatica.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// 1. Obtener la cadena de conexión desde appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+// 2. Registrar DbContext con SQL Server
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// 3. Registrar Controladores y OpenAPI
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+// --- CONSTRUIR LA APLICACIÓN ---
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 4. Configurar el pipeline de solicitudes HTTP
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
