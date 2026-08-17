@@ -1,0 +1,16 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_alerta_climatica
+    user: "0:0"   # <-- Agrega esta línea para otorgar permisos de escritura en el volumen
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=SqlAdmin2026!
+      - MSSQL_FORCE_ENCRYPTION=0
+    ports:
+      - "14333:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql/data
+
+volumes:
+  mssql_data:
