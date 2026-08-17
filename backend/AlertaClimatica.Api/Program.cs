@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Obtener la cadena de conexión desde appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 2. Registrar DbContext con SQL Server
+// 2. Registrar ApplicationDbContext con SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
