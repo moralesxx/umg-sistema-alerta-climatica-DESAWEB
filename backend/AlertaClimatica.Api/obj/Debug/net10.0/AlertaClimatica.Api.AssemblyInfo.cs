@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AlertaClimatica.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6d6b43a33095af35a388e49f890b56a5247f57da")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e14e1e3cdcae36e576a1e7cbc14e5c3071cc32ab")]
 [assembly: System.Reflection.AssemblyProductAttribute("AlertaClimatica.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AlertaClimatica.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
