@@ -1,58 +1,35 @@
-using AlertaClimatica.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using AlertaClimatica.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Agregar DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// 2. Agregar Controladores
-builder.Services.AddControllers();
-
-// 3. Agregar SignalR para tiempo real
-builder.Services.AddSignalR();
-
-// 4. Configurar CORS para permitir peticiones desde Angular (http://localhost:4200)
+// 1. Configurar CORS (Permite peticiones desde Angular)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins("http://localhost:4200")
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); // Necesario para WebSockets / SignalR
+              .AllowAnyMethod();
     });
 });
 
-builder.Services.AddEndpointsApiExplorer();
+// 2. Configurar DbContext con la cadena de conexión de SQL Server
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// 3. Registrar Controladores
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Inicializar y poblar la Base de Datos al arrancar
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        // Corrección aquí: invocamos DbInitializer.Seed
-        DbInitializer.Seed(context);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ocurrió un error al inicializar la base de datos.");
-    }
-}
-
-app.UseRouting();
-
-// Habilitar CORS
+// 4. Habilitar Middleware de CORS (debe ir antes de MapControllers y UseAuthorization)
 app.UseCors("AllowAngular");
 
 app.UseAuthorization();
 
+// 5. Mapear endpoints de los controladores
 app.MapControllers();
 
 app.Run();
