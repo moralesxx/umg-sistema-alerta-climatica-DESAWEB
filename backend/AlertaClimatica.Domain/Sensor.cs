@@ -2,12 +2,13 @@ namespace AlertaClimatica.Domain;
 
 public class Sensor
 {
-    public int SensorId { get; set; }
-    public string NombreSensor { get; set; } = string.Empty;
-    public int TipoSensorId { get; set; }
+    public int IdSensor { get; set; }
+    public string Nombre { get; set; } = string.Empty;
     public string Ubicacion { get; set; } = string.Empty;
-    public bool Estado { get; set; }
-
-    // Propiedad de navegación necesaria para .Include()
-    public TipoSensor? TipoSensor { get; set; } 
+    public decimal Latitud { get; set; }
+    public decimal Longitud { get; set; }
+    public DateTime FechaInstalacion { get; set; }
+    public bool Estado { get; set; } = true; 
+    public string Codigo { get; set; } = string.Empty;
+    public int IdTipoSensor { get; set; }
 }

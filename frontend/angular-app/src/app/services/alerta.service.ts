@@ -3,12 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Alerta {
-  alertaId?: number;
-  sensorId: number;
-  nivelRiesgo: string; // Verde, Amarillo, Naranja, Rojo
+  idAlerta: number;
+  idSensor: number;
+  idEvento: number;
+  tipoAlerta: string;
   mensaje: string;
-  fechaEmision?: string;
-  estado: boolean;
+  nivel: string;
+  atendida: boolean;
+  fechaEmision: string;
 }
 
 @Injectable({

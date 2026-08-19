@@ -85,16 +85,21 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let s of sensores">
-                  <td class="ps-4 fw-bold text-muted">#{{ s.sensorId ?? s.idSensor ?? s.IdSensor }}</td>
-                  <td class="fw-semibold text-dark">{{ s.nombreSensor ?? s.nombre ?? s.Nombre }}</td>
-                  <td class="text-muted">{{ s.ubicacion ?? s.Ubicacion }}</td>
-                  <td class="pe-4">
-                    <span class="badge bg-success px-3 py-2">Activo</span>
-                  </td>
-                </tr>
+                <!-- Mensaje si la lista está vacía -->
                 <tr *ngIf="sensores.length === 0">
                   <td colspan="4" class="text-center text-muted py-4">Cargando sensores desde C# API...</td>
+                </tr>
+
+                <!-- Filas renderizadas con datos reales -->
+                <tr *ngFor="let s of sensores">
+                  <td class="ps-4 fw-bold text-muted">#{{ s.idSensor }}</td>
+                  <td class="fw-semibold text-dark">{{ s.nombre }}</td>
+                  <td class="text-muted">{{ s.ubicacion }}</td>
+                  <td class="pe-4">
+                    <span class="badge" [ngClass]="s.estado ? 'bg-success' : 'bg-secondary'">
+                      {{ s.estado ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -119,25 +124,21 @@
 
           <!-- Listado de Alertas -->
           <div class="alert-feed" style="max-height: 400px; overflow-y: auto;">
-            <div *ngIf="alertasRecientes.length > 0; else sinAlertas">
-              <div *ngFor="let a of alertasRecientes" class="p-3 mb-3 border rounded bg-light shadow-sm">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="badge bg-info text-dark fw-bold px-2 py-1">{{ a.nivelRiesgo ?? 'Amarillo' }}</span>
-                  <small class="text-muted" style="font-size: 0.75rem;">11:25 PM</small>
-                </div>
-                <p class="mb-0 text-dark small">{{ a.mensaje ?? 'Prueba de temperatura elevada registrada en zona norte.' }}</p>
+            <div *ngIf="alertasRecientes.length === 0" class="p-3 mb-3 border rounded bg-light shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="badge bg-info text-dark fw-bold px-2 py-1">Información</span>
+                <small class="text-muted" style="font-size: 0.75rem;">Sistema</small>
               </div>
+              <p class="mb-0 text-dark small">No hay alertas registradas recientemente.</p>
             </div>
-            <ng-template #sinAlertas>
-              <!-- Datos estáticos de respaldo idénticos a tu captura si la API está vacía -->
-              <div class="p-3 mb-3 border rounded bg-light shadow-sm">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="badge bg-info text-dark fw-bold px-2 py-1">Amarillo</span>
-                  <small class="text-muted" style="font-size: 0.75rem;">11:25 PM</small>
-                </div>
-                <p class="mb-0 text-dark small">Prueba de temperatura elevada registrada en zona norte.</p>
+
+            <div *ngFor="let a of alertasRecientes" class="p-3 mb-3 border rounded bg-light shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="badge bg-danger text-white fw-bold px-2 py-1">{{ a.nivel ?? 'Crítica' }}</span>
+                <small class="text-muted" style="font-size: 0.75rem;">{{ a.fechaEmision | date:'shortTime' }}</small>
               </div>
-            </ng-template>
+              <p class="mb-0 text-dark small"><strong>{{ a.tipoAlerta }}:</strong> {{ a.mensaje }}</p>
+            </div>
           </div>
         </div>
       </div>

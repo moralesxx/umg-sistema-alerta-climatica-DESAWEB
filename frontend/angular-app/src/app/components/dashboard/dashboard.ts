@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SensorService, Sensor } from '../../services/sensor.service';
 import { AlertaService, Alerta } from '../../services/alerta.service';
@@ -19,13 +19,14 @@ export class Dashboard implements OnInit {
   nivelRio: number = 1.8;
 
   // Estado general y alertas
-  nivelAlertaGlobal: string = 'Verde'; // Verde, Amarillo, Naranja, Rojo
+  nivelAlertaGlobal: string = 'Verde';
   alertasRecientes: Alerta[] = [];
   sensores: Sensor[] = [];
 
   constructor(
     private sensorService: SensorService,
-    private alertaService: AlertaService
+    private alertaService: AlertaService,
+    private cdr: ChangeDetectorRef // <--- Inyectamos el detector de cambios
   ) {}
 
   ngOnInit(): void {
@@ -37,15 +38,23 @@ export class Dashboard implements OnInit {
 
   cargarSensores(): void {
     this.sensorService.getSensores().subscribe({
-      next: (data) => this.sensores = data,
-      error: (err) => console.log('Esperando datos de la API de sensores...', err)
+      next: (data) => {
+        this.sensores = data;
+        console.log('Sensores cargados:', data);
+        this.cdr.detectChanges(); // <--- Forzamos el redibujado de la UI
+      },
+      error: (err) => console.log('Error al cargar sensores:', err)
     });
   }
 
   cargarAlertas(): void {
     this.alertaService.getAlertas().subscribe({
-      next: (data) => this.alertasRecientes = data,
-      error: (err) => console.log('Esperando datos de la API de alertas...', err)
+      next: (data) => {
+        this.alertasRecientes = data;
+        console.log('Alertas cargadas:', data);
+        this.cdr.detectChanges(); // <--- Forzamos el redibujado de la UI
+      },
+      error: (err) => console.log('Error al cargar alertas:', err)
     });
   }
 
@@ -70,8 +79,9 @@ export class Dashboard implements OnInit {
   }
 
   getBadgeClass(nivel: string): string {
+    if (!nivel) return 'bg-success text-white';
     switch (nivel.toLowerCase()) {
-      case 'rojo': return 'bg-danger text-white';
+      case 'rojo': case 'critica': return 'bg-danger text-white';
       case 'naranja': return 'bg-warning text-dark';
       case 'amarillo': return 'bg-info text-dark';
       default: return 'bg-success text-white';

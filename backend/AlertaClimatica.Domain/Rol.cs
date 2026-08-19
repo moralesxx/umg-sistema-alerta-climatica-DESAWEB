@@ -5,7 +5,8 @@ namespace AlertaClimatica.Domain;
 public class Rol
 {
     [Key]
-    public int RolId { get; set; }
-    public string NombreRol { get; set; } = string.Empty;
+    public int IdRol { get; set; }
+    public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
+    public DateTime FechaCreacion { get; set; } = DateTime.Now;
 }

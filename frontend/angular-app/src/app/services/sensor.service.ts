@@ -3,11 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Sensor {
-  sensorId?: number;
-  nombreSensor: string;
-  tipoSensorId: number;
+  idSensor: number;
+  nombre: string;
   ubicacion: string;
+  latitud?: number;
+  longitud?: number;
+  fechaInstalacion?: string;
   estado: boolean;
+  codigo?: string;
+  idTipoSensor?: number;
   tipoSensor?: any;
 }
 

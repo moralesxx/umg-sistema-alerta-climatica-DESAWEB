@@ -1,13 +1,13 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace AlertaClimatica.Domain;
 
 public class Alerta
 {
-    [Key]
-    public int AlertaId { get; set; }
-    public int SensorId { get; set; }
-    public string NivelRiesgo { get; set; } = string.Empty;
+    public int IdAlerta { get; set; }
+    public int IdSensor { get; set; }
+    public int? IdEvento { get; set; }
+    public string TipoAlerta { get; set; } = string.Empty;
     public string Mensaje { get; set; } = string.Empty;
+    public string Nivel { get; set; } = string.Empty;
+    public bool Atendida { get; set; } = false; 
     public DateTime FechaEmision { get; set; } = DateTime.Now;
 }
