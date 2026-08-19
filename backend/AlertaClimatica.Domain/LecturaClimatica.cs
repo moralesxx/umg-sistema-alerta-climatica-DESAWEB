@@ -3,16 +3,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AlertaClimatica.Domain;
 
+[Table("LecturasClimaticas")]
 public class LecturaClimatica
 {
     [Key]
-    public long IdLectura { get; set; }
-    public int IdSensor { get; set; }
+    [Column("LecturaId")]
+    public long LecturaId { get; set; }
 
-    [Column(TypeName = "decimal(10,2)")]
+    [Column("SensorId")]
+    public int SensorId { get; set; }
+
+    [Column("Valor")]
     public decimal Valor { get; set; }
-    public DateTime FechaHora { get; set; } = DateTime.Now;
 
-    // Propiedad de navegación opcional
-    public Sensor? Sensor { get; set; }
+    [Column("FechaHora")]
+    public DateTime FechaHora { get; set; }
 }

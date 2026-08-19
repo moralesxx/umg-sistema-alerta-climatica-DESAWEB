@@ -1,0 +1,36 @@
+/* Contenedor principal sin desbordes raros */
+:host {
+  display: block;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Fijar altura máxima al contenedor del historial y habilitar scroll interno */
+.alert-feed {
+  max-height: 290px !important;
+  overflow-y: auto !important;
+  padding-right: 4px;
+}
+
+/* Estilo estético para la barra de desplazamiento interna */
+.alert-feed::-webkit-scrollbar {
+  width: 6px;
+}
+
+.alert-feed::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.alert-feed::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.alert-feed::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.card {
+  transition: transform 0.2s ease-in-out;
+}

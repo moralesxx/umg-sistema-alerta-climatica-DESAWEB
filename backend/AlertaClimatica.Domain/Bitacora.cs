@@ -1,15 +1,24 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AlertaClimatica.Domain;
 
+[Table("Bitacora")]
 public class Bitacora
 {
     [Key]
-    public long IdBitacora { get; set; }
-    public int? IdUsuario { get; set; }
+    [Column("BitacoraId")]
+    public long BitacoraId { get; set; }
+
+    [Column("UsuarioId")]
+    public int? UsuarioId { get; set; }
+
+    [Column("Accion")]
     public string Accion { get; set; } = string.Empty;
-    public string? TablaAfectada { get; set; }
-    public string? Detalle { get; set; }
-    public string? IpOrigen { get; set; }
-    public DateTime FechaHora { get; set; } = DateTime.Now;
+
+    [Column("Detalle")]
+    public string Detalle { get; set; } = string.Empty;
+
+    [Column("FechaHora")]
+    public DateTime FechaHora { get; set; }
 }

@@ -1,15 +1,21 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AlertaClimatica.Domain;
 
+[Table("Eventos")]
 public class Evento
 {
     [Key]
-    public int IdEvento { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-    public string? Descripcion { get; set; }
-    public string NivelRiesgo { get; set; } = string.Empty;
-    public DateTime FechaInicio { get; set; } = DateTime.Now;
-    public DateTime? FechaFin { get; set; }
-    public string Estado { get; set; } = "Activo";
+    [Column("EventoId")]
+    public int EventoId { get; set; }
+
+    [Column("TipoEvento")]
+    public string TipoEvento { get; set; } = string.Empty;
+
+    [Column("Descripcion")]
+    public string Descripcion { get; set; } = string.Empty;
+
+    [Column("FechaHora")]
+    public DateTime FechaHora { get; set; }
 }

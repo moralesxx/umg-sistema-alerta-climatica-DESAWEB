@@ -1,13 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace AlertaClimatica.Domain;
 
+[Table("Alertas")]
 public class Alerta
 {
-    public int IdAlerta { get; set; }
-    public int IdSensor { get; set; }
-    public int? IdEvento { get; set; }
-    public string TipoAlerta { get; set; } = string.Empty;
+    [Key]
+    [Column("AlertaId")]
+    public int AlertaId { get; set; }
+
+    [Column("SensorId")]
+    public int SensorId { get; set; }
+
+    [Column("NivelRiesgo")]
+    public string NivelRiesgo { get; set; } = string.Empty;
+
+    [Column("Mensaje")]
     public string Mensaje { get; set; } = string.Empty;
-    public string Nivel { get; set; } = string.Empty;
-    public bool Atendida { get; set; } = false; 
-    public DateTime FechaEmision { get; set; } = DateTime.Now;
+
+    [Column("FechaEmision")]
+    public DateTime FechaEmision { get; set; }
 }

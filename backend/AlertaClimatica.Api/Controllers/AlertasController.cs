@@ -45,4 +45,22 @@ public class AlertasController : ControllerBase
 
         return CreatedAtAction(nameof(GetAlerta), new { id = alerta.AlertaId }, alerta);
     }
+
+
+    // DELETE: api/alertas
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAllAlertas()
+    {
+        try
+        {
+            var todasLasAlertas = await _context.Alertas.ToListAsync();
+            _context.Alertas.RemoveRange(todasLasAlertas);
+            await _context.SaveChangesAsync();
+            return Ok(new { mensaje = "Historial de alertas limpiado correctamente." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error al limpiar las alertas", detalle = ex.Message });
+        }
+    }
 }

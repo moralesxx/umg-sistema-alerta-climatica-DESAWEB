@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 export interface Evento {
   eventoId?: number;
-  tipoFenomeno: string; // Inundación, Sequía, Tormenta, Helada, Incendio forestal
+  tipoFenomeno: string;
   descripcion: string;
   fechaHora?: string;
 }

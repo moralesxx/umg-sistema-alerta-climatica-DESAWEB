@@ -3,15 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Sensor {
-  idSensor: number;
-  nombre: string;
+  sensorId: number;       // Coincide con SensorId de C# -> sensorId
+  nombreSensor: string;   // Coincide con NombreSensor de C# -> nombreSensor
   ubicacion: string;
   latitud?: number;
   longitud?: number;
   fechaInstalacion?: string;
   estado: boolean;
   codigo?: string;
-  idTipoSensor?: number;
+  tipoSensorId?: number;  // Coincide con TipoSensorId de C# -> tipoSensorId
   tipoSensor?: any;
 }
 

@@ -23,15 +23,14 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Mapeo directo de nombres de tablas y columnas exactas
-        modelBuilder.Entity<Sensor>().ToTable("Sensores").HasKey(s => s.IdSensor);
-        modelBuilder.Entity<Alerta>().ToTable("Alertas").HasKey(a => a.IdAlerta);
-        
-        modelBuilder.Entity<Rol>().ToTable("Roles");
-        modelBuilder.Entity<Usuario>().ToTable("Usuarios");
-        modelBuilder.Entity<TipoSensor>().ToTable("TiposSensor");
-        modelBuilder.Entity<LecturaClimatica>().ToTable("LecturasClimaticas");
-        modelBuilder.Entity<Evento>().ToTable("Eventos");
-        modelBuilder.Entity<Bitacora>().ToTable("Bitacora");
+        // Mapeo directo usando las claves primarias reales de la base de datos
+        modelBuilder.Entity<Sensor>().ToTable("Sensores").HasKey(s => s.SensorId);
+        modelBuilder.Entity<Alerta>().ToTable("Alertas").HasKey(a => a.AlertaId);
+        modelBuilder.Entity<Rol>().ToTable("Roles").HasKey(r => r.RolId);
+        modelBuilder.Entity<Usuario>().ToTable("Usuarios").HasKey(u => u.UsuarioId);
+        modelBuilder.Entity<TipoSensor>().ToTable("TiposSensor").HasKey(t => t.TipoSensorId);
+        modelBuilder.Entity<LecturaClimatica>().ToTable("LecturasClimaticas").HasKey(l => l.LecturaId);
+        modelBuilder.Entity<Evento>().ToTable("Eventos").HasKey(e => e.EventoId);
+        modelBuilder.Entity<Bitacora>().ToTable("Bitacora").HasKey(b => b.BitacoraId);
     }
 }

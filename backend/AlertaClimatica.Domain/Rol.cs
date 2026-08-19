@@ -1,12 +1,18 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AlertaClimatica.Domain;
 
+[Table("Roles")]
 public class Rol
 {
     [Key]
-    public int IdRol { get; set; }
-    public string Nombre { get; set; } = string.Empty;
+    [Column("RolId")]
+    public int RolId { get; set; }
+
+    [Column("NombreRol")]
+    public string NombreRol { get; set; } = string.Empty;
+
+    [Column("Descripcion")]
     public string? Descripcion { get; set; }
-    public DateTime FechaCreacion { get; set; } = DateTime.Now;
 }

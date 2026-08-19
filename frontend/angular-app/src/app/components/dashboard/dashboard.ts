@@ -26,7 +26,7 @@ export class Dashboard implements OnInit {
   constructor(
     private sensorService: SensorService,
     private alertaService: AlertaService,
-    private cdr: ChangeDetectorRef // <--- Inyectamos el detector de cambios
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -41,7 +41,7 @@ export class Dashboard implements OnInit {
       next: (data) => {
         this.sensores = data;
         console.log('Sensores cargados:', data);
-        this.cdr.detectChanges(); // <--- Forzamos el redibujado de la UI
+        this.cdr.detectChanges();
       },
       error: (err) => console.log('Error al cargar sensores:', err)
     });
@@ -52,10 +52,40 @@ export class Dashboard implements OnInit {
       next: (data) => {
         this.alertasRecientes = data;
         console.log('Alertas cargadas:', data);
-        this.cdr.detectChanges(); // <--- Forzamos el redibujado de la UI
+        this.cdr.detectChanges();
       },
       error: (err) => console.log('Error al cargar alertas:', err)
     });
+  }
+
+  // Simulación sincronizada exactamente con el nivel de riesgo global actual
+  onSimularAlerta(): void {
+    const nivelActual = this.nivelAlertaGlobal;
+    const mensajePrueba = `Condición climática extrema detectada en campo con nivel ${nivelActual}.`;
+
+    this.alertaService.simularAlerta(nivelActual, mensajePrueba).subscribe({
+      next: (res) => {
+        console.log('Alerta simulada y guardada con éxito:', res);
+        this.cargarAlertas();
+      },
+      error: (err) => {
+        console.error('Error al simular la alerta:', err);
+      }
+    });
+  }
+
+  // Método para vaciar el historial de alertas
+  onLimpiarHistorial(): void {
+    if (confirm('¿Estás seguro de que deseas limpiar todo el historial de alertas?')) {
+      this.alertaService.limpiarHistorial().subscribe({
+        next: () => {
+          this.alertasRecientes = [];
+          this.cdr.detectChanges();
+          console.log('Historial limpiado con éxito');
+        },
+        error: (err) => console.error('Error al limpiar el historial:', err)
+      });
+    }
   }
 
   simularLecturasTiempoReal(): void {
@@ -83,7 +113,8 @@ export class Dashboard implements OnInit {
     switch (nivel.toLowerCase()) {
       case 'rojo': case 'critica': return 'bg-danger text-white';
       case 'naranja': return 'bg-warning text-dark';
-      case 'amarillo': return 'bg-info text-dark';
+      // Cambiamos a un estilo con color amarillo real (fondo amarillo y texto oscuro)
+      case 'amarillo': return 'bg-warning text-dark fw-bold';
       default: return 'bg-success text-white';
     }
   }
