@@ -35,6 +35,6 @@ public class TiposSensorController : ControllerBase
     {
         _context.TiposSensor.Add(tipoSensor);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetTipoSensor), new { id = tipoSensor.IdTipoSensor }, tipoSensor);
+        return CreatedAtAction(nameof(GetTipoSensor), new { id = tipoSensor.TipoSensorId }, tipoSensor);
     }
 }

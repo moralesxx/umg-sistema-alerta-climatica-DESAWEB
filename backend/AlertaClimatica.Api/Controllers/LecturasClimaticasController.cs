@@ -29,7 +29,7 @@ public class LecturasClimaticasController : ControllerBase
     public async Task<ActionResult<IEnumerable<LecturaClimatica>>> GetLecturasPorSensor(int sensorId)
     {
         return await _context.LecturasClimaticas
-            .Where(l => l.IdSensor == sensorId)
+            .Where(l => l.SensorId == sensorId)
             .OrderByDescending(l => l.FechaHora)
             .ToListAsync();
     }
@@ -45,6 +45,6 @@ public class LecturasClimaticasController : ControllerBase
         _context.LecturasClimaticas.Add(lectura);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetLecturas), new { id = lectura.IdLectura }, lectura);
+        return CreatedAtAction(nameof(GetLecturas), new { id = lectura.LecturaId }, lectura);
     }
 }

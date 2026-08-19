@@ -20,21 +20,21 @@ public class EventosController : ControllerBase
     public async Task<ActionResult<IEnumerable<Evento>>> GetEventos()
     {
         return await _context.Eventos
-            .OrderByDescending(e => e.FechaInicio)
+            .OrderByDescending(e => e.FechaHora)
             .ToListAsync();
     }
 
     [HttpPost]
     public async Task<ActionResult<Evento>> CreateEvento(Evento evento)
     {
-        if (evento.FechaInicio == default)
+        if (evento.FechaHora == default)
         {
-            evento.FechaInicio = DateTime.Now;
+            evento.FechaHora = DateTime.Now;
         }
 
         _context.Eventos.Add(evento);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetEventos), new { id = evento.IdEvento }, evento);
+        return CreatedAtAction(nameof(GetEventos), new { id = evento.EventoId }, evento);
     }
 }

@@ -43,6 +43,6 @@ public class AlertasController : ControllerBase
         _context.Alertas.Add(alerta);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetAlerta), new { id = alerta.IdAlerta }, alerta);
+        return CreatedAtAction(nameof(GetAlerta), new { id = alerta.AlertaId }, alerta);
     }
 }

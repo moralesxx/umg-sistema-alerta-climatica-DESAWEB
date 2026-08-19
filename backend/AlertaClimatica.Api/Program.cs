@@ -39,4 +39,20 @@ app.UseAuthorization();
 // 5. Mapear endpoints de los controladores
 app.MapControllers();
 
+// 6. Ejecutar el sembrado de la base de datos (DbInitializer) al iniciar la aplicación
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        DbInitializer.Seed(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error al inicializar la base de datos.");
+    }
+}
+
 app.Run();

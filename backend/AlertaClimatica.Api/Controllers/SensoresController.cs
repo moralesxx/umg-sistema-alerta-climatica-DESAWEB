@@ -31,9 +31,9 @@ public class SensoresController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Sensor>> GetSensor(int id)
     {
-        // Busca el registro utilizando la clave primaria actualizada IdSensor
+        // Busca el registro utilizando la clave primaria actualizada SensorId
         var sensor = await _context.Sensores
-            .FirstOrDefaultAsync(s => s.IdSensor == id);
+            .FirstOrDefaultAsync(s => s.SensorId == id);
 
         // Si no se encuentra el sensor, devuelve un código 404 No Encontrado
         if (sensor == null)
@@ -54,6 +54,6 @@ public class SensoresController : ControllerBase
         await _context.SaveChangesAsync();
 
         // Retorna una respuesta 201 Created apuntando a la ruta de consulta del nuevo sensor
-        return CreatedAtAction(nameof(GetSensor), new { id = sensor.IdSensor }, sensor);
+        return CreatedAtAction(nameof(GetSensor), new { id = sensor.SensorId }, sensor);
     }
 }

@@ -41,6 +41,6 @@ public class UsuariosController : ControllerBase
         _context.Usuarios.Add(usuario);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetUsuario), new { id = usuario.IdUsuario }, usuario);
+        return CreatedAtAction(nameof(GetUsuario), new { id = usuario.UsuarioId }, usuario);
     }
 }
