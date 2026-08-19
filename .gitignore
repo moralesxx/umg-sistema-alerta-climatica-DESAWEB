@@ -1,3 +1,16 @@
+# .NET / C#
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
 
-**/bin/
-**/obj/
+# Angular / Node
+node_modules/
+dist/
+.angular/
+
+# Logs y respaldos
+*.log
+.DS_Store
+Thumbs.db
