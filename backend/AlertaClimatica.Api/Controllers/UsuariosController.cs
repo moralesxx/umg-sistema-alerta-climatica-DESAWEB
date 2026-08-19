@@ -16,14 +16,12 @@ public class UsuariosController : ControllerBase
         _context = context;
     }
 
-    // GET: api/usuarios
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Usuario>>> GetUsuarios()
     {
         return await _context.Usuarios.ToListAsync();
     }
 
-    // GET: api/usuarios/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Usuario>> GetUsuario(int id)
     {
@@ -32,7 +30,6 @@ public class UsuariosController : ControllerBase
         return usuario;
     }
 
-    // POST: api/usuarios
     [HttpPost]
     public async Task<ActionResult<Usuario>> CreateUsuario(Usuario usuario)
     {
@@ -44,6 +41,6 @@ public class UsuariosController : ControllerBase
         _context.Usuarios.Add(usuario);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetUsuario), new { id = usuario.UsuarioId }, usuario);
+        return CreatedAtAction(nameof(GetUsuario), new { id = usuario.IdUsuario }, usuario);
     }
 }

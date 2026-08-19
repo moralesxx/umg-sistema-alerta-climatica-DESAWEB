@@ -16,7 +16,6 @@ public class AlertasController : ControllerBase
         _context = context;
     }
 
-    // GET: api/alertas
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Alerta>>> GetAlertas()
     {
@@ -25,7 +24,6 @@ public class AlertasController : ControllerBase
             .ToListAsync();
     }
 
-    // GET: api/alertas/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Alerta>> GetAlerta(int id)
     {
@@ -34,7 +32,6 @@ public class AlertasController : ControllerBase
         return alerta;
     }
 
-    // POST: api/alertas
     [HttpPost]
     public async Task<ActionResult<Alerta>> CreateAlerta(Alerta alerta)
     {
@@ -46,6 +43,6 @@ public class AlertasController : ControllerBase
         _context.Alertas.Add(alerta);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetAlerta), new { id = alerta.AlertaId }, alerta);
+        return CreatedAtAction(nameof(GetAlerta), new { id = alerta.IdAlerta }, alerta);
     }
 }

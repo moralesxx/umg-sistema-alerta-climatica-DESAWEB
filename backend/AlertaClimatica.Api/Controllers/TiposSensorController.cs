@@ -16,14 +16,12 @@ public class TiposSensorController : ControllerBase
         _context = context;
     }
 
-    // GET: api/tipossensor
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TipoSensor>>> GetTiposSensor()
     {
         return await _context.TiposSensor.ToListAsync();
     }
 
-    // GET: api/tipossensor/5
     [HttpGet("{id}")]
     public async Task<ActionResult<TipoSensor>> GetTipoSensor(int id)
     {
@@ -32,12 +30,11 @@ public class TiposSensorController : ControllerBase
         return tipo;
     }
 
-    // POST: api/tipossensor
     [HttpPost]
     public async Task<ActionResult<TipoSensor>> CreateTipoSensor(TipoSensor tipoSensor)
     {
         _context.TiposSensor.Add(tipoSensor);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetTipoSensor), new { id = tipoSensor.TipoSensorId }, tipoSensor);
+        return CreatedAtAction(nameof(GetTipoSensor), new { id = tipoSensor.IdTipoSensor }, tipoSensor);
     }
 }

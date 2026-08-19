@@ -16,27 +16,25 @@ public class EventosController : ControllerBase
         _context = context;
     }
 
-    // GET: api/eventos
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Evento>>> GetEventos()
     {
         return await _context.Eventos
-            .OrderByDescending(e => e.FechaHora)
+            .OrderByDescending(e => e.FechaInicio)
             .ToListAsync();
     }
 
-    // POST: api/eventos
     [HttpPost]
     public async Task<ActionResult<Evento>> CreateEvento(Evento evento)
     {
-        if (evento.FechaHora == default)
+        if (evento.FechaInicio == default)
         {
-            evento.FechaHora = DateTime.Now;
+            evento.FechaInicio = DateTime.Now;
         }
 
         _context.Eventos.Add(evento);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetEventos), new { id = evento.EventoId }, evento);
+        return CreatedAtAction(nameof(GetEventos), new { id = evento.IdEvento }, evento);
     }
 }

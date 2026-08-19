@@ -16,7 +16,6 @@ public class BitacoraController : ControllerBase
         _context = context;
     }
 
-    // GET: api/bitacora
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Bitacora>>> GetBitacora()
     {
@@ -26,7 +25,6 @@ public class BitacoraController : ControllerBase
             .ToListAsync();
     }
 
-    // POST: api/bitacora
     [HttpPost]
     public async Task<ActionResult<Bitacora>> RegistarAccion(Bitacora entrada)
     {

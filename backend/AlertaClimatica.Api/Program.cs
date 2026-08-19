@@ -24,6 +24,13 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// NUEVO: Habilitar página de errores detallados para depuración en desarrollo
+// Esto hará que el error de base de datos aparezca en rojo en tu terminal de VS Code
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
 // 4. Habilitar Middleware de CORS (debe ir antes de MapControllers y UseAuthorization)
 app.UseCors("AllowAngular");
 
@@ -31,6 +38,5 @@ app.UseAuthorization();
 
 // 5. Mapear endpoints de los controladores
 app.MapControllers();
-
 
 app.Run();
