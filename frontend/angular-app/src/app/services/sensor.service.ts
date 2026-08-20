@@ -38,4 +38,18 @@ export class SensorService {
   updateSensor(id: number, sensor: Sensor): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, sensor);
   }
+
+  // ==========================================
+  // NUEVOS MÉTODOS PARA LA ADMINISTRACIÓN
+  // ==========================================
+
+  // Permite activar o desactivar un sensor rápidamente (PATCH)
+  cambiarEstadoSensor(id: number, activo: boolean): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${id}/estado`, activo);
+  }
+
+  // Reinicia el sistema de monitoreo general (POST)
+  reiniciarSistema(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reiniciar`, {});
+  }
 }

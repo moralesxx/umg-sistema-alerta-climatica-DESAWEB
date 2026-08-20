@@ -22,7 +22,6 @@ public class SensoresController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Sensor>>> GetSensores()
     {
-        // Retorna la lista de sensores mapeada desde la base de datos
         return await _context.Sensores.ToListAsync();
     }
 
@@ -31,11 +30,9 @@ public class SensoresController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Sensor>> GetSensor(int id)
     {
-        // Busca el registro utilizando la clave primaria actualizada SensorId
         var sensor = await _context.Sensores
             .FirstOrDefaultAsync(s => s.SensorId == id);
 
-        // Si no se encuentra el sensor, devuelve un código 404 No Encontrado
         if (sensor == null)
             return NotFound();
 
@@ -47,13 +44,86 @@ public class SensoresController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Sensor>> CreateSensor(Sensor sensor)
     {
-        // Añade el objeto al contexto de Entity Framework
         _context.Sensores.Add(sensor);
-        
-        // Guarda los cambios de forma asíncrona en la base de datos SQL Server
         await _context.SaveChangesAsync();
 
-        // Retorna una respuesta 201 Created apuntando a la ruta de consulta del nuevo sensor
         return CreatedAtAction(nameof(GetSensor), new { id = sensor.SensorId }, sensor);
+    }
+
+    // PUT: api/sensores/5
+    // Edita los valores y propiedades de un sensor existente
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateSensor(int id, Sensor sensor)
+    {
+        if (id != sensor.SensorId)
+        {
+            return BadRequest(new { mensaje = "El ID del sensor no coincide." });
+        }
+
+        _context.Entry(sensor).State = EntityState.Modified;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!SensorExists(id))
+            {
+                return NotFound(new { mensaje = "Sensor no encontrado." });
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        return NoContent();
+    }
+
+    // PATCH: api/sensores/5/estado
+    // Permite activar o desactivar un sensor rápidamente cambiando su propiedad Estado
+    [HttpPatch("{id}/estado")]
+    public async Task<IActionResult> CambiarEstadoSensor(int id, [FromBody] bool activo)
+    {
+        var sensor = await _context.Sensores.FindAsync(id);
+        if (sensor == null)
+        {
+            return NotFound(new { mensaje = "Sensor no encontrado." });
+        }
+
+        // Se usa la propiedad Estado de tu modelo Sensor.cs
+        sensor.Estado = activo; 
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { mensaje = "Estado del sensor actualizado correctamente.", sensorId = id, nuevoEstado = activo });
+    }
+
+    // POST: api/sensores/reiniciar
+    // Reinicia el sistema de monitoreo general
+    [HttpPost("reiniciar")]
+    public async Task<IActionResult> ReiniciarSistemaMonitoreo()
+    {
+        try
+        {
+            var sensores = await _context.Sensores.ToListAsync();
+            foreach (var s in sensores)
+            {
+                s.Estado = true; // Reactiva todos por defecto al reiniciar el sistema
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { mensaje = "Sistema de monitoreo reiniciado con éxito." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error al reiniciar el sistema", detalle = ex.Message });
+        }
+    }
+
+    private bool SensorExists(int id)
+    {
+        return _context.Sensores.Any(e => e.SensorId == id);
     }
 }

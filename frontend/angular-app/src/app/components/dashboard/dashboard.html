@@ -1,6 +1,26 @@
-<div class="container-fluid py-3 overflow-hidden">
-  <!-- Indicadores Meteorológicos / Tarjetas superiores (Distribución responsiva en grid para evitar que rompan la página) -->
-  <div class="row g-2 mb-3">
+<div class="dashboard-wrapper">
+
+  <!-- Encabezado Principal del Sistema -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0 px-4 py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h3 class="fw-bold mb-1 text-dark">Monitoreo Climático y Alerta Temprana</h3>
+            <p class="text-muted mb-0 small">Panel de Control para Comunidades Rurales — Tiempo Real</p>
+          </div>
+          <div>
+            <span class="badge px-3 py-2 rounded-pill fw-bold shadow-sm" [ngClass]="getBadgeClass(nivelAlertaGlobal)" style="font-size: 0.85rem;">
+              ESTADO DE RIESGO: {{ nivelAlertaGlobal | uppercase }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicadores Meteorológicos -->
+  <div class="row g-2 mb-2">
     <div class="col-6 col-md-4 col-xl">
       <div class="card shadow-sm border-0 text-center py-2">
         <span class="text-muted small fw-bold" style="font-size: 0.75rem;">TEMPERATURA</span>
@@ -38,14 +58,19 @@
     </div>
   </div>
 
-  <!-- Sección Central: Sensores Activos y Alertas en Tiempo Real -->
-  <div class="row g-3 mb-3">
-    <!-- Sensores Activos en la Comunidad -->
+  <!-- Sensores + Alertas -->
+  <div class="row g-2 mb-2">
     <div class="col-lg-8">
       <div class="card shadow-sm border-0">
         <div class="card-body py-3">
-          <h5 class="card-title fw-bold mb-3">Sensores Activos en la Comunidad</h5>
-          <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <h5 class="card-title fw-bold mb-0">Sensores Activos en la Comunidad</h5>
+            <div class="d-flex gap-2">
+              <button class="btn btn-success btn-sm fw-bold" (click)="onAgregarSensor()">+ Agregar Sensor</button>
+              <button class="btn btn-outline-danger btn-sm fw-bold" (click)="onReiniciarSistema()">Reiniciar Sistema</button>
+            </div>
+          </div>
+          <div class="table-responsive sensores-feed">
             <table class="table align-middle mb-0">
               <thead class="sticky-top bg-white">
                 <tr>
@@ -53,15 +78,25 @@
                   <th class="text-muted">NOMBRE DEL SENSOR</th>
                   <th class="text-muted">UBICACIÓN</th>
                   <th class="text-muted">ESTADO</th>
+                  <th class="text-muted text-end">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let sensor of sensores">
-                  <td class="fw-bold">#{{ $any(sensor).sensorId }}</td>
-                  <td>{{ $any(sensor).nombre || $any(sensor).nombreSensor }}</td>
-                  <td class="text-muted">{{ $any(sensor).ubicacion }}</td>
+                  <td class="fw-bold">#{{ sensor.sensorId }}</td>
+                  <td>{{ sensor.nombreSensor }}</td>
+                  <td class="text-muted">{{ sensor.ubicacion }}</td>
                   <td>
-                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">Activo</span>
+                    <button class="btn btn-sm px-2 py-1 rounded-pill"
+                            [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'"
+                            (click)="onToggleEstado(sensor)" title="Clic para cambiar estado">
+                      {{ sensor.estado ? 'Activo' : 'Inactivo' }}
+                    </button>
+                  </td>
+                  <td class="text-end">
+                    <button class="btn btn-outline-primary btn-sm px-2 py-1" (click)="onEditarSensor(sensor)" title="Editar sensor">
+                      <i class="bi bi-pencil-fill"></i> Editar
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -71,7 +106,6 @@
       </div>
     </div>
 
-    <!-- Alertas en Tiempo Real -->
     <div class="col-lg-4">
       <div class="card shadow-sm border-0">
         <div class="card-body py-3">
@@ -84,11 +118,11 @@
             SIMULAR ALERTA ({{ nivelAlertaGlobal }})
           </button>
 
-          <div class="alertas-container" style="max-height: 160px; overflow-y: auto;">
+          <div class="alert-feed">
             <div *ngFor="let alerta of alertasRecientes" class="card border-0 bg-light p-2 mb-2 shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="badge" [ngClass]="getBadgeClass($any(alerta).nivelRiesgo || $any(alerta).nivel)" style="font-size: 0.7rem;">
-                  {{ $any(alerta).nivelRiesgo || $any(alerta).nivel || 'Informativa' }}
+                <span class="badge" [ngClass]="getBadgeClass($any(alerta).nivelRiesgo || $any(alerta).nivel || $any(alerta).nivelAlerta || $any(alerta).mensaje)" style="font-size: 0.7rem;">
+                  {{ $any(alerta).nivelRiesgo || $any(alerta).nivel || $any(alerta).nivelAlerta || 'Alerta' }}
                 </span>
                 <small class="text-muted" style="font-size: 0.7rem;">{{ $any(alerta).fechaEmision || $any(alerta).fechaHora | date:'shortTime' }}</small>
               </div>
@@ -103,7 +137,7 @@
     </div>
   </div>
 
-  <!-- Sección Inferior: Historial de Eventos y Fenómenos Climáticos -->
+  <!-- Historial -->
   <div class="row">
     <div class="col-12">
       <div class="card shadow-sm border-0">
@@ -113,7 +147,7 @@
             <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1" (click)="cargarEventos()">Actualizar</button>
           </div>
 
-          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+          <div class="table-responsive historial-feed">
             <table class="table align-middle mb-0" *ngIf="eventos.length > 0">
               <thead class="sticky-top bg-white">
                 <tr>
@@ -126,15 +160,12 @@
               <tbody>
                 <tr *ngFor="let evento of eventos">
                   <td class="ps-3 fw-bold">#{{ $any(evento).eventoId }}</td>
-                  <td>
-                    <span class="badge bg-secondary px-2 py-1">{{ $any(evento).tipoFenomeno }}</span>
-                  </td>
+                  <td><span class="badge bg-secondary px-2 py-1">{{ $any(evento).tipoFenomeno }}</span></td>
                   <td>{{ $any(evento).descripcion }}</td>
                   <td>{{ $any(evento).fechaHora | date:'medium' }}</td>
                 </tr>
               </tbody>
             </table>
-
             <div class="text-center py-3" *ngIf="eventos.length === 0">
               <p class="text-muted mb-0 small">No hay eventos registrados en el historial.</p>
             </div>
@@ -143,4 +174,58 @@
       </div>
     </div>
   </div>
+
 </div>
+
+<!-- ===== MODAL: Agregar Sensor ===== -->
+<div class="app-modal-backdrop" *ngIf="showAddSensorModal" (click)="cancelarAgregarSensor()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Agregar nuevo sensor simulado</h5>
+    <div class="mb-2">
+      <label class="form-label small text-muted">Nombre del sensor</label>
+      <input type="text" class="form-control" [(ngModel)]="nuevoSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small text-muted">Ubicación</label>
+      <input type="text" class="form-control" [(ngModel)]="nuevoSensorUbicacion" placeholder="Ej. Comunidad Norte">
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarAgregarSensor()">Cancelar</button>
+      <button class="btn btn-success btn-sm fw-bold" (click)="confirmarAgregarSensor()" [disabled]="!nuevoSensorNombre || !nuevoSensorUbicacion">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Editar Sensor ===== -->
+<div class="app-modal-backdrop" *ngIf="showEditSensorModal" (click)="cancelarEdicionSensor()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Editar Sensor #{{ sensorEnEdicionId }}</h5>
+    <div class="mb-2">
+      <label class="form-label small text-muted">Nombre del sensor</label>
+      <input type="text" class="form-control" [(ngModel)]="editSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small text-muted">Ubicación</label>
+      <input type="text" class="form-control" [(ngModel)]="editSensorUbicacion" placeholder="Ej. Comunidad Norte">
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarEdicionSensor()">Cancelar</button>
+      <button class="btn btn-primary btn-sm fw-bold" (click)="confirmarEdicionSensor()" [disabled]="!editSensorNombre || !editSensorUbicacion">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Confirmación genérica ===== -->
+<div class="app-modal-backdrop" *ngIf="showConfirmModal" (click)="cancelarConfirmacion()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-2">Confirmar acción</h5>
+    <p class="text-muted mb-3" style="font-size: 0.9rem;">{{ confirmMessage }}</p>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarConfirmacion()">Cancelar</button>
+      <button class="btn btn-danger btn-sm fw-bold" (click)="ejecutarConfirmacion()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="app-toast" *ngIf="showToast">{{ toastMessage }}</div>
