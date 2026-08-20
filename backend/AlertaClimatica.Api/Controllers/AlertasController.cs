@@ -41,11 +41,47 @@ public class AlertasController : ControllerBase
         }
 
         _context.Alertas.Add(alerta);
+
+        // Generar automáticamente el registro en el Historial de Eventos variando entre los 5 tipos requeridos
+        string nivelStr = alerta.NivelRiesgo?.ToLower() ?? "";
+        string tipoFenomenoAsociado = "Tormenta";
+
+        if (nivelStr.Contains("rojo") || nivelStr.Contains("emergencia"))
+        {
+            tipoFenomenoAsociado = "Inundación";
+        }
+        else if (nivelStr.Contains("naranja"))
+        {
+            tipoFenomenoAsociado = "Incendio forestal";
+        }
+        else if (nivelStr.Contains("amarillo"))
+        {
+            tipoFenomenoAsociado = "Sequía";
+        }
+        else if (nivelStr.Contains("verde"))
+        {
+            tipoFenomenoAsociado = "Helada";
+        }
+        else
+        {
+            // Si viene otro valor, se selecciona aleatoriamente entre los 5 de la rúbrica
+            string[] fenomenosDisponibles = { "Inundación", "Sequía", "Tormenta", "Helada", "Incendio forestal" };
+            tipoFenomenoAsociado = fenomenosDisponibles[new Random().Next(fenomenosDisponibles.Length)];
+        }
+
+        var nuevoEvento = new Evento
+        {
+            TipoFenomeno = tipoFenomenoAsociado,
+            Descripcion = alerta.Mensaje,
+            FechaHora = alerta.FechaEmision
+        };
+
+        _context.Eventos.Add(nuevoEvento);
+
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetAlerta), new { id = alerta.AlertaId }, alerta);
     }
-
 
     // DELETE: api/alertas
     [HttpDelete]

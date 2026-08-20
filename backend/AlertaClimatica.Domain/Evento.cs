@@ -11,7 +11,7 @@ public class Evento
     public int EventoId { get; set; }
 
     [Column("TipoEvento")]
-    public string TipoEvento { get; set; } = string.Empty;
+    public string TipoFenomeno { get; set; } = string.Empty;
 
     [Column("Descripcion")]
     public string Descripcion { get; set; } = string.Empty;

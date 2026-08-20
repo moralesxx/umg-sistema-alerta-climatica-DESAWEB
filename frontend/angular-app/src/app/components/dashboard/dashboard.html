@@ -1,101 +1,67 @@
-<div class="container-fluid py-4 px-4 min-vh-100" style="background-color: #f4f6f9;">
-  <!-- Encabezado Principal con Estilo Ejecutivo -->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 bg-white p-4 rounded-4 shadow-sm border border-light">
-    <div class="mb-3 mb-md-0">
-      <h2 class="fw-bold text-dark mb-1" style="letter-spacing: -0.5px;">
-        <i class="bi bi-shield-shaded text-primary me-2"></i> Monitoreo Climático y Alerta Temprana
-      </h2>
-      <p class="text-secondary mb-0 small">Panel de Control para Comunidades Rurales — Tiempo Real</p>
-    </div>
-    <div>
-      <span class="badge fs-6 px-4 py-2.5 rounded-pill shadow-sm fw-bold text-uppercase tracking-wide" [ngClass]="getBadgeClass(nivelAlertaGlobal)">
-        <i class="bi bi-activity me-1"></i> Estado de Riesgo: {{ nivelAlertaGlobal }}
-      </span>
-    </div>
-  </div>
-
-  <!-- Tarjetas de Indicadores en Tiempo Real (Ajustadas en 5 columnas estables) -->
-  <div class="row row-cols-1 row-cols-md-5 g-3 mb-4">
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-4 text-center py-3 bg-white h-100">
-        <div class="card-body px-2">
-          <span class="text-muted text-uppercase fw-semibold d-block mb-1 text-truncate" style="font-size: 0.7rem;">Temperatura</span>
-          <h3 class="fw-bold text-danger mb-1">{{ temperatura }} <span class="fs-5">°C</span></h3>
-          <span class="badge bg-light text-secondary border">Ambiente</span>
-        </div>
+<div class="container-fluid py-3 overflow-hidden">
+  <!-- Indicadores Meteorológicos / Tarjetas superiores (Distribución responsiva en grid para evitar que rompan la página) -->
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card shadow-sm border-0 text-center py-2">
+        <span class="text-muted small fw-bold" style="font-size: 0.75rem;">TEMPERATURA</span>
+        <h4 class="text-danger fw-bold my-1">{{ temperatura }} °C</h4>
+        <span class="badge bg-light text-dark mx-auto" style="font-size: 0.7rem;">Ambiente</span>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-4 text-center py-3 bg-white h-100">
-        <div class="card-body px-2">
-          <span class="text-muted text-uppercase fw-semibold d-block mb-1 text-truncate" style="font-size: 0.7rem;">Humedad Relativa</span>
-          <h3 class="fw-bold text-info mb-1">{{ humedad }} <span class="fs-5">%</span></h3>
-          <span class="badge bg-light text-secondary border">Humedad</span>
-        </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card shadow-sm border-0 text-center py-2">
+        <span class="text-muted small fw-bold" style="font-size: 0.75rem;">HUMEDAD</span>
+        <h4 class="text-primary fw-bold my-1">{{ humedad }} %</h4>
+        <span class="badge bg-light text-dark mx-auto" style="font-size: 0.7rem;">Humedad</span>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-4 text-center py-3 bg-white h-100">
-        <div class="card-body px-2">
-          <span class="text-muted text-uppercase fw-semibold d-block mb-1 text-truncate" style="font-size: 0.7rem;">Velocidad Viento</span>
-          <h3 class="fw-bold text-dark mb-1" style="font-size: 1.4rem;">{{ velocidadViento }} <span class="fs-6">km/h</span></h3>
-          <span class="badge bg-light text-secondary border">Viento</span>
-        </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card shadow-sm border-0 text-center py-2">
+        <span class="text-muted small fw-bold" style="font-size: 0.75rem;">VIENTO</span>
+        <h4 class="text-dark fw-bold my-1">{{ velocidadViento }} km/h</h4>
+        <span class="badge bg-light text-dark mx-auto" style="font-size: 0.7rem;">Viento</span>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-4 text-center py-3 bg-white h-100">
-        <div class="card-body px-2">
-          <span class="text-muted text-uppercase fw-semibold d-block mb-1 text-truncate" style="font-size: 0.7rem;">Nivel de Lluvia</span>
-          <h3 class="fw-bold text-primary mb-1" style="font-size: 1.4rem;">{{ nivelLluvia }} <span class="fs-6">mm</span></h3>
-          <span class="badge bg-light text-secondary border">Pluviómetro</span>
-        </div>
+    <div class="col-6 col-md-6 col-xl">
+      <div class="card shadow-sm border-0 text-center py-2">
+        <span class="text-muted small fw-bold" style="font-size: 0.75rem;">LLUVIA</span>
+        <h4 class="text-primary fw-bold my-1">{{ nivelLluvia }} mm</h4>
+        <span class="badge bg-light text-dark mx-auto" style="font-size: 0.7rem;">Pluviómetro</span>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-4 text-center py-3 bg-white h-100">
-        <div class="card-body px-2">
-          <span class="text-muted text-uppercase fw-semibold d-block mb-1 text-truncate" style="font-size: 0.7rem;">Nivel de Río / Cauce</span>
-          <h3 class="fw-bold text-primary mb-1" style="font-size: 1.4rem;">{{ nivelRio }} <span class="fs-6">m</span></h3>
-          <span class="badge bg-light text-secondary border">Reservorio</span>
-        </div>
+    <div class="col-12 col-md-6 col-xl">
+      <div class="card shadow-sm border-0 text-center py-2">
+        <span class="text-muted small fw-bold" style="font-size: 0.75rem;">RÍO / CAUCE</span>
+        <h4 class="text-primary fw-bold my-1">{{ nivelRio }} m</h4>
+        <span class="badge bg-light text-dark mx-auto" style="font-size: 0.7rem;">Reservorio</span>
       </div>
     </div>
   </div>
 
-  <!-- Contenido Principal -->
-  <div class="row g-4">
-    <!-- Tabla de Sensores -->
+  <!-- Sección Central: Sensores Activos y Alertas en Tiempo Real -->
+  <div class="row g-3 mb-3">
+    <!-- Sensores Activos en la Comunidad -->
     <div class="col-lg-8">
-      <div class="card shadow-sm border-0 rounded-4 bg-white h-100">
-        <div class="card-header bg-white py-3 px-4 border-bottom border-light">
-          <h5 class="mb-0 fw-bold text-dark">
-            <i class="bi bi-hdd-network text-primary me-2"></i> Sensores Activos en la Comunidad
-          </h5>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light text-secondary small text-uppercase">
+      <div class="card shadow-sm border-0">
+        <div class="card-body py-3">
+          <h5 class="card-title fw-bold mb-3">Sensores Activos en la Comunidad</h5>
+          <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+            <table class="table align-middle mb-0">
+              <thead class="sticky-top bg-white">
                 <tr>
-                  <th class="ps-4 py-3">ID</th>
-                  <th class="py-3">Nombre del Sensor</th>
-                  <th class="py-3">Ubicación</th>
-                  <th class="pe-4 py-3">Estado</th>
+                  <th class="text-muted">ID</th>
+                  <th class="text-muted">NOMBRE DEL SENSOR</th>
+                  <th class="text-muted">UBICACIÓN</th>
+                  <th class="text-muted">ESTADO</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngIf="sensores.length === 0">
-                  <td colspan="4" class="text-center text-muted py-4">Cargando sensores...</td>
-                </tr>
-                <tr *ngFor="let s of sensores">
-                  <td class="ps-4 fw-bold text-muted">#{{ s.sensorId }}</td>
-                  <td class="fw-semibold text-dark">{{ s.nombreSensor }}</td>
-                  <td class="text-secondary">{{ s.ubicacion }}</td>
-                  <td class="pe-4">
-                    <span class="badge rounded-pill px-3 py-1.5" [ngClass]="s.estado ? 'bg-success bg-opacity-10 text-success fw-bold' : 'bg-secondary bg-opacity-10 text-secondary'">
-                      {{ s.estado ? 'Activo' : 'Inactivo' }}
-                    </span>
+                <tr *ngFor="let sensor of sensores">
+                  <td class="fw-bold">#{{ $any(sensor).sensorId }}</td>
+                  <td>{{ $any(sensor).nombre || $any(sensor).nombreSensor }}</td>
+                  <td class="text-muted">{{ $any(sensor).ubicacion }}</td>
+                  <td>
+                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">Activo</span>
                   </td>
                 </tr>
               </tbody>
@@ -105,36 +71,72 @@
       </div>
     </div>
 
-    <!-- Panel de Historial de Alertas -->
+    <!-- Alertas en Tiempo Real -->
     <div class="col-lg-4">
-      <div class="card shadow-sm border-0 rounded-4 bg-white h-100">
-        <div class="card-header bg-white py-3 px-4 border-bottom border-light d-flex justify-content-between align-items-center">
-          <h5 class="mb-0 fw-bold text-dark">
-            <i class="bi bi-bell text-danger me-2"></i> Historial de Alertas
-          </h5>
-          <button *ngIf="alertasRecientes.length > 0" class="btn btn-outline-secondary btn-sm rounded-pill px-2 py-0 fs-7" (click)="onLimpiarHistorial()" title="Limpiar historial">
-            <i class="bi bi-trash"></i> Limpiar
-          </button>
-        </div>
-        <div class="card-body p-3">
-          <button class="btn btn-primary w-100 mb-3 fw-bold shadow-sm py-2 rounded-pill text-uppercase fs-7" (click)="onSimularAlerta()">
-            <i class="bi bi-plus-circle me-1"></i> Simular Alerta (Nivel Actual)
+      <div class="card shadow-sm border-0">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title fw-bold mb-0">Alertas en Tiempo Real</h5>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill px-2 py-0" (click)="onLimpiarHistorial()">Limpiar</button>
+          </div>
+
+          <button class="btn btn-primary w-100 py-1 fw-bold shadow-sm mb-2" (click)="onSimularAlerta()" style="font-size: 0.85rem;">
+            SIMULAR ALERTA ({{ nivelAlertaGlobal }})
           </button>
 
-          <div class="alert-feed" style="max-height: 380px; overflow-y: auto;">
-            <div *ngIf="alertasRecientes.length === 0" class="p-4 mb-3 border border-light rounded-4 bg-light text-center">
-              <i class="bi bi-check-circle text-success fs-3 mb-2 d-block"></i>
-              <p class="mb-0 text-muted small">No hay alertas registradas.</p>
-            </div>
-
-            <div *ngFor="let a of alertasRecientes" class="p-3 mb-3 border border-light rounded-4 bg-light shadow-sm">
+          <div class="alertas-container" style="max-height: 160px; overflow-y: auto;">
+            <div *ngFor="let alerta of alertasRecientes" class="card border-0 bg-light p-2 mb-2 shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="badge fw-bold px-2.5 py-1 rounded-pill" [ngClass]="getBadgeClass(a.nivel)">
-                  {{ a.nivel || 'Climática' }}
+                <span class="badge" [ngClass]="getBadgeClass($any(alerta).nivelRiesgo || $any(alerta).nivel)" style="font-size: 0.7rem;">
+                  {{ $any(alerta).nivelRiesgo || $any(alerta).nivel || 'Informativa' }}
                 </span>
-                <small class="text-muted" style="font-size: 0.75rem;">{{ a.fechaEmision | date:'shortTime' }}</small>
+                <small class="text-muted" style="font-size: 0.7rem;">{{ $any(alerta).fechaEmision || $any(alerta).fechaHora | date:'shortTime' }}</small>
               </div>
-              <p class="mb-0 text-dark small mt-2"><strong>{{ a.tipoAlerta }}:</strong> {{ a.mensaje }}</p>
+              <p class="mb-0 text-dark" style="font-size: 0.8rem;">{{ $any(alerta).mensaje }}</p>
+            </div>
+            <div *ngIf="alertasRecientes.length === 0" class="text-center text-muted py-2">
+              <small>No hay alertas recientes.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Inferior: Historial de Eventos y Fenómenos Climáticos -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title fw-bold mb-0">Historial de Eventos y Fenómenos Climáticos</h5>
+            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1" (click)="cargarEventos()">Actualizar</button>
+          </div>
+
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table align-middle mb-0" *ngIf="eventos.length > 0">
+              <thead class="sticky-top bg-white">
+                <tr>
+                  <th class="text-muted ps-3 border-bottom">ID</th>
+                  <th class="text-muted border-bottom">TIPO DE FENÓMENO</th>
+                  <th class="text-muted border-bottom">DESCRIPCIÓN DEL RIESGO</th>
+                  <th class="text-muted border-bottom">FECHA Y HORA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let evento of eventos">
+                  <td class="ps-3 fw-bold">#{{ $any(evento).eventoId }}</td>
+                  <td>
+                    <span class="badge bg-secondary px-2 py-1">{{ $any(evento).tipoFenomeno }}</span>
+                  </td>
+                  <td>{{ $any(evento).descripcion }}</td>
+                  <td>{{ $any(evento).fechaHora | date:'medium' }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="text-center py-3" *ngIf="eventos.length === 0">
+              <p class="text-muted mb-0 small">No hay eventos registrados en el historial.</p>
             </div>
           </div>
         </div>
