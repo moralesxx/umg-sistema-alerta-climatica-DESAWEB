@@ -8,7 +8,7 @@ export interface Alerta {
   eventoId?: number | null;
   tipoAlerta: string;
   mensaje: string;
-  nivel: string;
+  nivelRiesgo: string;    // <-- Corregido para coincidir con el backend
   atendida: boolean;
   fechaEmision?: string;
 }
@@ -40,7 +40,7 @@ export class AlertaService {
       eventoId: null,
       tipoAlerta: 'Climática',
       mensaje: mensajeDesc,
-      nivel: nivelRiesgo,
+      nivelRiesgo: nivelRiesgo, // <-- Corregido para enviar la propiedad exacta
       atendida: false,
       fechaEmision: new Date().toISOString()
     };

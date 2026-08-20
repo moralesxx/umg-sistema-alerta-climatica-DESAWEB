@@ -81,7 +81,24 @@ export class Dashboard implements OnInit {
 
   onSimularAlerta(): void {
     const nivelActual = this.nivelAlertaGlobal;
-    const mensajePrueba = `Condición climática extrema detectada en campo con nivel ${nivelActual}.`;
+    let mensajePrueba = '';
+
+    // Generar descripción profesional y variada según el nivel de riesgo y los 5 fenómenos de la rúbrica
+    switch (nivelActual.toLowerCase()) {
+      case 'rojo':
+        mensajePrueba = `Emergencia crítica: Desbordamiento inminente en el cauce principal del río detectado por sensores de caudal. Evacuación requerida.`;
+        break;
+      case 'naranja':
+        mensajePrueba = `Alerta alta: Condiciones extremas de temperatura y sequedad con riesgo inminente de propagación de incendio forestal.`;
+        break;
+      case 'amarillo':
+        mensajePrueba = `Precaución: Déficit prolongado de precipitaciones afectando la humedad del suelo y niveles de reservas hídricas (Sequía).`;
+        break;
+      case 'verde':
+      default:
+        mensajePrueba = `Condición normal/estable: Descenso leve de temperatura registrado en zona rural sin riesgo de helada severa.`;
+        break;
+    }
 
     this.alertaService.simularAlerta(nivelActual, mensajePrueba).subscribe({
       next: () => {

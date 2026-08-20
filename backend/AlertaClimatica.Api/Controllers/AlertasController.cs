@@ -42,31 +42,30 @@ public class AlertasController : ControllerBase
 
         _context.Alertas.Add(alerta);
 
-        // Generar automáticamente el registro en el Historial de Eventos variando entre los 5 tipos requeridos
+        // Mapeo preciso a los 5 fenómenos climáticos oficiales de la rúbrica[cite: 2]
         string nivelStr = alerta.NivelRiesgo?.ToLower() ?? "";
+        string mensajeStr = alerta.Mensaje?.ToLower() ?? "";
         string tipoFenomenoAsociado = "Tormenta";
 
-        if (nivelStr.Contains("rojo") || nivelStr.Contains("emergencia"))
+        if (nivelStr.Contains("rojo") || mensajeStr.Contains("desbordamiento") || mensajeStr.Contains("río"))
         {
             tipoFenomenoAsociado = "Inundación";
         }
-        else if (nivelStr.Contains("naranja"))
+        else if (nivelStr.Contains("naranja") || mensajeStr.Contains("incendio") || mensajeStr.Contains("temperatura"))
         {
             tipoFenomenoAsociado = "Incendio forestal";
         }
-        else if (nivelStr.Contains("amarillo"))
+        else if (nivelStr.Contains("amarillo") || mensajeStr.Contains("sequía") || mensajeStr.Contains("suelo"))
         {
             tipoFenomenoAsociado = "Sequía";
         }
-        else if (nivelStr.Contains("verde"))
+        else if (nivelStr.Contains("verde") || mensajeStr.Contains("helada"))
         {
             tipoFenomenoAsociado = "Helada";
         }
         else
         {
-            // Si viene otro valor, se selecciona aleatoriamente entre los 5 de la rúbrica
-            string[] fenomenosDisponibles = { "Inundación", "Sequía", "Tormenta", "Helada", "Incendio forestal" };
-            tipoFenomenoAsociado = fenomenosDisponibles[new Random().Next(fenomenosDisponibles.Length)];
+            tipoFenomenoAsociado = "Tormenta";
         }
 
         var nuevoEvento = new Evento
