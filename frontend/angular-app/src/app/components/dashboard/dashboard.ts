@@ -24,12 +24,17 @@ export class Dashboard implements OnInit {
   sensores: Sensor[] = [];
   eventos: Evento[] = [];
 
-  // Estado de modales (reemplazan prompt/confirm/alert)
+  // Datos para gráficos de evolución en tiempo real
+  historialTemperaturas: number[] = [22, 23, 24, 24.5];
+  historialRios: number[] = [1.5, 1.6, 1.7, 1.8];
+  svgPathTemperatura: string = '';
+  svgPathRio: string = '';
+
+  // Estado de modales
   showAddSensorModal = false;
   nuevoSensorNombre = '';
   nuevoSensorUbicacion = '';
 
-  // Estado para modal de Editar Sensor
   showEditSensorModal = false;
   sensorEnEdicionId: number | null = null;
   editSensorNombre = '';
@@ -55,7 +60,11 @@ export class Dashboard implements OnInit {
     this.cargarSensores();
     this.cargarAlertas();
     this.cargarEventos();
-    setInterval(() => this.simularLecturasTiempoReal(), 5000);
+    this.actualizarGraficos();
+    setInterval(() => {
+      this.simularLecturasTiempoReal();
+      this.actualizarGraficos();
+    }, 5000);
   }
 
   cargarSensores(): void {
@@ -83,7 +92,6 @@ export class Dashboard implements OnInit {
     const nivelActual = this.nivelAlertaGlobal;
     let mensajePrueba = '';
 
-    // Generar descripción profesional y variada según el nivel de riesgo y los 5 fenómenos de la rúbrica
     switch (nivelActual.toLowerCase()) {
       case 'rojo':
         mensajePrueba = `Emergencia crítica: Desbordamiento inminente en el cauce principal del río detectado por sensores de caudal. Evacuación requerida.`;
@@ -143,7 +151,7 @@ export class Dashboard implements OnInit {
   }
 
   // ==========================================
-  // MODAL: Editar sensor (Requerimiento de la rúbrica)
+  // MODAL: Editar sensor
   // ==========================================
   onEditarSensor(sensor: Sensor): void {
     this.sensorEnEdicionId = sensor.sensorId;
@@ -253,19 +261,19 @@ export class Dashboard implements OnInit {
     this.nivelLluvia = Number((Math.random() * 20).toFixed(1));
     this.nivelRio = Number((1.2 + Math.random() * 2.5).toFixed(2));
 
-    const orden = ['Verde', 'Amarillo', 'Naranja', 'Rojo'];
+    // Agregar al historial de gráficos (mantener últimos 10 puntos)
+    this.historialTemperaturas.push(this.temperatura);
+    this.historialRios.push(this.nivelRio);
+    if (this.historialTemperaturas.length > 10) this.historialTemperaturas.shift();
+    if (this.historialRios.length > 10) this.historialRios.shift();
 
+    const orden = ['Verde', 'Amarillo', 'Naranja', 'Rojo'];
     const rand = Math.random();
     let nivelBase: string;
-    if (rand < 0.25) {
-      nivelBase = 'Verde';
-    } else if (rand < 0.50) {
-      nivelBase = 'Amarillo';
-    } else if (rand < 0.75) {
-      nivelBase = 'Naranja';
-    } else {
-      nivelBase = 'Rojo';
-    }
+    if (rand < 0.25) nivelBase = 'Verde';
+    else if (rand < 0.50) nivelBase = 'Amarillo';
+    else if (rand < 0.75) nivelBase = 'Naranja';
+    else nivelBase = 'Rojo';
 
     if (nivelBase === this.nivelAlertaGlobal) {
       const rand2 = Math.random();
@@ -276,16 +284,32 @@ export class Dashboard implements OnInit {
     }
 
     let nivelSensores = 'Verde';
-    if (this.nivelRio > 3.2 || this.nivelLluvia > 15) {
-      nivelSensores = 'Rojo';
-    } else if (this.nivelRio > 2.7 || this.velocidadViento > 35) {
-      nivelSensores = 'Naranja';
-    } else if (this.temperatura > 32 || this.humedad < 52) {
-      nivelSensores = 'Amarillo';
-    }
+    if (this.nivelRio > 3.2 || this.nivelLluvia > 15) nivelSensores = 'Rojo';
+    else if (this.nivelRio > 2.7 || this.velocidadViento > 35) nivelSensores = 'Naranja';
+    else if (this.temperatura > 32 || this.humedad < 52) nivelSensores = 'Amarillo';
 
     const indiceFinal = Math.max(orden.indexOf(nivelBase), orden.indexOf(nivelSensores));
     this.nivelAlertaGlobal = orden[indiceFinal];
+  }
+
+  actualizarGraficos(): void {
+    this.svgPathTemperatura = this.generarPathSvg(this.historialTemperaturas, 10, 40);
+    this.svgPathRio = this.generarPathSvg(this.historialRios, 0, 5);
+  }
+
+  private generarPathSvg(datos: number[], minVal: number, maxVal: number): string {
+    if (!datos || datos.length === 0) return '';
+    const width = 500;
+    const height = 150;
+    const step = width / (Math.max(datos.length - 1, 1));
+
+    return datos.map((val, i) => {
+      const x = i * step;
+      // Normalizar altura en el SVG
+      const normalizedVal = Math.min(Math.max(val, minVal), maxVal);
+      const y = height - ((normalizedVal - minVal) / (maxVal - minVal)) * height;
+      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(' ');
   }
 
   getBadgeClass(texto: any): string {
