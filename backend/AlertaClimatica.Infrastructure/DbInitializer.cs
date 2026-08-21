@@ -1,5 +1,6 @@
 using AlertaClimatica.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace AlertaClimatica.Infrastructure;
 
@@ -28,15 +29,19 @@ public static class DbInitializer
 
         // 3. Sembrar Usuario Administrador Inicial
         var adminRole = context.Roles.First(r => r.NombreRol == "Administrador");
+        var passwordHasher = new PasswordHasher<Usuario>();
+
         var adminUser = new Usuario
         {
             Nombre = "Administrador Del Sistema",
             Correo = "admin@alerta.com",
-            ContraseniaHash = "Admin123!",
             RolId = adminRole.RolId,
             Estado = true,
             FechaCreacion = DateTime.Now
         };
+
+        adminUser.ContraseniaHash =
+        passwordHasher.HashPassword(adminUser, "Admin123!");
         context.Usuarios.Add(adminUser);
         context.SaveChanges();
 

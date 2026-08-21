@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Dashboard } from './components/dashboard/dashboard';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, Dashboard],
+  imports: [
+    RouterOutlet
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class AppComponent {
+
   title = 'umg-sistema-alerta-climatica-DESAWEB';
+
 }

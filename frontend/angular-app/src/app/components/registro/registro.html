@@ -1,0 +1,229 @@
+<div class="registro-page">
+
+  <div class="registro-card">
+
+    <!-- ENCABEZADO -->
+
+    <div class="registro-header">
+
+      <h1>Crear cuenta</h1>
+
+      <p>
+        Registra un usuario para acceder
+        al sistema de monitoreo.
+      </p>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="alert alert-danger"
+      *ngIf="error"
+    >
+      {{ error }}
+    </div>
+
+
+    <!-- ÉXITO -->
+
+    <div
+      class="alert alert-success"
+      *ngIf="mensaje"
+    >
+      {{ mensaje }}
+    </div>
+
+
+    <!-- FORMULARIO -->
+
+    <form
+      (ngSubmit)="registrar()"
+      #registroForm="ngForm"
+    >
+
+      <!-- NOMBRE -->
+
+      <div class="form-group">
+
+        <label for="nombre">
+          Nombre completo
+        </label>
+
+        <div class="input-container">
+
+          <input
+            id="nombre"
+            name="nombre"
+            type="text"
+            class="form-control"
+            placeholder="Nombre completo"
+            [(ngModel)]="nombre"
+            required
+            [disabled]="cargando"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- CORREO -->
+
+      <div class="form-group">
+
+        <label for="correo">
+          Correo electrónico
+        </label>
+
+        <div class="input-container">
+
+          <input
+            id="correo"
+            name="correo"
+            type="email"
+            class="form-control"
+            placeholder="ejemplo@correo.com"
+            [(ngModel)]="correo"
+            required
+            email
+            [disabled]="cargando"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- CONTRASEÑA -->
+
+      <div class="form-group">
+
+        <label for="contrasenia">
+          Contraseña
+        </label>
+
+        <div class="input-container">
+
+          <input
+            id="contrasenia"
+            name="contrasenia"
+            [type]="mostrarContrasenia ? 'text' : 'password'"
+            class="form-control"
+            placeholder="Mínimo 6 caracteres"
+            [(ngModel)]="contrasenia"
+            required
+            [disabled]="cargando"
+          />
+
+          <button
+            type="button"
+            class="password-button"
+            (click)="mostrarContrasenia = !mostrarContrasenia"
+          >
+            {{ mostrarContrasenia ? 'Ocultar' : 'Mostrar' }}
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- CONFIRMAR CONTRASEÑA -->
+
+      <div class="form-group">
+
+        <label for="confirmarContrasenia">
+          Confirmar contraseña
+        </label>
+
+        <div class="input-container">
+
+          <input
+            id="confirmarContrasenia"
+            name="confirmarContrasenia"
+            [type]="mostrarConfirmacion ? 'text' : 'password'"
+            class="form-control"
+            placeholder="Repite la contraseña"
+            [(ngModel)]="confirmarContrasenia"
+            required
+            [disabled]="cargando"
+          />
+
+          <button
+            type="button"
+            class="password-button"
+            (click)="mostrarConfirmacion = !mostrarConfirmacion"
+          >
+            {{ mostrarConfirmacion ? 'Ocultar' : 'Mostrar' }}
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- TÉRMINOS -->
+
+      <div class="terms-container">
+
+        <label>
+
+          <input
+            type="checkbox"
+            required
+          />
+
+          <span>
+            Acepto el uso del sistema y sus
+            condiciones de acceso.
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <!-- BOTÓN -->
+
+      <button
+        type="submit"
+        class="register-button"
+        [disabled]="cargando || registroForm.invalid"
+      >
+
+        <span *ngIf="!cargando">
+          Crear cuenta
+        </span>
+
+        <span *ngIf="cargando">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Creando cuenta...
+        </span>
+
+      </button>
+
+    </form>
+
+
+    <!-- LOGIN -->
+
+    <div class="login-link">
+
+      <span>
+        ¿Ya tienes una cuenta?
+      </span>
+
+      <button
+        type="button"
+        (click)="regresarLogin()"
+      >
+        Iniciar sesión
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

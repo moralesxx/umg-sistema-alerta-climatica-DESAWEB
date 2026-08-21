@@ -1,0 +1,413 @@
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.registro-page {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eef7ff 0%,
+      #f8fbff 50%,
+      #edf7f1 100%
+    );
+}
+
+/* ==========================================
+   TARJETA PRINCIPAL
+   ========================================== */
+
+.registro-card {
+  width: 100%;
+  max-width: 500px;
+
+  padding: 45px;
+
+  background: #ffffff;
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.12);
+
+  box-sizing: border-box;
+}
+
+/* ==========================================
+   ENCABEZADO
+   ========================================== */
+
+.registro-header {
+  margin-bottom: 30px;
+
+  text-align: center;
+}
+
+.registro-header h1 {
+  margin: 0 0 8px;
+
+  color: #212529;
+
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.registro-header p {
+  max-width: 380px;
+
+  margin: 0 auto;
+
+  color: #6c757d;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   ALERTAS
+   ========================================== */
+
+.registro-card .alert {
+  margin-bottom: 20px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+}
+
+/* ==========================================
+   FORMULARIO
+   ========================================== */
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #343a40;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==========================================
+   CONTENEDOR DE INPUT
+   ========================================== */
+
+.input-container {
+  position: relative;
+
+  width: 100%;
+}
+
+/* ==========================================
+   INPUT
+   ========================================== */
+
+.form-control {
+  width: 100%;
+  height: 48px;
+
+  padding: 0 15px;
+
+  border: 1px solid #dee2e6;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #212529;
+
+  font-size: 14px;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.form-control::placeholder {
+  color: #adb5bd;
+}
+
+.form-control:hover {
+  border-color: #b8c0c8;
+}
+
+.form-control:focus {
+  border-color: #087f5b;
+
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(8, 127, 91, 0.12);
+}
+
+.form-control:disabled {
+  background: #f1f3f5;
+
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   BOTÓN MOSTRAR / OCULTAR
+   ========================================== */
+
+.password-button {
+  position: absolute;
+
+  top: 50%;
+  right: 12px;
+
+  transform: translateY(-50%);
+
+  min-width: 65px;
+
+  padding: 5px 8px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #087f5b;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.password-button:hover {
+  color: #066b4c;
+}
+
+.password-button:focus {
+  outline: none;
+}
+
+/*
+ * Dejamos espacio suficiente para el botón
+ * Mostrar/Ocultar.
+ */
+
+.input-container .form-control[type='password'],
+.input-container .form-control[type='text'] {
+  padding-right: 85px;
+}
+
+/* ==========================================
+   TÉRMINOS Y CONDICIONES
+   ========================================== */
+
+.terms-container {
+  margin-bottom: 22px;
+}
+
+.terms-container label {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin: 0;
+
+  color: #6c757d;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  cursor: pointer;
+}
+
+.terms-container input {
+  flex-shrink: 0;
+
+  margin-top: 3px;
+
+  cursor: pointer;
+}
+
+/* ==========================================
+   BOTÓN CREAR CUENTA
+   ========================================== */
+
+.register-button {
+  width: 100%;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 20px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #087f5b;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease,
+    box-shadow 0.2s ease;
+}
+
+.register-button:hover:not(:disabled) {
+  background: #066b4c;
+
+  box-shadow:
+    0 5px 15px rgba(8, 127, 91, 0.2);
+}
+
+.register-button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.register-button:focus {
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(8, 127, 91, 0.2);
+}
+
+.register-button:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+/* ==========================================
+   ENLACE A LOGIN
+   ========================================== */
+
+.login-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  margin-top: 25px;
+
+  color: #6c757d;
+
+  font-size: 13px;
+}
+
+.login-link button {
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #087f5b;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.login-link button:hover {
+  color: #066b4c;
+
+  text-decoration: underline;
+}
+
+.login-link button:focus {
+  outline: none;
+}
+
+/* ==========================================
+   RESPONSIVE - TABLET
+   ========================================== */
+
+@media (max-width: 550px) {
+
+  .registro-page {
+    padding: 15px;
+  }
+
+  .registro-card {
+    max-width: 500px;
+
+    padding: 40px 30px;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE - MÓVIL
+   ========================================== */
+
+@media (max-width: 450px) {
+
+  .registro-page {
+    min-height: 100vh;
+
+    padding: 0;
+  }
+
+  .registro-card {
+    min-height: 100vh;
+
+    padding: 35px 25px;
+
+    border-radius: 0;
+
+    box-shadow: none;
+  }
+
+  .registro-header h1 {
+    font-size: 25px;
+  }
+}
+
+/* ==========================================
+   MÓVIL PEQUEÑO
+   ========================================== */
+
+@media (max-width: 350px) {
+
+  .registro-card {
+    padding: 30px 18px;
+  }
+
+  .login-link {
+    flex-direction: column;
+
+    gap: 4px;
+  }
+}
