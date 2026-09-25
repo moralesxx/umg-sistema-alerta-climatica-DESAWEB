@@ -1,0 +1,18 @@
+/* Estilos personalizados para Alertas */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.alert-feed {
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 4px;
+}
+
+
+.bg-warning-orange {
+  background-color: #fd7e14 !important;
+  color: #ffffff !important;
+}
+

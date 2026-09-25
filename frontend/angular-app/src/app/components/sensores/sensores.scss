@@ -1,0 +1,11 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.sensores-feed {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  max-height: 60vh;
+}

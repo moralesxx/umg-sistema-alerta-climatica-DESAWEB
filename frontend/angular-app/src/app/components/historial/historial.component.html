@@ -1,0 +1,60 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title fw-bold mb-0">Historial de Eventos y Fenómenos Climáticos</h5>
+          <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1" (click)="cargarEventos()">Actualizar</button>
+        </div>
+        <div class="table-responsive historial-feed">
+          <table class="table align-middle mb-0 tabla-fija" *ngIf="eventos.length > 0">
+            <colgroup>
+              <col style="width: 8%;">
+              <col style="width: 15%;">
+              <col style="width: 57%;">
+              <col style="width: 20%;">
+            </colgroup>
+            <thead class="sticky-top bg-white">
+              <tr>
+                <th class="text-muted ps-3 border-bottom">ID</th>
+                <th class="text-muted border-bottom">TIPO DE FENÓMENO</th>
+                <th class="text-muted border-bottom">DESCRIPCIÓN DEL RIESGO</th>
+                <th class="text-muted border-bottom">FECHA Y HORA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let evento of eventosPaginados">
+                <td class="ps-3 fw-bold">#{{ $any(evento).eventoId }}</td>
+                <td><span class="badge bg-secondary px-2 py-1">{{ $any(evento).tipoFenomeno }}</span></td>
+                <td class="celda-descripcion">{{ $any(evento).descripcion }}</td>
+                <td>{{ $any(evento).fechaHora | date:'medium' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="text-center py-3" *ngIf="eventos.length === 0">
+            <p class="text-muted mb-0 small">No hay eventos registrados en el historial.</p>
+          </div>
+        </div>
+
+        <!-- Controles de Paginación -->
+        <nav class="d-flex justify-content-between align-items-center mt-3 px-2" *ngIf="eventos.length > 0">
+          <small class="text-muted">
+            Mostrando página {{ paginaActual }} de {{ totalPaginas }} ({{ eventos.length }} registros totales)
+          </small>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="paginaActual === 1">
+              <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+            </li>
+            <li class="page-item" *ngFor="let p of [].constructor(totalPaginas); let i = index" [class.active]="paginaActual === (i + 1)">
+              <button class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+              <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
+            </li>
+          </ul>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+</div>

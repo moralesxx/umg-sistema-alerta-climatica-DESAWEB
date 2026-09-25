@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 export interface Alerta {
-  alertaId?: number;      // Opcional para cuando se crea una nueva
+  alertaId?: number;
   sensorId: number;
   eventoId?: number | null;
   tipoAlerta: string;
   mensaje: string;
-  nivelRiesgo: string;    // <-- Corregido para coincidir con el backend
+  nivelRiesgo: string;
   atendida: boolean;
   fechaEmision?: string;
 }
@@ -19,7 +19,15 @@ export interface Alerta {
 export class AlertaService {
   private apiUrl = 'http://localhost:5081/api/alertas';
 
+  // Subject para sincronizar el nivel de riesgo global entre componentes
+  private nivelAlertaSource = new BehaviorSubject<string>('Verde');
+  public nivelAlerta$ = this.nivelAlertaSource.asObservable();
+
   constructor(private http: HttpClient) { }
+
+  setNivelAlerta(nivel: string): void {
+    this.nivelAlertaSource.next(nivel);
+  }
 
   getAlertas(): Observable<Alerta[]> {
     return this.http.get<Alerta[]>(this.apiUrl);
@@ -33,14 +41,13 @@ export class AlertaService {
     return this.http.post<Alerta>(this.apiUrl, alerta);
   }
 
-  // Método específico para simular o disparar alertas desde el dashboard
   simularAlerta(nivelRiesgo: string, mensajeDesc: string): Observable<Alerta> {
     const nuevaAlerta: Alerta = {
-      sensorId: 1, // Usando el sensor predeterminado 1
+      sensorId: 1,
       eventoId: null,
       tipoAlerta: 'Climática',
       mensaje: mensajeDesc,
-      nivelRiesgo: nivelRiesgo, // <-- Corregido para enviar la propiedad exacta
+      nivelRiesgo: nivelRiesgo,
       atendida: false,
       fechaEmision: new Date().toISOString()
     };

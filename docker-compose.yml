@@ -1,8 +1,10 @@
+version: '3.8'
+
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver_alerta_climatica
-    user: "0:0"   # <-- Agrega esta línea para otorgar permisos de escritura en el volumen
+    user: "0:0"
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=SqlAdmin2026!
@@ -11,6 +13,39 @@ services:
       - "14333:1433"
     volumes:
       - mssql_data:/var/opt/mssql/data
+    networks:
+      - red-clima
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: api_alerta_climatica
+    ports:
+      - "5081:5081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=AlertaClimaticaDb;User Id=sa;Password=SqlAdmin2026!;TrustServerCertificate=True;
+    depends_on:
+      - db
+    networks:
+      - red-clima
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: frontend_alerta_climatica
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - red-clima
 
 volumes:
   mssql_data:
+
+networks:
+  red-clima:
+    driver: bridge

@@ -1,0 +1,83 @@
+<div class="row g-2 mb-2">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h5 class="card-title fw-bold mb-0">Sensores Activos en la Comunidad</h5>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm fw-bold" (click)="onAgregarSensor()">+ Agregar Sensor</button>
+            <button class="btn btn-outline-danger btn-sm fw-bold" (click)="onReiniciarSistema()">Reiniciar Sistema</button>
+          </div>
+        </div>
+        <div class="table-responsive sensores-feed">
+          <table class="table align-middle mb-0">
+            <thead class="sticky-top bg-white">
+              <tr>
+                <th class="text-muted">ID</th>
+                <th class="text-muted">NOMBRE DEL SENSOR</th>
+                <th class="text-muted">UBICACIÓN</th>
+                <th class="text-muted">ESTADO</th>
+                <th class="text-muted text-end">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sensor of sensores">
+                <td class="fw-bold">#{{ sensor.sensorId }}</td>
+                <td>{{ sensor.nombreSensor }}</td>
+                <td class="text-muted">{{ sensor.ubicacion }}</td>
+                <td>
+                  <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" (click)="onToggleEstado(sensor)" title="Clic para cambiar estado">
+                    {{ sensor.estado ? 'Activo' : 'Inactivo' }}
+                  </button>
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-outline-primary btn-sm px-2 py-1" [disabled]="!sensor.estado" [title]="sensor.estado ? 'Editar sensor' : 'No se puede editar un sensor inactivo'" (click)="onEditarSensor(sensor)">
+                    <i class="bi bi-pencil-fill"></i> Editar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agregar Sensor -->
+<div class="app-modal-backdrop" *ngIf="showAddSensorModal" (click)="cancelarAgregarSensor()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Agregar nuevo sensor simulado</h5>
+    <div class="mb-2">
+      <label class="form-label small text-muted">Nombre del sensor</label>
+      <input type="text" class="form-control" [(ngModel)]="nuevoSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small text-muted">Ubicación</label>
+      <input type="text" class="form-control" [(ngModel)]="nuevoSensorUbicacion" placeholder="Ej. Comunidad Norte">
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarAgregarSensor()">Cancelar</button>
+      <button class="btn btn-success btn-sm fw-bold" (click)="confirmarAgregarSensor()" [disabled]="!nuevoSensorNombre || !nuevoSensorUbicacion">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Sensor -->
+<div class="app-modal-backdrop" *ngIf="showEditSensorModal" (click)="cancelarEdicionSensor()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Editar Sensor #{{ sensorEnEdicionId }}</h5>
+    <div class="mb-2">
+      <label class="form-label small text-muted">Nombre del sensor</label>
+      <input type="text" class="form-control" [(ngModel)]="editSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small text-muted">Ubicación</label>
+      <input type="text" class="form-control" [(ngModel)]="editSensorUbicacion" placeholder="Ej. Comunidad Norte">
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarEdicionSensor()">Cancelar</button>
+      <button class="btn btn-primary btn-sm fw-bold" (click)="confirmarEdicionSensor()" [disabled]="!editSensorNombre || !editSensorUbicacion">Guardar Cambios</button>
+    </div>
+  </div>
+</div>

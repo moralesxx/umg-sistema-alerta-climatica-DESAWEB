@@ -1,0 +1,22 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.historial-feed {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  max-height: 60vh;
+}
+
+.tabla-fija {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.celda-descripcion {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}

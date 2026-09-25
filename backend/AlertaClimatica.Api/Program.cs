@@ -160,7 +160,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // =========================================================
-// 14. INICIALIZAR BASE DE DATOS
+// 14. INICIALIZAR BASE DE DATOS Y APLICAR MIGRACIONES
 // =========================================================
 
 using (var scope = app.Services.CreateScope())
@@ -172,6 +172,10 @@ using (var scope = app.Services.CreateScope())
         var context =
             services.GetRequiredService<ApplicationDbContext>();
 
+        // Ejecutar las migraciones pendientes automáticamente en la BD vacía
+        context.Database.Migrate();
+
+        // Sembrar los datos iniciales (como el usuario administrador)
         DbInitializer.Seed(context);
     }
     catch (Exception ex)
