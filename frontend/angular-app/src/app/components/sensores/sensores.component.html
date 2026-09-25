@@ -15,6 +15,7 @@
               <tr>
                 <th class="text-muted">ID</th>
                 <th class="text-muted">NOMBRE DEL SENSOR</th>
+                <th class="text-muted">TIPO</th>
                 <th class="text-muted">UBICACIÓN</th>
                 <th class="text-muted">ESTADO</th>
                 <th class="text-muted text-end">ACCIONES</th>
@@ -24,6 +25,7 @@
               <tr *ngFor="let sensor of sensores">
                 <td class="fw-bold">#{{ sensor.sensorId }}</td>
                 <td>{{ sensor.nombreSensor }}</td>
+                <td class="text-muted">{{ obtenerNombreTipo(sensor.tipoSensorId) }}</td>
                 <td class="text-muted">{{ sensor.ubicacion }}</td>
                 <td>
                   <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" (click)="onToggleEstado(sensor)" title="Clic para cambiar estado">
@@ -52,13 +54,26 @@
       <label class="form-label small text-muted">Nombre del sensor</label>
       <input type="text" class="form-control" [(ngModel)]="nuevoSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
     </div>
-    <div class="mb-3">
+    <div class="mb-2">
+      <label class="form-label small text-muted">Tipo de sensor</label>
+      <select class="form-select" [(ngModel)]="nuevoSensorTipoId">
+        <option [ngValue]="null" disabled>Selecciona un tipo...</option>
+        <option *ngFor="let tipo of tiposSensor" [ngValue]="tipo.tipoSensorId">
+          {{ tipo.nombreTipo }} ({{ tipo.unidadMedida }})
+        </option>
+      </select>
+    </div>
+    <div class="mb-2">
       <label class="form-label small text-muted">Ubicación</label>
       <input type="text" class="form-control" [(ngModel)]="nuevoSensorUbicacion" placeholder="Ej. Comunidad Norte">
     </div>
+    <div class="mb-3">
+      <label class="form-label small text-muted">Código (opcional)</label>
+      <input type="text" class="form-control" [(ngModel)]="nuevoSensorCodigo" placeholder="Ej. SENS-NORTE-01. Si lo dejas vacío se genera automático">
+    </div>
     <div class="d-flex justify-content-end gap-2">
       <button class="btn btn-outline-secondary btn-sm" (click)="cancelarAgregarSensor()">Cancelar</button>
-      <button class="btn btn-success btn-sm fw-bold" (click)="confirmarAgregarSensor()" [disabled]="!nuevoSensorNombre || !nuevoSensorUbicacion">Agregar</button>
+      <button class="btn btn-success btn-sm fw-bold" (click)="confirmarAgregarSensor()" [disabled]="!nuevoSensorNombre || !nuevoSensorUbicacion || !nuevoSensorTipoId">Agregar</button>
     </div>
   </div>
 </div>
@@ -71,13 +86,47 @@
       <label class="form-label small text-muted">Nombre del sensor</label>
       <input type="text" class="form-control" [(ngModel)]="editSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
     </div>
-    <div class="mb-3">
+    <div class="mb-2">
+      <label class="form-label small text-muted">Tipo de sensor</label>
+      <select class="form-select" [(ngModel)]="editSensorTipoId">
+        <option *ngFor="let tipo of tiposSensor" [ngValue]="tipo.tipoSensorId">
+          {{ tipo.nombreTipo }} ({{ tipo.unidadMedida }})
+        </option>
+      </select>
+    </div>
+    <div class="mb-2">
       <label class="form-label small text-muted">Ubicación</label>
       <input type="text" class="form-control" [(ngModel)]="editSensorUbicacion" placeholder="Ej. Comunidad Norte">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small text-muted">Código (opcional)</label>
+      <input type="text" class="form-control" [(ngModel)]="editSensorCodigo" placeholder="Ej. SENS-NORTE-01. Si lo dejas vacío se conserva el actual">
     </div>
     <div class="d-flex justify-content-end gap-2">
       <button class="btn btn-outline-secondary btn-sm" (click)="cancelarEdicionSensor()">Cancelar</button>
       <button class="btn btn-primary btn-sm fw-bold" (click)="confirmarEdicionSensor()" [disabled]="!editSensorNombre || !editSensorUbicacion">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación (usado por Reiniciar Sistema) -->
+<div class="app-modal-backdrop" *ngIf="showConfirmModal" (click)="cancelarConfirmacion()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Confirmar acción</h5>
+    <p class="mb-4">{{ confirmMessage }}</p>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarConfirmacion()">Cancelar</button>
+      <button class="btn btn-danger btn-sm fw-bold" (click)="ejecutarConfirmacion()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast de confirmación (también faltaba en el HTML) -->
+<div *ngIf="showToast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+  <div class="toast show align-items-center text-white bg-success border-0">
+    <div class="d-flex">
+      <div class="toast-body">{{ toastMessage }}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="showToast = false"></button>
     </div>
   </div>
 </div>

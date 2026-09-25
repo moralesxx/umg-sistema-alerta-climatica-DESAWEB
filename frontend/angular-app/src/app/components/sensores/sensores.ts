@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SensorService, Sensor } from '../../services/sensor.service';
+import { TipoSensorService, TipoSensor } from '../../services/tipo-sensor.service';
 import { BitacoraService } from '../../services/bitacora.service';
 
 @Component({
@@ -13,14 +14,19 @@ import { BitacoraService } from '../../services/bitacora.service';
 })
 export class SensoresComponent implements OnInit {
   sensores: Sensor[] = [];
+  tiposSensor: TipoSensor[] = [];
+
   showAddSensorModal = false;
   nuevoSensorNombre = '';
   nuevoSensorUbicacion = '';
+  nuevoSensorCodigo = '';
+  nuevoSensorTipoId: number | null = null;
 
   showEditSensorModal = false;
   sensorEnEdicionId: number | null = null;
   editSensorNombre = '';
   editSensorUbicacion = '';
+  editSensorCodigo = '';
   editSensorEstado = true;
   editSensorTipoId = 1;
 
@@ -33,12 +39,32 @@ export class SensoresComponent implements OnInit {
 
   constructor(
     private sensorService: SensorService,
+    private tipoSensorService: TipoSensorService,
     private bitacoraService: BitacoraService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.cargarSensores();
+    this.cargarTiposSensor();
+  }
+
+  cargarTiposSensor(): void {
+    this.tipoSensorService.getTiposSensor().subscribe({
+      next: (data) => {
+        this.tiposSensor = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar tipos de sensor:', err)
+    });
+  }
+
+  // Resuelve el nombre del tipo de sensor a partir de su Id, para mostrarlo
+  // en la columna "TIPO" de la tabla sin tener que tocar el backend.
+  obtenerNombreTipo(tipoSensorId?: number): string {
+    if (!tipoSensorId) return '—';
+    const tipo = this.tiposSensor.find(t => t.tipoSensorId === tipoSensorId);
+    return tipo ? tipo.nombreTipo : '—';
   }
 
   private registrarAccion(accion: string, detalle: string): void {
@@ -56,8 +82,14 @@ export class SensoresComponent implements OnInit {
   }
 
   onAgregarSensor(): void {
+    // Cierra el formulario de edición si estaba abierto, para no mostrar ambos a la vez
+    this.showEditSensorModal = false;
+    this.sensorEnEdicionId = null;
+
     this.nuevoSensorNombre = '';
     this.nuevoSensorUbicacion = '';
+    this.nuevoSensorCodigo = '';
+    this.nuevoSensorTipoId = null;
     this.showAddSensorModal = true;
   }
 
@@ -66,16 +98,19 @@ export class SensoresComponent implements OnInit {
   }
 
   confirmarAgregarSensor(): void {
-    if (!this.nuevoSensorNombre.trim() || !this.nuevoSensorUbicacion.trim()) return;
+    if (!this.nuevoSensorNombre.trim() || !this.nuevoSensorUbicacion.trim() || !this.nuevoSensorTipoId) return;
     const nombreSensor = this.nuevoSensorNombre.trim();
     const ubicacion = this.nuevoSensorUbicacion.trim();
+    const codigo = this.nuevoSensorCodigo.trim();
 
     const nuevoSensor: Sensor = {
       sensorId: 0,
       nombreSensor,
       ubicacion,
       estado: true,
-      tipoSensorId: 1
+      tipoSensorId: this.nuevoSensorTipoId,
+      // Si se deja vacío, el backend genera un código automático.
+      codigo: codigo ? codigo : undefined
     };
 
     this.sensorService.createSensor(nuevoSensor).subscribe({
@@ -90,11 +125,15 @@ export class SensoresComponent implements OnInit {
   }
 
   onEditarSensor(sensor: Sensor): void {
+    // Cierra el formulario de agregar si estaba abierto, para no mostrar ambos a la vez
+    this.showAddSensorModal = false;
+
     this.sensorEnEdicionId = sensor.sensorId;
     this.editSensorNombre = sensor.nombreSensor;
     this.editSensorUbicacion = sensor.ubicacion;
     this.editSensorEstado = sensor.estado;
     this.editSensorTipoId = sensor.tipoSensorId || 1;
+    this.editSensorCodigo = sensor.codigo || '';
     this.showEditSensorModal = true;
   }
 
@@ -108,13 +147,16 @@ export class SensoresComponent implements OnInit {
     const sensorId = this.sensorEnEdicionId;
     const nombreSensor = this.editSensorNombre.trim();
     const ubicacion = this.editSensorUbicacion.trim();
+    const codigo = this.editSensorCodigo.trim();
 
     const sensorActualizado: Sensor = {
       sensorId,
       nombreSensor,
       ubicacion,
       estado: this.editSensorEstado,
-      tipoSensorId: this.editSensorTipoId
+      tipoSensorId: this.editSensorTipoId,
+      // Si se deja vacío, el backend conserva el código que ya tenía.
+      codigo: codigo ? codigo : undefined
     };
 
     this.sensorService.updateSensor(sensorId, sensorActualizado).subscribe({
