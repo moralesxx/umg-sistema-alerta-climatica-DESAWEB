@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using AlertaClimatica.Infrastructure;
 using AlertaClimatica.Domain;
+using AlertaClimatica.Infrastructure.Services;
 
 namespace AlertaClimatica.Api.Controllers;
 
@@ -9,12 +8,12 @@ namespace AlertaClimatica.Api.Controllers;
 [Route("api/[controller]")]
 public class SensoresController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ISensorService _sensorService;
 
-    // Constructor que inyecta el contexto de la base de datos para las consultas
-    public SensoresController(ApplicationDbContext context)
+    // Ahora depende de ISensorService en vez de ApplicationDbContext directamente.
+    public SensoresController(ISensorService sensorService)
     {
-        _context = context;
+        _sensorService = sensorService;
     }
 
     // GET: api/sensores
@@ -22,7 +21,8 @@ public class SensoresController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Sensor>>> GetSensores()
     {
-        return await _context.Sensores.ToListAsync();
+        var sensores = await _sensorService.GetSensoresAsync();
+        return Ok(sensores);
     }
 
     // GET: api/sensores/5
@@ -30,13 +30,12 @@ public class SensoresController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Sensor>> GetSensor(int id)
     {
-        var sensor = await _context.Sensores
-            .FirstOrDefaultAsync(s => s.SensorId == id);
+        var sensor = await _sensorService.GetSensorByIdAsync(id);
 
         if (sensor == null)
-            return NotFound();
+            return NotFound(new { mensaje = "Sensor no encontrado." });
 
-        return sensor;
+        return Ok(sensor);
     }
 
     // POST: api/sensores
@@ -44,10 +43,15 @@ public class SensoresController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Sensor>> CreateSensor(Sensor sensor)
     {
-        _context.Sensores.Add(sensor);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetSensor), new { id = sensor.SensorId }, sensor);
+        try
+        {
+            var creado = await _sensorService.CreateSensorAsync(sensor);
+            return CreatedAtAction(nameof(GetSensor), new { id = creado.SensorId }, creado);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 
     // PUT: api/sensores/5
@@ -55,30 +59,19 @@ public class SensoresController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateSensor(int id, Sensor sensor)
     {
-        if (id != sensor.SensorId)
-        {
-            return BadRequest(new { mensaje = "El ID del sensor no coincide." });
-        }
-
-        _context.Entry(sensor).State = EntityState.Modified;
-
         try
         {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!SensorExists(id))
-            {
-                return NotFound(new { mensaje = "Sensor no encontrado." });
-            }
-            else
-            {
-                throw;
-            }
-        }
+            var actualizado = await _sensorService.UpdateSensorAsync(id, sensor);
 
-        return NoContent();
+            if (!actualizado)
+                return NotFound(new { mensaje = "Sensor no encontrado." });
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 
     // PATCH: api/sensores/5/estado
@@ -86,16 +79,10 @@ public class SensoresController : ControllerBase
     [HttpPatch("{id}/estado")]
     public async Task<IActionResult> CambiarEstadoSensor(int id, [FromBody] bool activo)
     {
-        var sensor = await _context.Sensores.FindAsync(id);
-        if (sensor == null)
-        {
+        var actualizado = await _sensorService.CambiarEstadoSensorAsync(id, activo);
+
+        if (!actualizado)
             return NotFound(new { mensaje = "Sensor no encontrado." });
-        }
-
-        // Se usa la propiedad Estado de tu modelo Sensor.cs
-        sensor.Estado = activo; 
-
-        await _context.SaveChangesAsync();
 
         return Ok(new { mensaje = "Estado del sensor actualizado correctamente.", sensorId = id, nuevoEstado = activo });
     }
@@ -107,23 +94,12 @@ public class SensoresController : ControllerBase
     {
         try
         {
-            var sensores = await _context.Sensores.ToListAsync();
-            foreach (var s in sensores)
-            {
-                s.Estado = true; // Reactiva todos por defecto al reiniciar el sistema
-            }
-
-            await _context.SaveChangesAsync();
+            await _sensorService.ReiniciarSistemaAsync();
             return Ok(new { mensaje = "Sistema de monitoreo reiniciado con éxito." });
         }
         catch (Exception ex)
         {
             return StatusCode(500, new { mensaje = "Error al reiniciar el sistema", detalle = ex.Message });
         }
-    }
-
-    private bool SensorExists(int id)
-    {
-        return _context.Sensores.Any(e => e.SensorId == id);
     }
 }

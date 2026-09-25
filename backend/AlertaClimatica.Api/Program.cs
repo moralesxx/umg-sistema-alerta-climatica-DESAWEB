@@ -117,6 +117,7 @@ builder.Services.AddHttpContextAccessor();
 // =========================================================
 
 builder.Services.AddScoped<BitacoraService>();
+builder.Services.AddScoped<ISensorService, SensorService>();
 
 // =========================================================
 // 8. CONSTRUIR APLICACIÓN
