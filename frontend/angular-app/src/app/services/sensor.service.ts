@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Sensor {
@@ -13,6 +13,17 @@ export interface Sensor {
   codigo?: string;
   tipoSensorId?: number;  // Coincide con TipoSensorId de C# -> tipoSensorId
   tipoSensor?: any;
+  comunidadId?: number;   // NUEVO (RF-ADM-15)
+  descripcion?: string;   // NUEVO (RF-ADM-15)
+  comunidad?: any;
+}
+
+// RF-ADM-20: filtros opcionales para el listado de sensores.
+export interface SensorFiltros {
+  comunidadId?: number;
+  tipoSensorId?: number;
+  estado?: boolean;
+  codigo?: string;
 }
 
 @Injectable({
@@ -23,8 +34,25 @@ export class SensorService {
 
   constructor(private http: HttpClient) { }
 
-  getSensores(): Observable<Sensor[]> {
-    return this.http.get<Sensor[]>(this.apiUrl);
+  // Sin argumentos devuelve todos los sensores (comportamiento de siempre).
+  // Con filtros, arma el query string y el backend hace el filtrado.
+  getSensores(filtros?: SensorFiltros): Observable<Sensor[]> {
+    let params = new HttpParams();
+
+    if (filtros?.comunidadId) {
+      params = params.set('comunidadId', filtros.comunidadId);
+    }
+    if (filtros?.tipoSensorId) {
+      params = params.set('tipoSensorId', filtros.tipoSensorId);
+    }
+    if (filtros?.estado !== undefined && filtros?.estado !== null) {
+      params = params.set('estado', filtros.estado);
+    }
+    if (filtros?.codigo) {
+      params = params.set('codigo', filtros.codigo);
+    }
+
+    return this.http.get<Sensor[]>(this.apiUrl, { params });
   }
 
   getSensor(id: number): Observable<Sensor> {
@@ -40,7 +68,7 @@ export class SensorService {
   }
 
   // ==========================================
-  // NUEVOS MÉTODOS PARA LA ADMINISTRACIÓN
+  // MÉTODOS PARA LA ADMINISTRACIÓN
   // ==========================================
 
   // Permite activar o desactivar un sensor rápidamente (PATCH)

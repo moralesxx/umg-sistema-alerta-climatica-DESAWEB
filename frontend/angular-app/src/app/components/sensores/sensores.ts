@@ -1,8 +1,9 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SensorService, Sensor } from '../../services/sensor.service';
+import { SensorService, Sensor, SensorFiltros } from '../../services/sensor.service';
 import { TipoSensorService, TipoSensor } from '../../services/tipo-sensor.service';
+import { ComunidadService, Comunidad } from '../../services/comunidad.service';
 import { BitacoraService } from '../../services/bitacora.service';
 
 @Component({
@@ -15,12 +16,22 @@ import { BitacoraService } from '../../services/bitacora.service';
 export class SensoresComponent implements OnInit {
   sensores: Sensor[] = [];
   tiposSensor: TipoSensor[] = [];
+  comunidades: Comunidad[] = [];
+
+  // RF-ADM-20: filtros
+  filtroComunidadId: number | null = null;
+  filtroTipoSensorId: number | null = null;
+  filtroEstado: string = 'todos'; // 'todos' | 'true' | 'false'
+  filtroCodigo: string = '';
 
   showAddSensorModal = false;
   nuevoSensorNombre = '';
   nuevoSensorUbicacion = '';
   nuevoSensorCodigo = '';
   nuevoSensorTipoId: number | null = null;
+  nuevoSensorComunidadId: number | null = null;
+  nuevoSensorFechaInstalacion = '';
+  nuevoSensorDescripcion = '';
 
   showEditSensorModal = false;
   sensorEnEdicionId: number | null = null;
@@ -29,6 +40,9 @@ export class SensoresComponent implements OnInit {
   editSensorCodigo = '';
   editSensorEstado = true;
   editSensorTipoId = 1;
+  editSensorComunidadId: number | null = null;
+  editSensorFechaInstalacion = '';
+  editSensorDescripcion = '';
 
   showConfirmModal = false;
   confirmMessage = '';
@@ -40,6 +54,7 @@ export class SensoresComponent implements OnInit {
   constructor(
     private sensorService: SensorService,
     private tipoSensorService: TipoSensorService,
+    private comunidadService: ComunidadService,
     private bitacoraService: BitacoraService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -47,6 +62,21 @@ export class SensoresComponent implements OnInit {
   ngOnInit(): void {
     this.cargarSensores();
     this.cargarTiposSensor();
+    this.cargarComunidades();
+  }
+
+  private registrarAccion(accion: string, detalle: string): void {
+    this.bitacoraService.registrarAccion(accion, detalle).subscribe();
+  }
+
+  cargarSensores(filtros?: SensorFiltros): void {
+    this.sensorService.getSensores(filtros).subscribe({
+      next: (data) => {
+        this.sensores = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar sensores:', err)
+    });
   }
 
   cargarTiposSensor(): void {
@@ -59,6 +89,16 @@ export class SensoresComponent implements OnInit {
     });
   }
 
+  cargarComunidades(): void {
+    this.comunidadService.getComunidades().subscribe({
+      next: (data) => {
+        this.comunidades = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar comunidades:', err)
+    });
+  }
+
   // Resuelve el nombre del tipo de sensor a partir de su Id, para mostrarlo
   // en la columna "TIPO" de la tabla sin tener que tocar el backend.
   obtenerNombreTipo(tipoSensorId?: number): string {
@@ -67,18 +107,32 @@ export class SensoresComponent implements OnInit {
     return tipo ? tipo.nombreTipo : '—';
   }
 
-  private registrarAccion(accion: string, detalle: string): void {
-    this.bitacoraService.registrarAccion(accion, detalle).subscribe();
+  // Igual que obtenerNombreTipo, pero para Comunidad.
+  obtenerNombreComunidad(comunidadId?: number): string {
+    if (!comunidadId) return '—';
+    const comunidad = this.comunidades.find(c => c.comunidadId === comunidadId);
+    return comunidad ? comunidad.nombre : '—';
   }
 
-  cargarSensores(): void {
-    this.sensorService.getSensores().subscribe({
-      next: (data) => {
-        this.sensores = data;
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error al cargar sensores:', err)
-    });
+  // RF-ADM-20: aplica los filtros seleccionados y vuelve a pedir la lista al backend.
+  aplicarFiltros(): void {
+    const filtros: SensorFiltros = {};
+
+    if (this.filtroComunidadId) filtros.comunidadId = this.filtroComunidadId;
+    if (this.filtroTipoSensorId) filtros.tipoSensorId = this.filtroTipoSensorId;
+    if (this.filtroEstado === 'true') filtros.estado = true;
+    if (this.filtroEstado === 'false') filtros.estado = false;
+    if (this.filtroCodigo.trim()) filtros.codigo = this.filtroCodigo.trim();
+
+    this.cargarSensores(filtros);
+  }
+
+  limpiarFiltros(): void {
+    this.filtroComunidadId = null;
+    this.filtroTipoSensorId = null;
+    this.filtroEstado = 'todos';
+    this.filtroCodigo = '';
+    this.cargarSensores();
   }
 
   onAgregarSensor(): void {
@@ -90,6 +144,9 @@ export class SensoresComponent implements OnInit {
     this.nuevoSensorUbicacion = '';
     this.nuevoSensorCodigo = '';
     this.nuevoSensorTipoId = null;
+    this.nuevoSensorComunidadId = null;
+    this.nuevoSensorFechaInstalacion = '';
+    this.nuevoSensorDescripcion = '';
     this.showAddSensorModal = true;
   }
 
@@ -98,10 +155,18 @@ export class SensoresComponent implements OnInit {
   }
 
   confirmarAgregarSensor(): void {
-    if (!this.nuevoSensorNombre.trim() || !this.nuevoSensorUbicacion.trim() || !this.nuevoSensorTipoId) return;
+    if (
+      !this.nuevoSensorNombre.trim() ||
+      !this.nuevoSensorUbicacion.trim() ||
+      !this.nuevoSensorTipoId ||
+      !this.nuevoSensorFechaInstalacion ||
+      !this.nuevoSensorDescripcion.trim()
+    ) return;
+
     const nombreSensor = this.nuevoSensorNombre.trim();
     const ubicacion = this.nuevoSensorUbicacion.trim();
     const codigo = this.nuevoSensorCodigo.trim();
+    const descripcion = this.nuevoSensorDescripcion.trim();
 
     const nuevoSensor: Sensor = {
       sensorId: 0,
@@ -109,6 +174,9 @@ export class SensoresComponent implements OnInit {
       ubicacion,
       estado: true,
       tipoSensorId: this.nuevoSensorTipoId,
+      comunidadId: this.nuevoSensorComunidadId ?? undefined,
+      fechaInstalacion: this.nuevoSensorFechaInstalacion,
+      descripcion,
       // Si se deja vacío, el backend genera un código automático.
       codigo: codigo ? codigo : undefined
     };
@@ -134,6 +202,11 @@ export class SensoresComponent implements OnInit {
     this.editSensorEstado = sensor.estado;
     this.editSensorTipoId = sensor.tipoSensorId || 1;
     this.editSensorCodigo = sensor.codigo || '';
+    this.editSensorComunidadId = sensor.comunidadId ?? null;
+    // El input type="date" de HTML espera "yyyy-MM-dd"; si el backend manda
+    // fecha+hora, se recorta a solo la parte de la fecha.
+    this.editSensorFechaInstalacion = sensor.fechaInstalacion ? sensor.fechaInstalacion.substring(0, 10) : '';
+    this.editSensorDescripcion = sensor.descripcion || '';
     this.showEditSensorModal = true;
   }
 
@@ -148,6 +221,7 @@ export class SensoresComponent implements OnInit {
     const nombreSensor = this.editSensorNombre.trim();
     const ubicacion = this.editSensorUbicacion.trim();
     const codigo = this.editSensorCodigo.trim();
+    const descripcion = this.editSensorDescripcion.trim();
 
     const sensorActualizado: Sensor = {
       sensorId,
@@ -155,6 +229,9 @@ export class SensoresComponent implements OnInit {
       ubicacion,
       estado: this.editSensorEstado,
       tipoSensorId: this.editSensorTipoId,
+      comunidadId: this.editSensorComunidadId ?? undefined,
+      fechaInstalacion: this.editSensorFechaInstalacion ? this.editSensorFechaInstalacion : undefined,
+      descripcion: descripcion ? descripcion : undefined,
       // Si se deja vacío, el backend conserva el código que ya tenía.
       codigo: codigo ? codigo : undefined
     };
