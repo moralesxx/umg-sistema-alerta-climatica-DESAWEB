@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using AlertaClimatica.Infrastructure;
 using AlertaClimatica.Infrastructure.Services;
+using AlertaClimatica.Infrastructure.Repositories;
+using AlertaClimatica.Infrastructure.Repositories.Interfaces;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -117,6 +119,13 @@ builder.Services.AddHttpContextAccessor();
 // =========================================================
 
 builder.Services.AddScoped<BitacoraService>();
+
+// Repositorios (acceso a datos puro)
+builder.Services.AddScoped<ISensorRepository, SensorRepository>();
+builder.Services.AddScoped<ITipoSensorRepository, TipoSensorRepository>();
+builder.Services.AddScoped<IComunidadRepository, ComunidadRepository>();
+
+// Services (reglas de negocio, dependen de los repositorios de arriba)
 builder.Services.AddScoped<ISensorService, SensorService>();
 
 // =========================================================

@@ -1,33 +1,42 @@
-using Microsoft.EntityFrameworkCore;
 using AlertaClimatica.Domain;
+using AlertaClimatica.Infrastructure.Repositories.Interfaces;
 
 namespace AlertaClimatica.Infrastructure.Services;
 
-// Servicio de dominio para el módulo de Sensores.
-// Saca la lógica de negocio del controller (SensoresController) y la centraliza
-// aquí, siguiendo el mismo patrón que ya usan con BitacoraService.
+// Reglas de negocio del módulo de Sensores. Ya NO conoce ApplicationDbContext
+// ni EntityFrameworkCore directamente — todo el acceso a datos pasa por los
+// repositorios inyectados. Esto es lo que permite, por ejemplo, probar esta
+// clase con repositorios simulados (mocks) sin necesitar una base real.
 public class SensorService : ISensorService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ISensorRepository _sensorRepository;
+    private readonly ITipoSensorRepository _tipoSensorRepository;
+    private readonly IComunidadRepository _comunidadRepository;
 
-    public SensorService(ApplicationDbContext context)
+    public SensorService(
+        ISensorRepository sensorRepository,
+        ITipoSensorRepository tipoSensorRepository,
+        IComunidadRepository comunidadRepository)
     {
-        _context = context;
+        _sensorRepository = sensorRepository;
+        _tipoSensorRepository = tipoSensorRepository;
+        _comunidadRepository = comunidadRepository;
     }
 
     public async Task<IEnumerable<Sensor>> GetSensoresAsync()
     {
-        return await _context.Sensores
-            .AsNoTracking()
-            .OrderBy(s => s.SensorId)
-            .ToListAsync();
+        return await _sensorRepository.ObtenerTodosAsync();
+    }
+
+    public async Task<IEnumerable<Sensor>> GetSensoresFiltradosAsync(
+        int? comunidadId, int? tipoSensorId, bool? estado, string? codigo)
+    {
+        return await _sensorRepository.ObtenerFiltradosAsync(comunidadId, tipoSensorId, estado, codigo);
     }
 
     public async Task<Sensor?> GetSensorByIdAsync(int id)
     {
-        return await _context.Sensores
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SensorId == id);
+        return await _sensorRepository.ObtenerPorIdAsync(id);
     }
 
     public async Task<Sensor> CreateSensorAsync(Sensor sensor)
@@ -38,16 +47,28 @@ public class SensorService : ISensorService
         if (string.IsNullOrWhiteSpace(sensor.Ubicacion))
             throw new ArgumentException("La ubicación del sensor es obligatoria.");
 
-        var tipoExiste = await _context.TiposSensor
-            .AnyAsync(t => t.TipoSensorId == sensor.TipoSensorId);
+        // RF-ADM-15: fecha de instalación y descripción son obligatorias
+        // para sensores NUEVOS (los viejos de prueba se quedan con NULL).
+        if (sensor.FechaInstalacion == null)
+            throw new ArgumentException("La fecha de instalación es obligatoria.");
 
-        if (!tipoExiste)
+        if (string.IsNullOrWhiteSpace(sensor.Descripcion))
+            throw new ArgumentException("La descripción del sensor es obligatoria.");
+
+        if (!await _tipoSensorRepository.ExisteAsync(sensor.TipoSensorId))
             throw new ArgumentException($"El tipo de sensor con Id {sensor.TipoSensorId} no existe.");
 
-        // El modal "Agregar Sensor" del frontend no envía Código, y la columna
-        // Codigo en la BD es NOT NULL UNIQUE. Si llega vacío, se generaba
-        // string.Empty por defecto y el segundo sensor creado violaría el
-        // UNIQUE. Se genera uno automáticamente cuando no viene informado.
+        // ComunidadId es opcional mientras no exista el módulo de Comunidades
+        // (todavía no hay ninguna fila que elegir). Si viene informado, sí
+        // se valida que exista de verdad.
+        if (sensor.ComunidadId.HasValue &&
+            !await _comunidadRepository.ExisteAsync(sensor.ComunidadId.Value))
+        {
+            throw new ArgumentException($"La comunidad con Id {sensor.ComunidadId} no existe.");
+        }
+
+        // El modal "Agregar Sensor" no siempre envía Código, y la columna
+        // Codigo en la BD es NOT NULL UNIQUE. Si llega vacío, se genera uno.
         if (string.IsNullOrWhiteSpace(sensor.Codigo))
         {
             sensor.Codigo = $"SEN-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
@@ -56,8 +77,8 @@ public class SensorService : ISensorService
         sensor.SensorId = 0; // que el autoincremental de la BD lo asigne
         sensor.Estado = true; // todo sensor nuevo nace activo
 
-        _context.Sensores.Add(sensor);
-        await _context.SaveChangesAsync();
+        await _sensorRepository.AgregarAsync(sensor);
+        await _sensorRepository.GuardarCambiosAsync();
 
         return sensor;
     }
@@ -67,54 +88,59 @@ public class SensorService : ISensorService
         if (id != sensor.SensorId)
             throw new ArgumentException("El ID del sensor no coincide.");
 
-        var existente = await _context.Sensores.FindAsync(id);
+        var existente = await _sensorRepository.ObtenerParaActualizarAsync(id);
         if (existente == null)
             return false;
 
-        var tipoExiste = await _context.TiposSensor
-            .AnyAsync(t => t.TipoSensorId == sensor.TipoSensorId);
-
-        if (!tipoExiste)
+        if (!await _tipoSensorRepository.ExisteAsync(sensor.TipoSensorId))
             throw new ArgumentException($"El tipo de sensor con Id {sensor.TipoSensorId} no existe.");
 
-        // Se actualizan campo por campo (en vez de reemplazar la entidad completa
-        // con _context.Entry(sensor).State = Modified) para no pisar por accidente
-        // columnas que el cliente no envió, como Codigo, Latitud o Longitud.
+        if (sensor.ComunidadId.HasValue &&
+            !await _comunidadRepository.ExisteAsync(sensor.ComunidadId.Value))
+        {
+            throw new ArgumentException($"La comunidad con Id {sensor.ComunidadId} no existe.");
+        }
+
+        // Se actualiza campo por campo para no pisar por accidente columnas
+        // que el cliente no envió.
         existente.NombreSensor = sensor.NombreSensor;
         existente.Ubicacion = sensor.Ubicacion;
         existente.TipoSensorId = sensor.TipoSensorId;
+        existente.ComunidadId = sensor.ComunidadId;
         existente.Estado = sensor.Estado;
+        existente.FechaInstalacion = sensor.FechaInstalacion;
+        existente.Descripcion = sensor.Descripcion;
 
         if (!string.IsNullOrWhiteSpace(sensor.Codigo))
             existente.Codigo = sensor.Codigo;
 
-        await _context.SaveChangesAsync();
+        await _sensorRepository.GuardarCambiosAsync();
         return true;
     }
 
     public async Task<bool> CambiarEstadoSensorAsync(int id, bool activo)
     {
-        var sensor = await _context.Sensores.FindAsync(id);
+        var sensor = await _sensorRepository.ObtenerParaActualizarAsync(id);
         if (sensor == null)
             return false;
 
         sensor.Estado = activo;
-        await _context.SaveChangesAsync();
+        await _sensorRepository.GuardarCambiosAsync();
         return true;
     }
 
     public async Task ReiniciarSistemaAsync()
     {
-        var sensores = await _context.Sensores.ToListAsync();
+        var sensores = await _sensorRepository.ObtenerTodosParaActualizarAsync();
         foreach (var s in sensores)
         {
             s.Estado = true;
         }
-        await _context.SaveChangesAsync();
+        await _sensorRepository.GuardarCambiosAsync();
     }
 
     public async Task<bool> SensorExistsAsync(int id)
     {
-        return await _context.Sensores.AnyAsync(s => s.SensorId == id);
+        return await _sensorRepository.ExisteAsync(id);
     }
 }

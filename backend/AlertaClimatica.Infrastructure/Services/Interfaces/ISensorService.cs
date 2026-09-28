@@ -5,6 +5,7 @@ namespace AlertaClimatica.Infrastructure.Services;
 public interface ISensorService
 {
     Task<IEnumerable<Sensor>> GetSensoresAsync();
+    Task<IEnumerable<Sensor>> GetSensoresFiltradosAsync(int? comunidadId, int? tipoSensorId, bool? estado, string? codigo);
     Task<Sensor?> GetSensorByIdAsync(int id);
     Task<Sensor> CreateSensorAsync(Sensor sensor);
     Task<bool> UpdateSensorAsync(int id, Sensor sensor);

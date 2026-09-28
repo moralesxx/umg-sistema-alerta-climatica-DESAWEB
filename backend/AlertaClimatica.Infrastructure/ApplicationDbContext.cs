@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Usuario> Usuarios { get; set; }
     public DbSet<TipoSensor> TiposSensor { get; set; }
     public DbSet<Sensor> Sensores { get; set; }
+    public DbSet<Comunidad> Comunidades { get; set; }
     public DbSet<LecturaClimatica> LecturasClimaticas { get; set; }
     public DbSet<Evento> Eventos { get; set; }
     public DbSet<Alerta> Alertas { get; set; }
@@ -39,10 +40,27 @@ public class ApplicationDbContext : DbContext
             .HasKey(t => t.TipoSensorId);
         modelBuilder.Entity<TipoSensor>().Property(t => t.TipoSensorId).ValueGeneratedOnAdd();
 
+        // NUEVO: Comunidad (RF-ADM-08)
+        modelBuilder.Entity<Comunidad>()
+            .ToTable("Comunidades")
+            .HasKey(c => c.ComunidadId);
+        modelBuilder.Entity<Comunidad>().Property(c => c.ComunidadId).ValueGeneratedOnAdd();
+        modelBuilder.Entity<Comunidad>().Property(c => c.Latitud).HasPrecision(9, 6);
+        modelBuilder.Entity<Comunidad>().Property(c => c.Longitud).HasPrecision(9, 6);
+
         modelBuilder.Entity<Sensor>()
             .ToTable("Sensores")
             .HasKey(s => s.SensorId);
         modelBuilder.Entity<Sensor>().Property(s => s.SensorId).ValueGeneratedOnAdd();
+
+        // NUEVO: FK opcional de Sensor -> Comunidad.
+        // Restrict (no Cascade) para que borrar una comunidad nunca borre sensores en cadena.
+        modelBuilder.Entity<Sensor>()
+            .HasOne(s => s.Comunidad)
+            .WithMany()
+            .HasForeignKey(s => s.ComunidadId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         modelBuilder.Entity<LecturaClimatica>()
             .ToTable("LecturasClimaticas")

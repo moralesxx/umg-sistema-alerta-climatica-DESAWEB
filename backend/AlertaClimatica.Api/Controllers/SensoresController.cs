@@ -17,11 +17,17 @@ public class SensoresController : ControllerBase
     }
 
     // GET: api/sensores
-    // Obtiene el listado completo de los sensores registrados en la comunidad
+    // GET: api/sensores?comunidadId=1&tipoSensorId=2&estado=true&codigo=SEN
+    // Obtiene el listado de sensores. Todos los filtros son opcionales
+    // (RF-ADM-19 y RF-ADM-20); sin parámetros devuelve todos.
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Sensor>>> GetSensores()
+    public async Task<ActionResult<IEnumerable<Sensor>>> GetSensores(
+        [FromQuery] int? comunidadId,
+        [FromQuery] int? tipoSensorId,
+        [FromQuery] bool? estado,
+        [FromQuery] string? codigo)
     {
-        var sensores = await _sensorService.GetSensoresAsync();
+        var sensores = await _sensorService.GetSensoresFiltradosAsync(comunidadId, tipoSensorId, estado, codigo);
         return Ok(sensores);
     }
 
