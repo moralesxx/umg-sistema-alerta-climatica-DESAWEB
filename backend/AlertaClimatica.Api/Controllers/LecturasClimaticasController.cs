@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AlertaClimatica.Infrastructure;
@@ -5,8 +6,12 @@ using AlertaClimatica.Domain;
 
 namespace AlertaClimatica.Api.Controllers;
 
+// Mismo criterio que Eventos: no está nombrado literal en el ejemplo del
+// PDF, pero es datos operativos de sensores. GET abierto a cualquier
+// autenticado, POST (simular una lectura) restringido a Administrador/Operador.
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LecturasClimaticasController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -35,6 +40,7 @@ public class LecturasClimaticasController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<ActionResult<LecturaClimatica>> CreateLectura(LecturaClimatica lectura)
     {
         if (lectura.FechaHora == default)

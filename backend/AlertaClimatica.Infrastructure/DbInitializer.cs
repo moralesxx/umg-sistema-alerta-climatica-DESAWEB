@@ -17,12 +17,12 @@ public static class DbInitializer
             return; // La base de datos ya fue poblada anteriormente
         }
 
-        // 2. Sembrar Roles
+        // 2. Sembrar Roles (RF-ADM-06: nombres exactos según el PDF de Fase 2)
         var roles = new[]
         {
             new Rol { NombreRol = "Administrador", Descripcion = "Acceso total al sistema y gestión de usuarios" },
             new Rol { NombreRol = "Operador", Descripcion = "Gestión y control de sensores y alertas" },
-            new Rol { NombreRol = "Visualizador", Descripcion = "Acceso únicamente a dashboards y reportes" }
+            new Rol { NombreRol = "Usuario de consulta", Descripcion = "Acceso únicamente a dashboards y reportes" }
         };
         context.Roles.AddRange(roles);
         context.SaveChanges();

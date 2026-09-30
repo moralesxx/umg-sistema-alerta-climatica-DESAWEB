@@ -1,11 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AlertaClimatica.Domain;
 using AlertaClimatica.Infrastructure.Services;
 
 namespace AlertaClimatica.Api.Controllers;
 
+// RF-ADM-07: Administrador acceso completo, Operador administra sensores,
+// Usuario de consulta solo puede ver (los GET no tienen restricción de rol
+// adicional, solo requieren estar autenticado).
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class SensoresController : ControllerBase
 {
     private readonly ISensorService _sensorService;
@@ -47,6 +52,7 @@ public class SensoresController : ControllerBase
     // POST: api/sensores
     // Registra un nuevo sensor en el sistema de monitoreo climático
     [HttpPost]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<ActionResult<Sensor>> CreateSensor(Sensor sensor)
     {
         try
@@ -63,6 +69,7 @@ public class SensoresController : ControllerBase
     // PUT: api/sensores/5
     // Edita los valores y propiedades de un sensor existente
     [HttpPut("{id}")]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<IActionResult> UpdateSensor(int id, Sensor sensor)
     {
         try
@@ -83,6 +90,7 @@ public class SensoresController : ControllerBase
     // PATCH: api/sensores/5/estado
     // Permite activar o desactivar un sensor rápidamente cambiando su propiedad Estado
     [HttpPatch("{id}/estado")]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<IActionResult> CambiarEstadoSensor(int id, [FromBody] bool activo)
     {
         var actualizado = await _sensorService.CambiarEstadoSensorAsync(id, activo);
@@ -96,6 +104,7 @@ public class SensoresController : ControllerBase
     // POST: api/sensores/reiniciar
     // Reinicia el sistema de monitoreo general
     [HttpPost("reiniciar")]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<IActionResult> ReiniciarSistemaMonitoreo()
     {
         try

@@ -118,15 +118,19 @@ builder.Services.AddHttpContextAccessor();
 // 7. REGISTRAR SERVICIOS
 // =========================================================
 
-builder.Services.AddScoped<BitacoraService>();
-
 // Repositorios (acceso a datos puro)
 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
 builder.Services.AddScoped<ITipoSensorRepository, TipoSensorRepository>();
 builder.Services.AddScoped<IComunidadRepository, ComunidadRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IRolRepository, RolRepository>();
+builder.Services.AddScoped<IBitacoraRepository, BitacoraRepository>();
 
 // Services (reglas de negocio, dependen de los repositorios de arriba)
 builder.Services.AddScoped<ISensorService, SensorService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IBitacoraService, BitacoraService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
 // =========================================================
 // 8. CONSTRUIR APLICACIÓN

@@ -1,21 +1,23 @@
 using AlertaClimatica.Domain;
+using AlertaClimatica.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace AlertaClimatica.Infrastructure.Services;
 
-public class BitacoraService
+// Ya NO toca ApplicationDbContext directamente — todo el acceso a datos
+// pasa por IBitacoraRepository, igual que hicimos con Sensores.
+public class BitacoraService : IBitacoraService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IBitacoraRepository _bitacoraRepository;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public BitacoraService(
-        ApplicationDbContext context,
+        IBitacoraRepository bitacoraRepository,
         IHttpContextAccessor httpContextAccessor)
     {
-        _context = context;
+        _bitacoraRepository = bitacoraRepository;
         _httpContextAccessor = httpContextAccessor;
     }
 
@@ -23,10 +25,6 @@ public class BitacoraService
         string accion,
         string detalle)
     {
-        // =====================================================
-        // 1. Obtener contexto HTTP
-        // =====================================================
-
         var httpContext = _httpContextAccessor.HttpContext;
 
         if (httpContext == null)
@@ -36,10 +34,6 @@ public class BitacoraService
             );
         }
 
-        // =====================================================
-        // 2. Verificar autenticación
-        // =====================================================
-
         if (httpContext.User?.Identity?.IsAuthenticated != true)
         {
             throw new UnauthorizedAccessException(
@@ -47,64 +41,34 @@ public class BitacoraService
             );
         }
 
-        // =====================================================
-        // 3. Obtener UsuarioId desde el JWT
-        // =====================================================
-
         var usuarioIdClaim =
-            httpContext.User.FindFirst(
-                ClaimTypes.NameIdentifier
-            )?.Value;
+            httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        // Si no existe NameIdentifier,
-        // intentamos obtener "sub"
         if (string.IsNullOrWhiteSpace(usuarioIdClaim))
         {
-            usuarioIdClaim =
-                httpContext.User.FindFirst(
-                    JwtRegisteredClaimNames.Sub
-                )?.Value;
+            usuarioIdClaim = httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         }
 
-        // También dejamos explícitamente "sub"
-        // como alternativa directa.
         if (string.IsNullOrWhiteSpace(usuarioIdClaim))
         {
-            usuarioIdClaim =
-                httpContext.User.FindFirst("sub")?.Value;
+            usuarioIdClaim = httpContext.User.FindFirst("sub")?.Value;
         }
 
-        // =====================================================
-        // 4. Validar UsuarioId
-        // =====================================================
-
-        if (!int.TryParse(
-            usuarioIdClaim,
-            out var usuarioId))
+        if (!int.TryParse(usuarioIdClaim, out var usuarioId))
         {
             throw new UnauthorizedAccessException(
                 "No se pudo identificar al usuario autenticado."
             );
         }
 
-        // =====================================================
-        // 5. Verificar que el usuario exista
-        // =====================================================
+        await RegistrarConUsuarioIdAsync(usuarioId, accion, detalle);
+    }
 
-        var usuarioExiste = await _context.Usuarios
-            .AnyAsync(u => u.UsuarioId == usuarioId);
-
-        if (!usuarioExiste)
-        {
-            throw new UnauthorizedAccessException(
-                "El usuario del token no existe en la base de datos."
-            );
-        }
-
-        // =====================================================
-        // 6. Validar acción
-        // =====================================================
-
+    public async Task RegistrarConUsuarioIdAsync(
+        int usuarioId,
+        string accion,
+        string detalle)
+    {
         if (string.IsNullOrWhiteSpace(accion))
         {
             throw new ArgumentException(
@@ -112,9 +76,14 @@ public class BitacoraService
             );
         }
 
-        // =====================================================
-        // 7. Crear registro
-        // =====================================================
+        var usuarioExiste = await _bitacoraRepository.ExisteUsuarioAsync(usuarioId);
+
+        if (!usuarioExiste)
+        {
+            throw new UnauthorizedAccessException(
+                "El usuario indicado no existe en la base de datos."
+            );
+        }
 
         var bitacora = new Bitacora
         {
@@ -124,12 +93,12 @@ public class BitacoraService
             FechaHora = DateTime.Now
         };
 
-        // =====================================================
-        // 8. Guardar
-        // =====================================================
+        await _bitacoraRepository.AgregarAsync(bitacora);
+        await _bitacoraRepository.GuardarCambiosAsync();
+    }
 
-        _context.Bitacora.Add(bitacora);
-
-        await _context.SaveChangesAsync();
+    public async Task<IEnumerable<Bitacora>> ObtenerUltimosAsync(int cantidad = 100)
+    {
+        return await _bitacoraRepository.ObtenerUltimosAsync(cantidad);
     }
 }

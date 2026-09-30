@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AlertaClimatica.Domain;
 using AlertaClimatica.Infrastructure.Repositories.Interfaces;
@@ -7,8 +8,10 @@ namespace AlertaClimatica.Api.Controllers;
 // Solo lectura por ahora — soporte al <select> de Comunidad en el formulario
 // de Sensores. El CRUD completo de Comunidades (RF-ADM-08 a RF-ADM-14) es
 // el objetivo #5 de la fase, todavía no implementado.
+// Requiere estar autenticado (cualquier rol), sin restricción adicional.
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ComunidadesController : ControllerBase
 {
     private readonly IComunidadRepository _comunidadRepository;

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AlertaClimatica.Infrastructure;
@@ -5,8 +6,11 @@ using AlertaClimatica.Domain;
 
 namespace AlertaClimatica.Api.Controllers;
 
+// RF-ADM-07: Administrador acceso completo, Operador administra alertas,
+// Usuario de consulta solo puede ver (GET sin restricción adicional de rol).
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AlertasController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -33,6 +37,7 @@ public class AlertasController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<ActionResult<Alerta>> CreateAlerta(Alerta alerta)
     {
         if (alerta.FechaEmision == default)
@@ -84,6 +89,7 @@ public class AlertasController : ControllerBase
 
     // DELETE: api/alertas
     [HttpDelete]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<IActionResult> DeleteAllAlertas()
     {
         try

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AlertaClimatica.Infrastructure;
@@ -5,8 +6,13 @@ using AlertaClimatica.Domain;
 
 namespace AlertaClimatica.Api.Controllers;
 
+// El PDF no menciona "Eventos" en el ejemplo de RF-ADM-07, pero es parte
+// del mismo dominio operativo (se generan a partir de Alertas). Aplico
+// la misma matriz por consistencia: GET para cualquier autenticado,
+// POST restringido a Administrador/Operador.
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EventosController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -25,6 +31,7 @@ public class EventosController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<ActionResult<Evento>> CreateEvento(Evento evento)
     {
         if (evento.FechaHora == default)
