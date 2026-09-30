@@ -76,6 +76,17 @@ export class AuthService {
   }
 
   cerrarSesion(): void {
+    // RF-ADM-56: avisamos al backend ANTES de borrar el token,
+    // para que quede registrado el LOGOUT en bitácora mientras
+    // el token todavía es válido. Es "best effort": si falla
+    // (por ejemplo sin conexión), igual cerramos sesión local.
+    this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
+      error: () => {
+        // Silenciado a propósito: cerrar sesión localmente no
+        // debe depender de que el backend responda.
+      }
+    });
+
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
   }

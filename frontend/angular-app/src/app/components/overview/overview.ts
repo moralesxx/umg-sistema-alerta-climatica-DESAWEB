@@ -1,7 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
-import { BitacoraService } from '../../services/bitacora.service';
 import { AlertaService } from '../../services/alerta.service';
 
 @Component({
@@ -27,8 +25,6 @@ export class OverviewComponent implements OnInit, OnDestroy {
   private intervaloTiempoReal: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private authService: AuthService,
-    private bitacoraService: BitacoraService,
     private alertaService: AlertaService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -48,19 +44,6 @@ export class OverviewComponent implements OnInit, OnDestroy {
       clearInterval(this.intervaloTiempoReal);
       this.intervaloTiempoReal = null;
     }
-  }
-
-  cerrarSesion(): void {
-    this.bitacoraService.registrarAccion('CERRAR_SESION', 'El usuario cerró sesión desde el dashboard.').subscribe({
-      next: () => {
-        this.authService.cerrarSesion();
-        window.location.href = '/login';
-      },
-      error: () => {
-        this.authService.cerrarSesion();
-        window.location.href = '/login';
-      }
-    });
   }
 
   simularLecturasTiempoReal(): void {

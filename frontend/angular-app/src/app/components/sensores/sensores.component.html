@@ -4,7 +4,7 @@
       <div class="card-body py-3">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
           <h5 class="card-title fw-bold mb-0">Sensores Activos en la Comunidad</h5>
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2" *ngIf="puedeAdministrar">
             <button class="btn btn-success btn-sm fw-bold" (click)="onAgregarSensor()">+ Agregar Sensor</button>
             <button class="btn btn-outline-danger btn-sm fw-bold" (click)="onReiniciarSistema()">Reiniciar Sistema</button>
           </div>
@@ -71,14 +71,15 @@
                 <td class="text-muted">{{ obtenerNombreComunidad(sensor.comunidadId) }}</td>
                 <td class="text-muted">{{ sensor.ubicacion }}</td>
                 <td>
-                  <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" (click)="onToggleEstado(sensor)" title="Clic para cambiar estado">
+                  <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" [disabled]="!puedeAdministrar" (click)="onToggleEstado(sensor)" [title]="puedeAdministrar ? 'Clic para cambiar estado' : 'Solo Administrador u Operador pueden cambiar el estado'">
                     {{ sensor.estado ? 'Activo' : 'Inactivo' }}
                   </button>
                 </td>
                 <td class="text-end">
-                  <button class="btn btn-outline-primary btn-sm px-2 py-1" [disabled]="!sensor.estado" [title]="sensor.estado ? 'Editar sensor' : 'No se puede editar un sensor inactivo'" (click)="onEditarSensor(sensor)">
+                  <button *ngIf="puedeAdministrar" class="btn btn-outline-primary btn-sm px-2 py-1" [disabled]="!sensor.estado" [title]="sensor.estado ? 'Editar sensor' : 'No se puede editar un sensor inactivo'" (click)="onEditarSensor(sensor)">
                     <i class="bi bi-pencil-fill"></i> Editar
                   </button>
+                  <span *ngIf="!puedeAdministrar" class="text-muted small">—</span>
                 </td>
               </tr>
             </tbody>

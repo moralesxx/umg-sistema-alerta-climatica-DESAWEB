@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlertaService, Alerta } from '../../services/alerta.service';
 import { BitacoraService } from '../../services/bitacora.service';
+import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -16,6 +17,11 @@ export class AlertasComponent implements OnInit, OnDestroy {
   nivelAlertaGlobal: string = 'Verde';
   private alertaSub!: Subscription;
 
+  // RF-ADM-07: el backend ya rechaza Simular Alerta y Limpiar con 403
+  // para "Usuario de consulta". Esto solo oculta los botones en la UI,
+  // mismo patrón que en Sensores.
+  puedeAdministrar = false;
+
   showConfirmModal = false;
   confirmMessage = '';
   private confirmAction: (() => void) | null = null;
@@ -26,8 +32,12 @@ export class AlertasComponent implements OnInit, OnDestroy {
   constructor(
     private alertaService: AlertaService,
     private bitacoraService: BitacoraService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    const usuario = this.authService.obtenerUsuario();
+    this.puedeAdministrar = usuario?.rol === 'Administrador' || usuario?.rol === 'Operador';
+  }
 
   ngOnInit(): void {
     this.cargarAlertas();

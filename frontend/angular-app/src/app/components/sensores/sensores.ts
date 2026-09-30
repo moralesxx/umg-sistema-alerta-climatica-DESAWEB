@@ -5,6 +5,7 @@ import { SensorService, Sensor, SensorFiltros } from '../../services/sensor.serv
 import { TipoSensorService, TipoSensor } from '../../services/tipo-sensor.service';
 import { ComunidadService, Comunidad } from '../../services/comunidad.service';
 import { BitacoraService } from '../../services/bitacora.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-sensores',
@@ -17,6 +18,12 @@ export class SensoresComponent implements OnInit {
   sensores: Sensor[] = [];
   tiposSensor: TipoSensor[] = [];
   comunidades: Comunidad[] = [];
+
+  // RF-ADM-07: el backend ya rechaza estas acciones con 403 para
+  // "Usuario de consulta". Esto solo oculta los botones en la UI
+  // para que no vea controles que de todos modos le van a fallar;
+  // la seguridad real sigue viviendo en el backend.
+  puedeAdministrar = false;
 
   // RF-ADM-20: filtros
   filtroComunidadId: number | null = null;
@@ -56,8 +63,12 @@ export class SensoresComponent implements OnInit {
     private tipoSensorService: TipoSensorService,
     private comunidadService: ComunidadService,
     private bitacoraService: BitacoraService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    const usuario = this.authService.obtenerUsuario();
+    this.puedeAdministrar = usuario?.rol === 'Administrador' || usuario?.rol === 'Operador';
+  }
 
   ngOnInit(): void {
     this.cargarSensores();
