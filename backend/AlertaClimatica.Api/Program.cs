@@ -131,6 +131,7 @@ builder.Services.AddScoped<ISensorService, SensorService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBitacoraService, BitacoraService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IComunidadService, ComunidadService>();
 
 // =========================================================
 // 8. CONSTRUIR APLICACIÓN

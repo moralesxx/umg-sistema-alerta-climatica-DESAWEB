@@ -1,0 +1,176 @@
+<div class="row g-2 mb-2">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h5 class="card-title fw-bold mb-0">Comunidades</h5>
+          <div class="d-flex gap-2" *ngIf="esAdministrador">
+            <button class="btn btn-success btn-sm fw-bold" (click)="onAgregarComunidad()">+ Agregar Comunidad</button>
+          </div>
+        </div>
+
+        <!-- RF-ADM-12: Búsqueda y filtros -->
+        <div class="row g-2 mb-3 align-items-end">
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-muted mb-1">Búsqueda</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroBusqueda" (keyup.enter)="aplicarFiltros()" placeholder="Nombre, municipio o departamento">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-1">Estado</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroEstado">
+              <option value="todos">Todos</option>
+              <option value="true">Activa</option>
+              <option value="false">Inactiva</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-1">Municipio</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroMunicipio" (keyup.enter)="aplicarFiltros()">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-1">Departamento</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroDepartamento" (keyup.enter)="aplicarFiltros()">
+          </div>
+          <div class="col-12 col-md-3 d-flex gap-2">
+            <button class="btn btn-primary btn-sm flex-fill" (click)="aplicarFiltros()">Buscar</button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">Limpiar</button>
+          </div>
+        </div>
+
+        <!-- RF-ADM-11: Listado -->
+        <div class="table-responsive comunidades-feed">
+          <table class="table align-middle mb-0" *ngIf="comunidades.length > 0">
+            <thead class="sticky-top bg-white">
+              <tr>
+                <th class="text-muted">ID</th>
+                <th class="text-muted">NOMBRE</th>
+                <th class="text-muted">MUNICIPIO</th>
+                <th class="text-muted">DEPARTAMENTO</th>
+                <th class="text-muted">PAÍS</th>
+                <th class="text-muted">COORDENADAS</th>
+                <th class="text-muted text-center">SENSORES</th>
+                <th class="text-muted">ESTADO</th>
+                <th class="text-muted text-end">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let comunidad of comunidades">
+                <td class="fw-bold">#{{ comunidad.comunidadId }}</td>
+                <td>
+                  {{ comunidad.nombre }}
+                  <div class="text-muted small" *ngIf="comunidad.descripcion">{{ comunidad.descripcion }}</div>
+                </td>
+                <td class="text-muted">{{ comunidad.municipio }}</td>
+                <td class="text-muted">{{ comunidad.departamento }}</td>
+                <td class="text-muted">{{ comunidad.pais }}</td>
+                <td class="text-muted small">
+                  <ng-container *ngIf="comunidad.latitud != null && comunidad.longitud != null; else sinCoordenadas">
+                    {{ comunidad.latitud }}, {{ comunidad.longitud }}
+                  </ng-container>
+                  <ng-template #sinCoordenadas>—</ng-template>
+                </td>
+                <!-- RF-ADM-13: cantidad de sensores asociados -->
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ comunidad.cantidadSensores ?? 0 }}</span>
+                </td>
+                <td>
+                  <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="comunidad.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" [disabled]="!esAdministrador" (click)="onToggleEstado(comunidad)" [title]="esAdministrador ? 'Clic para cambiar estado' : 'Solo el Administrador puede cambiar el estado'">
+                    {{ comunidad.estado ? 'Activa' : 'Inactiva' }}
+                  </button>
+                </td>
+                <td class="text-end">
+                  <button *ngIf="esAdministrador" class="btn btn-outline-primary btn-sm px-2 py-1" title="Editar comunidad" (click)="onEditarComunidad(comunidad)">
+                    <i class="bi bi-pencil-fill"></i> Editar
+                  </button>
+                  <span *ngIf="!esAdministrador" class="text-muted small">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="text-center py-3" *ngIf="comunidades.length === 0">
+            <p class="text-muted mb-0 small">No hay comunidades que coincidan con la búsqueda.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear / Editar Comunidad -->
+<div class="app-modal-backdrop" *ngIf="showFormModal" (click)="cancelarFormulario()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">{{ modoEdicion ? 'Editar Comunidad #' + comunidadEnEdicionId : 'Agregar nueva comunidad' }}</h5>
+
+    <div class="alert alert-danger py-2 small" *ngIf="errorFormulario">{{ errorFormulario }}</div>
+
+    <div class="mb-2">
+      <label class="form-label small text-muted">Nombre</label>
+      <input type="text" class="form-control" [(ngModel)]="formNombre" placeholder="Ej. Aldea El Rosario">
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label small text-muted">Municipio</label>
+        <input type="text" class="form-control" [(ngModel)]="formMunicipio">
+      </div>
+      <div class="col-6">
+        <label class="form-label small text-muted">Departamento</label>
+        <input type="text" class="form-control" [(ngModel)]="formDepartamento">
+      </div>
+    </div>
+    <div class="mb-2">
+      <label class="form-label small text-muted">País</label>
+      <input type="text" class="form-control" [(ngModel)]="formPais">
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label small text-muted">Latitud (-90 a 90)</label>
+        <input type="number" step="any" class="form-control" [(ngModel)]="formLatitud">
+      </div>
+      <div class="col-6">
+        <label class="form-label small text-muted">Longitud (-180 a 180)</label>
+        <input type="number" step="any" class="form-control" [(ngModel)]="formLongitud">
+      </div>
+    </div>
+    <div class="mb-2">
+      <label class="form-label small text-muted">Descripción</label>
+      <textarea class="form-control" rows="2" [(ngModel)]="formDescripcion" placeholder="Breve descripción de la comunidad"></textarea>
+    </div>
+    <!-- El estado se elige solo al crear; después se cambia con el botón de la tabla. -->
+    <div class="mb-3" *ngIf="!modoEdicion">
+      <label class="form-label small text-muted">Estado inicial</label>
+      <select class="form-select" [(ngModel)]="formEstado">
+        <option [ngValue]="true">Activa</option>
+        <option [ngValue]="false">Inactiva</option>
+      </select>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarFormulario()">Cancelar</button>
+      <button class="btn btn-sm fw-bold" [ngClass]="modoEdicion ? 'btn-primary' : 'btn-success'" [disabled]="guardando" (click)="guardarFormulario()">
+        {{ modoEdicion ? 'Guardar Cambios' : 'Agregar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación (activar / desactivar) -->
+<div class="app-modal-backdrop" *ngIf="showConfirmModal" (click)="cancelarConfirmacion()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Confirmar acción</h5>
+    <p class="mb-4">{{ confirmMessage }}</p>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarConfirmacion()">Cancelar</button>
+      <button class="btn btn-danger btn-sm fw-bold" (click)="ejecutarConfirmacion()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast de confirmación -->
+<div *ngIf="showToast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+  <div class="toast show align-items-center text-white bg-success border-0">
+    <div class="d-flex">
+      <div class="toast-body">{{ toastMessage }}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="showToast = false"></button>
+    </div>
+  </div>
+</div>

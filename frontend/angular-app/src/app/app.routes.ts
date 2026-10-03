@@ -5,6 +5,7 @@ import { RegistroComponent } from './components/registro/registro';
 import { MainLayoutComponent } from './components/main-layout/main-layout';
 import { Dashboard } from './components/dashboard/dashboard';
 import { SensoresComponent } from './components/sensores/sensores';
+import { ComunidadesComponent } from './components/comunidades/comunidades';
 import { AlertasComponent } from './components/alertas/alertas';
 import { HistorialComponent } from './components/historial/historial';
 
@@ -25,6 +26,9 @@ export const routes: Routes = [
     path: 'registro',
     component: RegistroComponent
   },
+  { path: 'comunidades', 
+    component: ComunidadesComponent
+   },
   {
     path: '',
     component: MainLayoutComponent,
