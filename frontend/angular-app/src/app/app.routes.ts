@@ -26,15 +26,13 @@ export const routes: Routes = [
     path: 'registro',
     component: RegistroComponent
   },
-  { path: 'comunidades', 
-    component: ComunidadesComponent
-   },
   {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: Dashboard },
+      { path: 'comunidades', component: ComunidadesComponent },
       { path: 'sensores', component: SensoresComponent },
       { path: 'alertas', component: AlertasComponent },
       { path: 'historial', component: HistorialComponent }
