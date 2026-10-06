@@ -48,6 +48,7 @@ public class BitacoraController : ControllerBase
     // =========================================================
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Operador")]
     public async Task<IActionResult> RegistrarAccion(
         [FromBody] RegistrarBitacoraDto entrada)
     {

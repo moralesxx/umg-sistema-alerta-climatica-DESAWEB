@@ -9,6 +9,7 @@ namespace AlertaClimatica.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsuariosController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
@@ -85,7 +86,7 @@ public class UsuariosController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return StatusCode(500, new { mensaje = ex.Message });
+            return StatusCode(500, new { mensaje = "No fue posible completar el registro del usuario." });
         }
     }
 
@@ -233,24 +234,5 @@ public class UsuariosController : ControllerBase
         {
             return BadRequest(new { mensaje = ex.Message });
         }
-    }
-
-    // =========================================================
-    // GET: api/usuarios/probar-bitacora
-    // =========================================================
-
-    [HttpGet("probar-bitacora")]
-    [Authorize]
-    public async Task<IActionResult> ProbarBitacora()
-    {
-        await _bitacoraService.RegistrarAsync(
-            "PRUEBA_BITACORA",
-            "El usuario autenticado ejecutó la prueba de bitácora."
-        );
-
-        return Ok(new
-        {
-            mensaje = "La acción fue registrada correctamente en la bitácora."
-        });
     }
 }

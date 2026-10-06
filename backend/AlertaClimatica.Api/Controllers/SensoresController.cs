@@ -114,7 +114,7 @@ public class SensoresController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { mensaje = "Error al reiniciar el sistema", detalle = ex.Message });
+            return StatusCode(500, new { mensaje = "No fue posible reiniciar el sistema de monitoreo." });
         }
     }
 }

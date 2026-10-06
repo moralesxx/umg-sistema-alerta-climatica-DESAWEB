@@ -101,7 +101,7 @@ public class AlertasController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { mensaje = "Error al limpiar las alertas", detalle = ex.Message });
+            return StatusCode(500, new { mensaje = "No fue posible limpiar el historial de alertas." });
         }
     }
 }
