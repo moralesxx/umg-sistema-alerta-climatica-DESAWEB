@@ -9,6 +9,7 @@ import { ComunidadesComponent } from './components/comunidades/comunidades';
 import { UsuariosComponent } from './components/usuarios/usuarios';
 import { AlertasComponent } from './components/alertas/alertas';
 import { HistorialComponent } from './components/historial/historial';
+import { LecturasComponent } from './components/lecturas/lecturas.component';
 
 import { authGuard } from './core/guards/auth-guard';
 import { roleGuard } from './core/guards/role-guard';
@@ -36,6 +37,7 @@ export const routes: Routes = [
       { path: 'comunidades', component: ComunidadesComponent },
       { path: 'usuarios', component: UsuariosComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
       { path: 'sensores', component: SensoresComponent },
+      { path: 'lecturas', component: LecturasComponent },
       { path: 'alertas', component: AlertasComponent },
       { path: 'historial', component: HistorialComponent }
     ]
