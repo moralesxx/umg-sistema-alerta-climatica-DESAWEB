@@ -132,6 +132,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBitacoraService, BitacoraService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IComunidadService, ComunidadService>();
+builder.Services.AddScoped<IRolService, RolService>();
 
 // =========================================================
 // 8. CONSTRUIR APLICACIÓN

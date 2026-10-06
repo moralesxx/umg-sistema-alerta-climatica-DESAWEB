@@ -6,6 +6,7 @@ import { MainLayoutComponent } from './components/main-layout/main-layout';
 import { Dashboard } from './components/dashboard/dashboard';
 import { SensoresComponent } from './components/sensores/sensores';
 import { ComunidadesComponent } from './components/comunidades/comunidades';
+import { UsuariosComponent } from './components/usuarios/usuarios';
 import { AlertasComponent } from './components/alertas/alertas';
 import { HistorialComponent } from './components/historial/historial';
 
@@ -33,6 +34,7 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'comunidades', component: ComunidadesComponent },
+      { path: 'usuarios', component: UsuariosComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
       { path: 'sensores', component: SensoresComponent },
       { path: 'alertas', component: AlertasComponent },
       { path: 'historial', component: HistorialComponent }

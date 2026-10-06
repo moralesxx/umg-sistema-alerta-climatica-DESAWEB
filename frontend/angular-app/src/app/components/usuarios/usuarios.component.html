@@ -1,0 +1,159 @@
+<div class="row g-2 mb-2">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h5 class="card-title fw-bold mb-0">Usuarios</h5>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm fw-bold" (click)="onAgregarUsuario()">+ Agregar Usuario</button>
+          </div>
+        </div>
+
+        <!-- RF-ADM-54: Búsqueda y filtros -->
+        <div class="row g-2 mb-3 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label small text-muted mb-1">Búsqueda</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Nombre o correo">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-1">Rol</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroRol">
+              <option value="todos">Todos</option>
+              <option *ngFor="let rol of roles" [value]="rol.rolId">{{ rol.nombreRol }}</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-1">Estado</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroEstado">
+              <option value="todos">Todos</option>
+              <option value="true">Activo</option>
+              <option value="false">Inactivo</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-4 d-flex gap-2">
+            <button class="btn btn-primary btn-sm flex-fill" (click)="aplicarFiltros()">Buscar</button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="alert alert-danger py-2 small" *ngIf="errorListado">{{ errorListado }}</div>
+
+        <!-- RF-ADM-53 y RF-ADM-55: Listado con fecha de creación y último acceso -->
+        <div class="table-responsive usuarios-feed">
+          <table class="table align-middle mb-0" *ngIf="usuarios.length > 0">
+            <thead class="sticky-top bg-white">
+              <tr>
+                <th class="text-muted">ID</th>
+                <th class="text-muted">NOMBRE</th>
+                <th class="text-muted">CORREO</th>
+                <th class="text-muted">ROL</th>
+                <th class="text-muted">CREADO</th>
+                <th class="text-muted">ÚLTIMO ACCESO</th>
+                <th class="text-muted">ESTADO</th>
+                <th class="text-muted text-end">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let usuario of usuarios">
+                <td class="fw-bold">#{{ usuario.usuarioId }}</td>
+                <td>
+                  {{ usuario.nombre }}
+                  <span class="badge bg-info text-dark ms-1" *ngIf="usuario.usuarioId === usuarioActualId">Tú</span>
+                </td>
+                <td class="text-muted">{{ usuario.correo }}</td>
+                <td><span class="badge bg-secondary">{{ nombreRol(usuario.rolId) }}</span></td>
+                <td class="text-muted small">{{ usuario.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td class="text-muted small">
+                  <ng-container *ngIf="usuario.ultimoAcceso; else nuncaAcceso">
+                    {{ usuario.ultimoAcceso | date:'dd/MM/yyyy HH:mm' }}
+                  </ng-container>
+                  <ng-template #nuncaAcceso>Nunca</ng-template>
+                </td>
+                <td>
+                  <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="usuario.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" [disabled]="usuario.usuarioId === usuarioActualId" (click)="onToggleEstado(usuario)" [title]="usuario.usuarioId === usuarioActualId ? 'No puedes desactivar tu propia cuenta' : 'Clic para cambiar estado'">
+                    {{ usuario.estado ? 'Activo' : 'Inactivo' }}
+                  </button>
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-outline-primary btn-sm px-2 py-1" title="Editar usuario" (click)="onEditarUsuario(usuario)">
+                    <i class="bi bi-pencil-fill"></i> Editar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="text-center py-3" *ngIf="usuarios.length === 0 && !errorListado">
+            <p class="text-muted mb-0 small">No hay usuarios que coincidan con la búsqueda.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear / Editar Usuario -->
+<div class="app-modal-backdrop" *ngIf="showFormModal" (click)="cancelarFormulario()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">{{ modoEdicion ? 'Editar Usuario #' + usuarioEnEdicionId : 'Agregar nuevo usuario' }}</h5>
+
+    <div class="alert alert-danger py-2 small" *ngIf="errorFormulario">{{ errorFormulario }}</div>
+
+    <div class="mb-2">
+      <label class="form-label small text-muted">Nombre</label>
+      <input type="text" class="form-control" [(ngModel)]="formNombre" placeholder="Nombre completo">
+    </div>
+    <div class="mb-2">
+      <label class="form-label small text-muted">Correo</label>
+      <input type="email" class="form-control" [(ngModel)]="formCorreo" placeholder="correo@ejemplo.com">
+    </div>
+
+    <!-- La contraseña solo se pide al crear: editar no la cambia (ver ActualizarUsuarioDto). -->
+    <div class="mb-2" *ngIf="!modoEdicion">
+      <label class="form-label small text-muted">Contraseña (mínimo 6 caracteres)</label>
+      <div class="input-group">
+        <input [type]="mostrarContrasenia ? 'text' : 'password'" class="form-control" [(ngModel)]="formContrasenia" autocomplete="new-password">
+        <button type="button" class="btn btn-outline-secondary" (click)="mostrarContrasenia = !mostrarContrasenia">
+          {{ mostrarContrasenia ? 'Ocultar' : 'Mostrar' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label small text-muted">Rol</label>
+      <select class="form-select" [(ngModel)]="formRolId" [disabled]="editandoseASiMismo">
+        <option [ngValue]="null" disabled>Selecciona un rol</option>
+        <option *ngFor="let rol of roles" [ngValue]="rol.rolId">{{ rol.nombreRol }}</option>
+      </select>
+      <div class="form-text" *ngIf="editandoseASiMismo">No puedes cambiar tu propio rol.</div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarFormulario()">Cancelar</button>
+      <button class="btn btn-sm fw-bold" [ngClass]="modoEdicion ? 'btn-primary' : 'btn-success'" [disabled]="guardando" (click)="guardarFormulario()">
+        {{ modoEdicion ? 'Guardar Cambios' : 'Agregar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación (activar / desactivar) -->
+<div class="app-modal-backdrop" *ngIf="showConfirmModal" (click)="cancelarConfirmacion()">
+  <div class="app-modal-box" (click)="$event.stopPropagation()">
+    <h5 class="fw-bold mb-3">Confirmar acción</h5>
+    <p class="mb-4">{{ confirmMessage }}</p>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarConfirmacion()">Cancelar</button>
+      <button class="btn btn-danger btn-sm fw-bold" (click)="ejecutarConfirmacion()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast de confirmación -->
+<div *ngIf="showToast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+  <div class="toast show align-items-center text-white bg-success border-0">
+    <div class="d-flex">
+      <div class="toast-body">{{ toastMessage }}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="showToast = false"></button>
+    </div>
+  </div>
+</div>

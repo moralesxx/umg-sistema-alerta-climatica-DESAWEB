@@ -13,6 +13,14 @@ public class RolRepository : IRolRepository
         _context = context;
     }
 
+    public async Task<IEnumerable<Rol>> ObtenerTodosAsync()
+    {
+        return await _context.Roles
+            .AsNoTracking()
+            .OrderBy(r => r.RolId)
+            .ToListAsync();
+    }
+
     public async Task<Rol?> ObtenerPorIdAsync(int id)
     {
         return await _context.Roles
