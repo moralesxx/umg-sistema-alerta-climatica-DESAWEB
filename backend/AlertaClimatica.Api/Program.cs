@@ -5,6 +5,7 @@ using AlertaClimatica.Infrastructure;
 using AlertaClimatica.Infrastructure.Services;
 using AlertaClimatica.Infrastructure.Repositories;
 using AlertaClimatica.Infrastructure.Repositories.Interfaces;
+using AlertaClimatica.Infrastructure.Services.Interfaces;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -125,6 +126,7 @@ builder.Services.AddScoped<IComunidadRepository, ComunidadRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IBitacoraRepository, BitacoraRepository>();
+builder.Services.AddScoped<ILecturaRepository, LecturaRepository>();
 
 // Services (reglas de negocio, dependen de los repositorios de arriba)
 builder.Services.AddScoped<ISensorService, SensorService>();
@@ -133,6 +135,8 @@ builder.Services.AddScoped<IBitacoraService, BitacoraService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IComunidadService, ComunidadService>();
 builder.Services.AddScoped<IRolService, RolService>();
+builder.Services.AddScoped<ILecturaService, LecturaService>();
+
 
 // =========================================================
 // 8. CONSTRUIR APLICACIÓN
