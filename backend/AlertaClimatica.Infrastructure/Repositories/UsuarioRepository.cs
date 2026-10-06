@@ -21,6 +21,29 @@ public class UsuarioRepository : IUsuarioRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Usuario>> ObtenerFiltradosAsync(string? texto, int? rolId, bool? estado)
+    {
+        var query = _context.Usuarios.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(texto))
+        {
+            var t = texto.Trim().ToLower();
+            query = query.Where(u => u.Nombre.ToLower().Contains(t) || u.Correo.ToLower().Contains(t));
+        }
+
+        if (rolId.HasValue)
+        {
+            query = query.Where(u => u.RolId == rolId.Value);
+        }
+
+        if (estado.HasValue)
+        {
+            query = query.Where(u => u.Estado == estado.Value);
+        }
+
+        return await query.OrderBy(u => u.UsuarioId).ToListAsync();
+    }
+
     public async Task<Usuario?> ObtenerPorIdAsync(int id)
     {
         return await _context.Usuarios
@@ -28,10 +51,14 @@ public class UsuarioRepository : IUsuarioRepository
             .FirstOrDefaultAsync(u => u.UsuarioId == id);
     }
 
-    // Sin AsNoTracking a propósito: en Login no se modifica el usuario,
-    // pero dejarlo sin tracking evita cualquier sorpresa si en el futuro
-    // se necesita, por ejemplo, actualizar "último acceso" (RF-ADM-55)
-    // en la misma operación.
+    // Con tracking: para Editar y Cambiar Estado, que modifican la entidad.
+    public async Task<Usuario?> ObtenerParaActualizarAsync(int id)
+    {
+        return await _context.Usuarios.FindAsync(id);
+    }
+
+    // Sin AsNoTracking a propósito: en Login se actualiza UltimoAcceso
+    // sobre esta misma instancia.
     public async Task<Usuario?> ObtenerPorCorreoAsync(string correo)
     {
         return await _context.Usuarios
@@ -42,6 +69,12 @@ public class UsuarioRepository : IUsuarioRepository
     {
         return await _context.Usuarios
             .AnyAsync(u => u.Correo.ToLower() == correo.ToLower());
+    }
+
+    public async Task<bool> ExisteCorreoEnOtroUsuarioAsync(string correo, int usuarioIdExcluir)
+    {
+        return await _context.Usuarios
+            .AnyAsync(u => u.Correo.ToLower() == correo.ToLower() && u.UsuarioId != usuarioIdExcluir);
     }
 
     public async Task AgregarAsync(Usuario usuario)

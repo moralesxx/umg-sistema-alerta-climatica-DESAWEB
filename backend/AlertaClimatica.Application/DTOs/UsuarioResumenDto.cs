@@ -8,4 +8,5 @@ public class UsuarioResumenDto
     public int RolId { get; set; }
     public bool Estado { get; set; }
     public DateTime FechaCreacion { get; set; }
+    public DateTime? UltimoAcceso { get; set; }
 }

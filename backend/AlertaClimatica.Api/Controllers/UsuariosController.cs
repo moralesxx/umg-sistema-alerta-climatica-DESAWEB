@@ -3,6 +3,7 @@ using AlertaClimatica.Infrastructure.Exceptions;
 using AlertaClimatica.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AlertaClimatica.Api.Controllers;
 
@@ -26,11 +27,17 @@ public class UsuariosController : ControllerBase
     // RESTRINGIDO A ADMINISTRADOR
     // =========================================================
 
+    // GET: api/usuarios?texto=&rolId=&estado=
+    // Todos los filtros son opcionales (RF-ADM-54); sin parámetros
+    // devuelve el listado completo, igual que antes.
     [HttpGet]
     [Authorize(Roles = "Administrador")]
-    public async Task<ActionResult<IEnumerable<UsuarioResumenDto>>> GetUsuarios()
+    public async Task<ActionResult<IEnumerable<UsuarioResumenDto>>> GetUsuarios(
+        [FromQuery] string? texto,
+        [FromQuery] int? rolId,
+        [FromQuery] bool? estado)
     {
-        var usuarios = await _usuarioService.GetUsuariosAsync();
+        var usuarios = await _usuarioService.GetUsuariosFiltradosAsync(texto, rolId, estado);
         return Ok(usuarios);
     }
 
@@ -158,6 +165,73 @@ public class UsuariosController : ControllerBase
         catch (ConflictException ex)
         {
             return Conflict(new { mensaje = ex.Message });
+        }
+    }
+
+    // =========================================================
+    // PUT: api/usuarios/{id}
+    // RF-ADM-50 y RF-ADM-52: editar nombre, correo y rol.
+    // =========================================================
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<ActionResult<UsuarioResumenDto>> ActualizarUsuario(
+        int id, [FromBody] ActualizarUsuarioDto datos)
+    {
+        try
+        {
+            var usuario = await _usuarioService.ActualizarUsuarioAsync(id, datos);
+
+            if (usuario == null)
+            {
+                return NotFound(new { mensaje = "Usuario no encontrado." });
+            }
+
+            return Ok(usuario);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new { mensaje = ex.Message });
+        }
+    }
+
+    // =========================================================
+    // PATCH: api/usuarios/{id}/estado
+    // RF-ADM-51: activar/desactivar. No permite que un Administrador
+    // se desactive a sí mismo.
+    // =========================================================
+
+    [HttpPatch("{id}/estado")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<ActionResult<UsuarioResumenDto>> CambiarEstadoUsuario(
+        int id, [FromBody] bool activo)
+    {
+        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
+
+        if (!int.TryParse(idClaim, out var usuarioQueEjecutaId))
+        {
+            return Unauthorized(new { mensaje = "No se pudo identificar al usuario autenticado." });
+        }
+
+        try
+        {
+            var usuario = await _usuarioService.CambiarEstadoUsuarioAsync(id, activo, usuarioQueEjecutaId);
+
+            if (usuario == null)
+            {
+                return NotFound(new { mensaje = "Usuario no encontrado." });
+            }
+
+            return Ok(usuario);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
         }
     }
 

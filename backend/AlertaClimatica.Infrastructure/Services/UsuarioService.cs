@@ -34,12 +34,26 @@ public class UsuarioService : IUsuarioService
         Correo = u.Correo,
         RolId = u.RolId,
         Estado = u.Estado,
-        FechaCreacion = u.FechaCreacion
+        FechaCreacion = u.FechaCreacion,
+        UltimoAcceso = u.UltimoAcceso
     };
 
     public async Task<IEnumerable<UsuarioResumenDto>> GetUsuariosAsync()
     {
         var usuarios = await _usuarioRepository.ObtenerTodosAsync();
+
+        await _bitacoraService.RegistrarAsync(
+            "CONSULTAR_USUARIOS",
+            "El usuario consultó el listado de usuarios."
+        );
+
+        return usuarios.Select(AResumen);
+    }
+
+    public async Task<IEnumerable<UsuarioResumenDto>> GetUsuariosFiltradosAsync(
+        string? texto, int? rolId, bool? estado)
+    {
+        var usuarios = await _usuarioRepository.ObtenerFiltradosAsync(texto, rolId, estado);
 
         await _bitacoraService.RegistrarAsync(
             "CONSULTAR_USUARIOS",
@@ -142,6 +156,58 @@ public class UsuarioService : IUsuarioService
         return AResumen(usuario);
     }
 
+    public async Task<UsuarioResumenDto?> ActualizarUsuarioAsync(int id, ActualizarUsuarioDto datos)
+    {
+        if (string.IsNullOrWhiteSpace(datos.Nombre))
+            throw new ArgumentException("El nombre es obligatorio.");
+
+        if (string.IsNullOrWhiteSpace(datos.Correo))
+            throw new ArgumentException("El correo es obligatorio.");
+
+        if (!await _rolRepository.ExisteAsync(datos.RolId))
+            throw new ArgumentException("El rol seleccionado no existe.");
+
+        var usuario = await _usuarioRepository.ObtenerParaActualizarAsync(id);
+        if (usuario == null) return null;
+
+        if (await _usuarioRepository.ExisteCorreoEnOtroUsuarioAsync(datos.Correo, id))
+            throw new ConflictException("Ya existe otro usuario registrado con ese correo.");
+
+        usuario.Nombre = datos.Nombre.Trim();
+        usuario.Correo = datos.Correo.Trim();
+        usuario.RolId = datos.RolId;
+
+        await _usuarioRepository.GuardarCambiosAsync();
+
+        await _bitacoraService.RegistrarAsync(
+            "EDITAR_USUARIO",
+            $"El administrador modificó el usuario #{id}. Nuevo nombre: \"{usuario.Nombre}\", correo: \"{usuario.Correo}\", rol Id {usuario.RolId}."
+        );
+
+        return AResumen(usuario);
+    }
+
+    public async Task<UsuarioResumenDto?> CambiarEstadoUsuarioAsync(int id, bool activo, int usuarioQueEjecutaId)
+    {
+        if (id == usuarioQueEjecutaId && !activo)
+        {
+            throw new ArgumentException("No puedes desactivar tu propia cuenta.");
+        }
+
+        var usuario = await _usuarioRepository.ObtenerParaActualizarAsync(id);
+        if (usuario == null) return null;
+
+        usuario.Estado = activo;
+        await _usuarioRepository.GuardarCambiosAsync();
+
+        await _bitacoraService.RegistrarAsync(
+            "CAMBIAR_ESTADO_USUARIO",
+            $"El administrador cambió el estado del usuario #{id} a {(activo ? "Activo" : "Inactivo")}."
+        );
+
+        return AResumen(usuario);
+    }
+
     public async Task<LoginResultDto> LoginAsync(LoginDto login)
     {
         if (string.IsNullOrWhiteSpace(login.Correo))
@@ -166,6 +232,10 @@ public class UsuarioService : IUsuarioService
             throw new UnauthorizedAccessException("El usuario no tiene un rol válido.");
 
         var token = _tokenService.GenerarToken(usuario, rol.NombreRol);
+
+        // RF-ADM-55: registrar el último acceso.
+        usuario.UltimoAcceso = DateTime.Now;
+        await _usuarioRepository.GuardarCambiosAsync();
 
         // RF-ADM-56: registrar el login. Se usa RegistrarConUsuarioIdAsync
         // porque en este momento todavía no existe un JWT en el request.

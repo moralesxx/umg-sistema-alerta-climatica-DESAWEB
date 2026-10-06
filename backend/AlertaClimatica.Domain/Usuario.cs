@@ -27,4 +27,10 @@ public class Usuario
 
     [Column("FechaCreacion")]
     public DateTime FechaCreacion { get; set; }
+
+    // RF-ADM-55: "Último acceso". Nullable porque los usuarios ya
+    // existentes (como el admin sembrado) todavía no tienen ninguno
+    // registrado hasta su próximo login.
+    [Column("UltimoAcceso")]
+    public DateTime? UltimoAcceso { get; set; }
 }
