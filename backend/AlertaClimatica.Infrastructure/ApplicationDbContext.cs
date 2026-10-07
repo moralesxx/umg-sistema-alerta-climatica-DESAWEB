@@ -74,6 +74,30 @@ public class ApplicationDbContext : DbContext
             .ToTable("Eventos")
             .HasKey(e => e.EventoId);
         modelBuilder.Entity<Evento>().Property(e => e.EventoId).ValueGeneratedOnAdd();
+        modelBuilder.Entity<Evento>().Property(e => e.Valor).HasPrecision(18, 2);
+
+        // RF-ADM-45: FK opcionales de Evento. Restrict (no Cascade) para que
+        // borrar una comunidad, sensor o usuario nunca borre el historial.
+        modelBuilder.Entity<Evento>()
+            .HasOne(e => e.Comunidad)
+            .WithMany()
+            .HasForeignKey(e => e.ComunidadId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Evento>()
+            .HasOne(e => e.Sensor)
+            .WithMany()
+            .HasForeignKey(e => e.SensorId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Evento>()
+            .HasOne(e => e.UsuarioResponsable)
+            .WithMany()
+            .HasForeignKey(e => e.UsuarioResponsableId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         modelBuilder.Entity<Alerta>()
             .ToTable("Alertas")

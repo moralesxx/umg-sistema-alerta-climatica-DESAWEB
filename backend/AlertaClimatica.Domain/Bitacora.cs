@@ -21,4 +21,13 @@ public class Bitacora
 
     [Column("FechaHora")]
     public DateTime FechaHora { get; set; }
+
+    // RF-ADM-57: sobre qué entidad se hizo la acción y cuál fue su
+    // identificador. Nullable porque hay acciones sin entidad (Login,
+    // Logout) y registros anteriores a la Fase 2.
+    [Column("Entidad")]
+    public string? Entidad { get; set; }
+
+    [Column("EntidadId")]
+    public int? EntidadId { get; set; }
 }
