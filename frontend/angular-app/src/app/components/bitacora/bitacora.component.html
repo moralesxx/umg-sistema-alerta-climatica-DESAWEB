@@ -1,0 +1,115 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body py-4">
+        
+        <!-- Cabecera -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h4 class="card-title fw-bold text-dark mb-1">Bitácora de Auditoría</h4>
+            <p class="text-muted small mb-0">Trazabilidad y registro de acciones del sistema y usuarios.</p>
+          </div>
+          <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1" (click)="cargarBitacora()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar Registros
+          </button>
+        </div>
+
+        <!-- Barra de Filtros -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+              <label class="form-label small text-muted fw-bold mb-1">Desde</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="filtroFechaInicio">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small text-muted fw-bold mb-1">Hasta</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="filtroFechaFin">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Usuario ID</label>
+              <input type="text" class="form-control form-control-sm" placeholder="ID de usuario..." [(ngModel)]="filtroUsuario">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Acción</label>
+              <select class="form-select form-select-sm" [(ngModel)]="filtroAccion">
+                <option value="todas">Todas</option>
+                <option *ngFor="let ac of accionesDisponibles" [value]="ac">{{ ac }}</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+              <button class="btn btn-primary btn-sm flex-fill fw-semibold shadow-sm" (click)="aplicarFiltros()">Filtrar</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()" title="Limpiar filtros">Limpiar</button>
+            </div>
+          </div>
+          <div class="text-danger small mt-2" *ngIf="errorFiltros">{{ errorFiltros }}</div>
+          <div class="text-danger small mt-2" *ngIf="errorListado">{{ errorListado }}</div>
+        </div>
+
+        <!-- Tabla de Registros -->
+        <div class="table-responsive historial-feed border rounded-3 bg-white">
+          <table class="table table-hover align-middle mb-0 tabla-fija" *ngIf="registrosFiltrados.length > 0">
+            <colgroup>
+              <col style="width: 12%;">
+              <col style="width: 20%;">
+              <col style="width: 15%;">
+              <col style="width: 18%;">
+              <col style="width: 35%;">
+            </colgroup>
+            <thead class="table-light text-uppercase fs-7">
+              <tr>
+                <th class="text-secondary ps-3 py-3">ID</th>
+                <th class="text-secondary py-3">Fecha / Hora</th>
+                <th class="text-secondary py-3">Usuario ID</th>
+                <th class="text-secondary py-3">Acción</th>
+                <th class="text-secondary py-3">Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let reg of registrosPaginados">
+                <td class="ps-3 py-3">
+                  <div class="fw-bold text-dark">#{{ reg.bitacoraId }}</div>
+                </td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ reg.fechaHora | date:'dd/MM/yyyy' }}</div>
+                  <div class="text-muted small">{{ reg.fechaHora | date:'HH:mm:ss' }}</div>
+                </td>
+                <td>
+                  <div class="fw-medium text-dark">ID: {{ reg.usuarioId }}</div>
+                </td>
+                <td>
+                  <span class="badge px-2.5 py-1 fw-semibold" [ngClass]="getAccionBadgeClass(reg.accion)">{{ reg.accion }}</span>
+                </td>
+                <td class="text-muted text-truncate" [title]="reg.detalle">{{ reg.detalle || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="text-center py-5" *ngIf="registrosFiltrados.length === 0">
+            <i class="bi bi-shield-check fs-2 text-muted d-block mb-2"></i>
+            <p class="text-muted mb-0">No se encontraron registros en la bitácora de auditoría.</p>
+          </div>
+        </div>
+
+        <!-- Paginación -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 px-1 gap-2" *ngIf="registrosFiltrados.length > 0">
+          <small class="text-muted">Mostrando página <strong>{{ paginaActual }}</strong> de <strong>{{ totalPaginas }}</strong></small>
+          
+          <nav>
+            <ul class="pagination pagination-sm mb-0 shadow-sm">
+              <li class="page-item" [class.disabled]="paginaActual === 1">
+                <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+              </li>
+              <li class="page-item" *ngFor="let p of [].constructor(totalPaginas); let i = index" [class.active]="paginaActual === (i + 1)">
+                <button class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
+              </li>
+              <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

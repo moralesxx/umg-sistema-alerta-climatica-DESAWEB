@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.historial-feed {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  max-height: 65vh;
+}
+
+.tabla-fija {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.fs-7 {
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}

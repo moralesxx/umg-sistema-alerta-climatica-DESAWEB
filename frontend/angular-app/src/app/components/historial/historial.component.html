@@ -1,58 +1,225 @@
 <div class="row">
   <div class="col-12">
-    <div class="card shadow-sm border-0">
-      <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 class="card-title fw-bold mb-0">Historial de Eventos y Fenómenos Climáticos</h5>
-          <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1" (click)="cargarEventos()">Actualizar</button>
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body py-4">
+        
+        <!-- Cabecera y Título Ejecutivo -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h4 class="card-title fw-bold text-dark mb-1">Historial Ejecutivo de Eventos</h4>
+            <p class="text-muted small mb-0">Monitoreo, analítica y trazabilidad de fenómenos climáticos.</p>
+          </div>
+          <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1" (click)="actualizar()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar Datos
+          </button>
         </div>
-        <div class="table-responsive historial-feed">
-          <table class="table align-middle mb-0 tabla-fija" *ngIf="eventos.length > 0">
+
+        <!-- Panel Gráfico Gerencial (KPIs + Gráficas de Proporción) -->
+        <div class="row g-3 mb-4" *ngIf="estadisticas">
+          
+          <!-- 1. Tarjeta Total -->
+          <div class="col-md-3">
+            <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between text-center">
+              <span class="text-uppercase text-muted fw-semibold small">Total de Eventos</span>
+              <div class="my-2">
+                <h1 class="fw-bold display-5 text-primary mb-0">{{ estadisticas.total }}</h1>
+                <span class="text-muted small">Registrados en el sistema</span>
+              </div>
+              <div class="badge bg-primary-subtle text-primary fw-medium py-1">Período activo</div>
+            </div>
+          </div>
+
+          <!-- 2. Gráfica de Barras: Distribución por Nivel de Riesgo -->
+          <div class="col-md-5">
+            <div class="p-3 border rounded-3 bg-white h-100 d-flex flex-column justify-content-between">
+              <div>
+                <span class="text-uppercase text-muted fw-semibold small d-block mb-3">Gráfica: Distribución por Nivel de Riesgo</span>
+              </div>
+              
+              <!-- Contenedor de Gráfica de Barras Proporcionales -->
+              <div class="d-flex flex-column gap-2 mb-2" *ngIf="nivelesStats.length > 0">
+                <div *ngFor="let c of nivelesStats">
+                  <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span class="text-dark">{{ c.nombre }}</span>
+                    <span class="text-muted">{{ c.total }} ({{ calcularPorcentaje(c.total, estadisticas.total) }}%)</span>
+                  </div>
+                  <div class="progress" style="height: 8px;">
+                    <div class="progress-bar" [ngClass]="getBarraColorClass(c.nombre)" [style.width.%]="calcularPorcentaje(c.total, estadisticas.total)" role="progressbar"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-muted small text-center py-2" *ngIf="nivelesStats.length === 0">Sin datos de nivel</div>
+            </div>
+          </div>
+
+          <!-- 3. Gráfica de Barras: Fenómenos Identificados -->
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-white h-100 d-flex flex-column justify-content-between">
+              <div>
+                <span class="text-uppercase text-muted fw-semibold small d-block mb-3">Gráfica: Incidencia por Fenómeno</span>
+              </div>
+
+              <div class="d-flex flex-column gap-2 mb-2" *ngIf="fenomenosStats.length > 0">
+                <div *ngFor="let c of fenomenosStats">
+                  <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span class="text-dark text-truncate" style="max-width: 70%;">{{ c.nombre }}</span>
+                    <span class="text-muted">{{ c.total }} ({{ calcularPorcentaje(c.total, estadisticas.total) }}%)</span>
+                  </div>
+                  <div class="progress bg-light" style="height: 6px;">
+                    <div class="progress-bar bg-secondary" [style.width.%]="calcularPorcentaje(c.total, estadisticas.total)" role="progressbar"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-muted small text-center py-2" *ngIf="fenomenosStats.length === 0">Sin fenómenos registrados</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RF-ADM-47: Barra de Filtros -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Desde</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="filtroFechaInicio">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Hasta</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="filtroFechaFin">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Comunidad</label>
+              <select class="form-select form-select-sm" [(ngModel)]="filtroComunidad">
+                <option value="todas">Todas</option>
+                <option *ngFor="let c of comunidades" [value]="c.comunidadId">{{ c.nombre }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Fenómeno</label>
+              <select class="form-select form-select-sm" [(ngModel)]="filtroFenomeno">
+                <option value="todos">Todos</option>
+                <option *ngFor="let f of fenomenos" [value]="f">{{ f }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small text-muted fw-bold mb-1">Nivel</label>
+              <select class="form-select form-select-sm" [(ngModel)]="filtroNivel">
+                <option value="todos">Todos</option>
+                <option *ngFor="let n of niveles" [value]="n">{{ n }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-2">
+              <button class="btn btn-primary btn-sm flex-fill fw-semibold shadow-sm" (click)="aplicarFiltros()">Filtrar</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()" title="Limpiar filtros">Limpiar</button>
+            </div>
+          </div>
+          <div class="text-danger small mt-2" *ngIf="errorFiltros">{{ errorFiltros }}</div>
+          <div class="text-danger small mt-2" *ngIf="errorListado">{{ errorListado }}</div>
+        </div>
+
+        <!-- RF-ADM-46: Listado en Tabla Estilizada -->
+        <div class="table-responsive historial-feed border rounded-3 bg-white">
+          <table class="table table-hover align-middle mb-0 tabla-fija" *ngIf="eventos.length > 0">
             <colgroup>
-              <col style="width: 8%;">
+              <col style="width: 14%;">
               <col style="width: 15%;">
-              <col style="width: 57%;">
+              <col style="width: 10%;">
               <col style="width: 20%;">
+              <col style="width: 31%;">
+              <col style="width: 10%;">
             </colgroup>
-            <thead class="sticky-top bg-white">
+            <thead class="table-light text-uppercase fs-7">
               <tr>
-                <th class="text-muted ps-3 border-bottom">ID</th>
-                <th class="text-muted border-bottom">TIPO DE FENÓMENO</th>
-                <th class="text-muted border-bottom">DESCRIPCIÓN DEL RIESGO</th>
-                <th class="text-muted border-bottom">FECHA Y HORA</th>
+                <th class="text-secondary ps-3 py-3">Fecha / Hora</th>
+                <th class="text-secondary py-3">Fenómeno</th>
+                <th class="text-secondary py-3">Nivel</th>
+                <th class="text-secondary py-3">Ubicación</th>
+                <th class="text-secondary py-3">Descripción Breve</th>
+                <th class="text-secondary py-3">Estado</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let evento of eventosPaginados">
-                <td class="ps-3 fw-bold">#{{ $any(evento).eventoId }}</td>
-                <td><span class="badge bg-secondary px-2 py-1">{{ $any(evento).tipoFenomeno }}</span></td>
-                <td class="celda-descripcion">{{ $any(evento).descripcion }}</td>
-                <td>{{ $any(evento).fechaHora | date:'medium' }}</td>
-              </tr>
+              <ng-container *ngFor="let evento of eventosPaginados">
+                <tr class="fila-evento" [class.fila-abierta]="eventoAbiertoId === evento.eventoId" (click)="alternarDetalle(evento)">
+                  <td class="ps-3 py-3">
+                    <div class="fw-semibold text-dark">{{ evento.fechaHora | date:'dd/MM/yyyy' }}</div>
+                    <div class="text-muted small">{{ evento.fechaHora | date:'HH:mm' }}</div>
+                  </td>
+                  <td><span class="badge bg-light text-dark border px-2 py-1">{{ evento.tipoFenomeno }}</span></td>
+                  <td>
+                    <span class="badge px-2 py-1 shadow-sm" [ngClass]="getBadgeClass(evento.nivelRiesgo)" *ngIf="evento.nivelRiesgo">{{ evento.nivelRiesgo }}</span>
+                    <span class="text-muted" *ngIf="!evento.nivelRiesgo">—</span>
+                  </td>
+                  <td>
+                    <div class="fw-medium text-truncate">{{ evento.comunidadNombre || '—' }}</div>
+                    <div class="text-muted small text-truncate" *ngIf="evento.sensorNombre">{{ evento.sensorNombre }}</div>
+                  </td>
+                  <td class="celda-descripcion text-truncate text-muted" [title]="evento.descripcion">{{ evento.descripcion }}</td>
+                  <td>
+                    <span class="badge px-2.5 py-1 fw-semibold" [ngClass]="getEstadoClass(evento.estado)" *ngIf="evento.estado">{{ evento.estado }}</span>
+                    <span class="text-muted" *ngIf="!evento.estado">—</span>
+                  </td>
+                </tr>
+
+                <!-- Detalle Desplegable (RF-ADM-45) -->
+                <tr class="fila-detalle" *ngIf="eventoAbiertoId === evento.eventoId">
+                  <td colspan="6" class="p-3 bg-soft-primary">
+                    <div class="p-3 bg-white rounded-3 border shadow-sm">
+                      <div class="row g-3 small">
+                        <div class="col-6 col-md-2">
+                          <span class="text-muted d-block">ID de Evento</span>
+                          <span class="fw-bold text-dark">#{{ evento.eventoId }}</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                          <span class="text-muted d-block">Sensor Origen</span>
+                          <span class="fw-bold text-dark">{{ evento.sensorNombre || '—' }}</span>
+                        </div>
+                        <div class="col-6 col-md-2">
+                          <span class="text-muted d-block">Valor Capturado</span>
+                          <span class="fw-bold text-dark">{{ evento.valor !== null && evento.valor !== undefined ? evento.valor : '—' }}</span>
+                        </div>
+                        <div class="col-6 col-md-5">
+                          <span class="text-muted d-block">Personal Responsable</span>
+                          <span class="fw-bold text-dark">{{ evento.usuarioResponsableNombre || 'Sin asignar' }}</span>
+                        </div>
+                        <div class="col-12 pt-2 border-top">
+                          <span class="text-muted d-block mb-1">Descripción Completa del Incidente</span>
+                          <p class="text-dark mb-0">{{ evento.descripcion }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
             </tbody>
           </table>
-          <div class="text-center py-3" *ngIf="eventos.length === 0">
-            <p class="text-muted mb-0 small">No hay eventos registrados en el historial.</p>
+
+          <div class="text-center py-5" *ngIf="eventos.length === 0">
+            <i class="bi bi-inbox fs-2 text-muted d-block mb-2"></i>
+            <p class="text-muted mb-0">No se encontraron eventos registrados bajo los filtros seleccionados.</p>
           </div>
         </div>
 
-        <!-- Controles de Paginación -->
-        <nav class="d-flex justify-content-between align-items-center mt-3 px-2" *ngIf="eventos.length > 0">
-          <small class="text-muted">
-            Mostrando página {{ paginaActual }} de {{ totalPaginas }} ({{ eventos.length }} registros totales)
-          </small>
-          <ul class="pagination pagination-sm mb-0">
-            <li class="page-item" [class.disabled]="paginaActual === 1">
-              <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
-            </li>
-            <li class="page-item" *ngFor="let p of [].constructor(totalPaginas); let i = index" [class.active]="paginaActual === (i + 1)">
-              <button class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
-            </li>
-            <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
-              <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
-            </li>
-          </ul>
-        </nav>
+        <!-- Paginación -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 px-1 gap-2" *ngIf="eventos.length > 0">
+          <small class="text-muted">Mostrando página <strong>{{ paginaActual }}</strong> de <strong>{{ totalPaginas }}</strong> (Haz clic en cualquier fila para desplegar detalles)</small>
+          
+          <nav>
+            <ul class="pagination pagination-sm mb-0 shadow-sm">
+              <li class="page-item" [class.disabled]="paginaActual === 1">
+                <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+              </li>
+              <li class="page-item" *ngFor="let p of [].constructor(totalPaginas); let i = index" [class.active]="paginaActual === (i + 1)">
+                <button class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
+              </li>
+              <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
 
       </div>
     </div>

@@ -7,7 +7,7 @@
   overflow-x: auto;
   overflow-y: auto;
   max-width: 100%;
-  max-height: 60vh;
+  max-height: 65vh;
 }
 
 .tabla-fija {
@@ -16,7 +16,34 @@
 }
 
 .celda-descripcion {
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  color: #495057;
+}
+
+.fila-evento {
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  
+  &:hover {
+    background-color: #fcfdfe !important;
+  }
+}
+
+.fila-abierta > td {
+  background-color: #f8fbff !important;
+}
+
+.bg-soft-primary {
+  background-color: #f0f4f9;
+}
+
+// Estilos personalizados para el nivel Naranja
+.bg-warning-orange {
+  background-color: #fd7e14 !important;
+  color: #ffffff !important;
+}
+
+// Tamaños tipográficos auxiliares
+.fs-7 {
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
 }
