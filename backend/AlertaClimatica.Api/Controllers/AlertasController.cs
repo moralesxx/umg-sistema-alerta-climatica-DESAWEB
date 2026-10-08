@@ -47,37 +47,47 @@ public class AlertasController : ControllerBase
 
         _context.Alertas.Add(alerta);
 
-        // Mapeo preciso a los 5 fenómenos climáticos oficiales de la rúbrica[cite: 2]
-        string nivelStr = alerta.NivelRiesgo?.ToLower() ?? "";
+        // El fenómeno se deduce del texto del mensaje (los 5 fenómenos oficiales, RF-ADM-47).
+        // "helada" se revisa primero porque el mensaje normal también menciona "temperatura".
         string mensajeStr = alerta.Mensaje?.ToLower() ?? "";
-        string tipoFenomenoAsociado = "Tormenta";
+        string tipoFenomenoAsociado;
 
-        if (nivelStr.Contains("rojo") || mensajeStr.Contains("desbordamiento") || mensajeStr.Contains("río"))
+        if (mensajeStr.Contains("helada"))
+        {
+            tipoFenomenoAsociado = "Helada";
+        }
+        else if (mensajeStr.Contains("desbordamiento") || mensajeStr.Contains("río"))
         {
             tipoFenomenoAsociado = "Inundación";
         }
-        else if (nivelStr.Contains("naranja") || mensajeStr.Contains("incendio") || mensajeStr.Contains("temperatura"))
+        else if (mensajeStr.Contains("incendio"))
         {
             tipoFenomenoAsociado = "Incendio forestal";
         }
-        else if (nivelStr.Contains("amarillo") || mensajeStr.Contains("sequía") || mensajeStr.Contains("suelo"))
+        else if (mensajeStr.Contains("sequía") || mensajeStr.Contains("suelo"))
         {
             tipoFenomenoAsociado = "Sequía";
-        }
-        else if (nivelStr.Contains("verde") || mensajeStr.Contains("helada"))
-        {
-            tipoFenomenoAsociado = "Helada";
         }
         else
         {
             tipoFenomenoAsociado = "Tormenta";
         }
 
+        // RF-ADM-45: se busca el sensor para completar sensor y comunidad del evento.
+        // Si el sensor no existe queda null, para no romper la FK al guardar.
+        var sensor = await _context.Sensores
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SensorId == alerta.SensorId);
+
         var nuevoEvento = new Evento
         {
             TipoFenomeno = tipoFenomenoAsociado,
             Descripcion = alerta.Mensaje,
-            FechaHora = alerta.FechaEmision
+            FechaHora = alerta.FechaEmision,
+            SensorId = sensor?.SensorId,
+            ComunidadId = sensor?.ComunidadId,
+            NivelRiesgo = alerta.NivelRiesgo,
+            Estado = "Activa"
         };
 
         _context.Eventos.Add(nuevoEvento);

@@ -1,47 +1,63 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using AlertaClimatica.Infrastructure;
-using AlertaClimatica.Domain;
+using AlertaClimatica.Application.DTOs;
+using AlertaClimatica.Infrastructure.Services;
 
 namespace AlertaClimatica.Api.Controllers;
 
-// El PDF no menciona "Eventos" en el ejemplo de RF-ADM-07, pero es parte
-// del mismo dominio operativo (se generan a partir de Alertas). Aplico
-// la misma matriz por consistencia: GET para cualquier autenticado,
-// POST restringido a Administrador/Operador.
+// RF-ADM-07: consultar (GET) cualquier usuario autenticado; registrar (POST) solo Administrador y Operador.
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public class EventosController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IEventoService _eventoService;
 
-    public EventosController(ApplicationDbContext context)
+    public EventosController(IEventoService eventoService)
     {
-        _context = context;
+        _eventoService = eventoService;
     }
 
+    // GET: api/eventos?fechaInicio=2026-10-01&fechaFin=2026-10-07&comunidadId=1&fenomeno=Inundación&nivel=Rojo
+    // RF-ADM-46 y RF-ADM-47. Todos los filtros son opcionales.
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Evento>>> GetEventos()
+    public async Task<ActionResult<IEnumerable<EventoDto>>> GetEventos(
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] int? comunidadId,
+        [FromQuery] string? fenomeno,
+        [FromQuery] string? nivel)
     {
-        return await _context.Eventos
-            .OrderByDescending(e => e.FechaHora)
-            .ToListAsync();
+        var eventos = await _eventoService.GetEventosAsync(fechaInicio, fechaFin, comunidadId, fenomeno, nivel);
+        return Ok(eventos);
     }
 
+    // GET: api/eventos/estadisticas (mismos filtros). RF-ADM-48
+    [HttpGet("estadisticas")]
+    public async Task<ActionResult<EventoEstadisticasDto>> GetEstadisticas(
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] int? comunidadId,
+        [FromQuery] string? fenomeno,
+        [FromQuery] string? nivel)
+    {
+        var stats = await _eventoService.GetEstadisticasAsync(fechaInicio, fechaFin, comunidadId, fenomeno, nivel);
+        return Ok(stats);
+    }
+
+    // POST: api/eventos. RF-ADM-44
     [HttpPost]
     [Authorize(Roles = "Administrador,Operador")]
-    public async Task<ActionResult<Evento>> CreateEvento(Evento evento)
+    public async Task<ActionResult<EventoDto>> CreateEvento([FromBody] CrearEventoDto dto)
     {
-        if (evento.FechaHora == default)
+        try
         {
-            evento.FechaHora = DateTime.Now;
+            var creado = await _eventoService.CrearEventoAsync(dto);
+            return CreatedAtAction(nameof(GetEventos), new { id = creado.EventoId }, creado);
         }
-
-        _context.Eventos.Add(evento);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetEventos), new { id = evento.EventoId }, evento);
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 }
