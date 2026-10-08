@@ -1,40 +1,104 @@
 <nav class="bg-dark text-white border-end d-flex flex-column" id="sidebar-wrapper" style="width: 250px; min-height: 100vh;">
+
   <div class="sidebar-heading p-3 fw-bold fs-5 border-bottom border-secondary">
     Alerta Climática
   </div>
+
   <div class="list-group list-group-flush">
-    <a routerLink="/dashboard" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-speedometer2 me-2"></i> Panel General
+
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-speedometer2 me-2"></i>
+      Panel General
     </a>
-    <a routerLink="/comunidades" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-geo-alt me-2"></i> Comunidades
+
+    <a
+      routerLink="/comunidades"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-geo-alt me-2"></i>
+      Comunidades
     </a>
-    <a *ngIf="esAdministrador" routerLink="/usuarios" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-people me-2"></i> Usuarios
+
+    <a
+      *ngIf="esAdministrador"
+      routerLink="/usuarios"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-people me-2"></i>
+      Usuarios
     </a>
-    <a routerLink="/sensores" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-cpu me-2"></i> Sensores
+
+    <a
+      routerLink="/sensores"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-cpu me-2"></i>
+      Sensores
     </a>
-    <!-- OPCIÓN DE LECTURAS -->
-    <a routerLink="/lecturas" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-activity me-2"></i> Lecturas
+
+    <!-- LECTURAS -->
+    <a
+      routerLink="/lecturas"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-activity me-2"></i>
+      Lecturas
     </a>
-    <a routerLink="/alertas" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-exclamation-triangle me-2"></i> Alertas
+
+    <!-- ALERTAS -->
+    <a
+      routerLink="/alertas"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      Alertas
     </a>
-    <a routerLink="/historial" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-clock-history me-2"></i> Historial
+
+    <!-- REGLAS DE ALERTA - SOLO ADMINISTRADOR -->
+    <a
+      *ngIf="esAdministrador"
+      routerLink="/reglas-alerta"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-sliders me-2"></i>
+      Reglas de Alerta
     </a>
-    <!-- NUEVA OPCIÓN DE BITÁCORA (Solo administradores) -->
-    <a *ngIf="esAdministrador" routerLink="/bitacora" routerLinkActive="active" class="list-group-item list-group-item-action bg-dark text-white p-3">
-      <i class="bi bi-shield-check me-2"></i> Bitácora
+
+    <!-- BITÁCORA - SOLO ADMINISTRADORES -->
+    <a
+      *ngIf="esAdministrador"
+      routerLink="/bitacora"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-shield-check me-2"></i>
+      Bitácora
     </a>
+
+    <!-- HISTORIAL -->
+    <a
+      routerLink="/historial"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-clock-history me-2"></i>
+      Historial
+    </a>
+
   </div>
 
-  <!-- RF-ADM-03: Cierre de sesión. mt-auto lo empuja al fondo del sidebar. -->
+  <!-- RF-ADM-03: Cierre de sesión -->
   <div class="mt-auto list-group list-group-flush border-top border-secondary">
-    <button type="button" class="list-group-item list-group-item-action bg-dark text-white p-3 border-0 text-start w-100" (click)="cerrarSesion()">
-      <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+
+    <button
+      type="button"
+      class="list-group-item list-group-item-action bg-dark text-white p-3 border-0 text-start w-100"
+      (click)="cerrarSesion()">
+      <i class="bi bi-box-arrow-right me-2"></i>
+      Cerrar sesión
     </button>
+
   </div>
+
 </nav>

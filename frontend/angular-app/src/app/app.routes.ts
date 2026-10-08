@@ -10,7 +10,8 @@ import { UsuariosComponent } from './components/usuarios/usuarios';
 import { AlertasComponent } from './components/alertas/alertas';
 import { HistorialComponent } from './components/historial/historial';
 import { LecturasComponent } from './components/lecturas/lecturas.component';
-import { BitacoraComponent } from './components/bitacora/bitacora'; // <-- Añadido
+import { BitacoraComponent } from './components/bitacora/bitacora';
+import { ReglasAlertaComponent } from './components/reglas-alerta/reglas-alerta';
 
 import { authGuard } from './core/guards/auth-guard';
 import { roleGuard } from './core/guards/role-guard';
@@ -41,7 +42,8 @@ export const routes: Routes = [
       { path: 'lecturas', component: LecturasComponent },
       { path: 'alertas', component: AlertasComponent },
       { path: 'historial', component: HistorialComponent },
-      { path: 'bitacora', component: BitacoraComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } } // <-- Ruta añadida
+      { path: 'bitacora', component: BitacoraComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
+      { path: 'reglas-alerta', component: ReglasAlertaComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } }
     ]
   },
   {

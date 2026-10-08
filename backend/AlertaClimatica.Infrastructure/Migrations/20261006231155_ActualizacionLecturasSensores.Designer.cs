@@ -4,15 +4,19 @@ using AlertaClimatica.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
 #nullable disable
 
 namespace AlertaClimatica.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006231155_ActualizacionLecturasSensores")]
+    partial class ActualizacionLecturasSensores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,8 +32,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("AlertaId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("AlertaId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AlertaId"));
 
                     b.Property<DateTime>("FechaEmision")
                         .HasColumnType("datetime2")
@@ -45,18 +48,11 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("NivelRiesgo");
 
-                    b.Property<int?>("ReglaAlertaId")
-                        .HasColumnType("int")
-                        .HasColumnName("ReglaAlertaId");
-
                     b.Property<int>("SensorId")
                         .HasColumnType("int")
                         .HasColumnName("SensorId");
 
                     b.HasKey("AlertaId");
-
-                    b.HasIndex("ReglaAlertaId");
-                    b.HasIndex("SensorId");
 
                     b.ToTable("Alertas", (string)null);
                 });
@@ -68,8 +64,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("BitacoraId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<long>("BitacoraId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("BitacoraId"));
 
                     b.Property<string>("Accion")
                         .IsRequired()
@@ -80,14 +75,6 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Detalle");
-
-                    b.Property<string>("Entidad")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Entidad");
-
-                    b.Property<int?>("EntidadId")
-                        .HasColumnType("int")
-                        .HasColumnName("EntidadId");
 
                     b.Property<DateTime>("FechaHora")
                         .HasColumnType("datetime2")
@@ -108,8 +95,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("ComunidadId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ComunidadId"));
 
                     b.Property<string>("Departamento")
                         .IsRequired()
@@ -153,53 +139,23 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("EventoId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("EventoId"));
-
-                    b.Property<int?>("ComunidadId")
-                        .HasColumnType("int")
-                        .HasColumnName("ComunidadId");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EventoId"));
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Descripcion");
 
-                    b.Property<string>("Estado")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Estado");
-
                     b.Property<DateTime>("FechaHora")
                         .HasColumnType("datetime2")
                         .HasColumnName("FechaHora");
-
-                    b.Property<string>("NivelRiesgo")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NivelRiesgo");
-
-                    b.Property<int?>("SensorId")
-                        .HasColumnType("int")
-                        .HasColumnName("SensorId");
 
                     b.Property<string>("TipoFenomeno")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("TipoEvento");
 
-                    b.Property<int?>("UsuarioResponsableId")
-                        .HasColumnType("int")
-                        .HasColumnName("UsuarioResponsableId");
-
-                    b.Property<decimal?>("Valor")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("Valor");
-
                     b.HasKey("EventoId");
-
-                    b.HasIndex("ComunidadId");
-                    b.HasIndex("SensorId");
-                    b.HasIndex("UsuarioResponsableId");
 
                     b.ToTable("Eventos", (string)null);
                 });
@@ -211,8 +167,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("LecturaId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<long>("LecturaId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("LecturaId"));
 
                     b.Property<DateTime>("FechaHora")
                         .HasColumnType("datetime2")
@@ -234,61 +189,6 @@ namespace AlertaClimatica.Infrastructure.Migrations
                     b.ToTable("LecturasClimaticas", (string)null);
                 });
 
-            modelBuilder.Entity("AlertaClimatica.Domain.ReglaAlerta", b =>
-                {
-                    b.Property<int>("ReglaAlertaId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ReglaAlertaId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("ReglaAlertaId"));
-
-                    b.Property<bool>("Estado")
-                        .HasColumnType("bit")
-                        .HasColumnName("Estado");
-
-                    b.Property<string>("Mensaje")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Mensaje");
-
-                    b.Property<string>("NivelPeligro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NivelPeligro");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Nombre");
-
-                    b.Property<string>("TipoFenomeno")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("TipoFenomeno");
-
-                    b.Property<int>("TipoSensorId")
-                        .HasColumnType("int")
-                        .HasColumnName("TipoSensorId");
-
-                    b.Property<decimal?>("ValorMaximo")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("ValorMaximo");
-
-                    b.Property<decimal?>("ValorMinimo")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("ValorMinimo");
-
-                    b.HasKey("ReglaAlertaId");
-
-                    b.HasIndex("TipoSensorId");
-
-                    b.ToTable("ReglasAlerta", (string)null);
-                });
-
             modelBuilder.Entity("AlertaClimatica.Domain.Rol", b =>
                 {
                     b.Property<int>("RolId")
@@ -296,8 +196,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("RolId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("RolId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RolId"));
 
                     b.Property<string>("Descripcion")
                         .HasColumnType("nvarchar(max)")
@@ -319,8 +218,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("SensorId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SensorId"));
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -352,6 +250,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                     b.HasKey("SensorId");
 
                     b.HasIndex("ComunidadId");
+
                     b.HasIndex("TipoSensorId");
 
                     b.ToTable("Sensores", (string)null);
@@ -364,8 +263,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("TipoSensorId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("TipoSensorId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TipoSensorId"));
 
                     b.Property<string>("NombreTipo")
                         .IsRequired()
@@ -389,8 +287,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("UsuarioId");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(
-                        b.Property<int>("UsuarioId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UsuarioId"));
 
                     b.Property<string>("ContraseniaHash")
                         .IsRequired()
@@ -428,45 +325,6 @@ namespace AlertaClimatica.Infrastructure.Migrations
                     b.ToTable("Usuarios", (string)null);
                 });
 
-            modelBuilder.Entity("AlertaClimatica.Domain.Alerta", b =>
-                {
-                    b.HasOne("AlertaClimatica.Domain.ReglaAlerta", "ReglaAlerta")
-                        .WithMany()
-                        .HasForeignKey("ReglaAlertaId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AlertaClimatica.Domain.Sensor", "Sensor")
-                        .WithMany()
-                        .HasForeignKey("SensorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReglaAlerta");
-                    b.Navigation("Sensor");
-                });
-
-            modelBuilder.Entity("AlertaClimatica.Domain.Evento", b =>
-                {
-                    b.HasOne("AlertaClimatica.Domain.Comunidad", "Comunidad")
-                        .WithMany()
-                        .HasForeignKey("ComunidadId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AlertaClimatica.Domain.Sensor", "Sensor")
-                        .WithMany()
-                        .HasForeignKey("SensorId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AlertaClimatica.Domain.Usuario", "UsuarioResponsable")
-                        .WithMany()
-                        .HasForeignKey("UsuarioResponsableId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Comunidad");
-                    b.Navigation("Sensor");
-                    b.Navigation("UsuarioResponsable");
-                });
-
             modelBuilder.Entity("AlertaClimatica.Domain.LecturaClimatica", b =>
                 {
                     b.HasOne("AlertaClimatica.Domain.Sensor", "Sensor")
@@ -476,17 +334,6 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Sensor");
-                });
-
-            modelBuilder.Entity("AlertaClimatica.Domain.ReglaAlerta", b =>
-                {
-                    b.HasOne("AlertaClimatica.Domain.TipoSensor", "TipoSensor")
-                        .WithMany()
-                        .HasForeignKey("TipoSensorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TipoSensor");
                 });
 
             modelBuilder.Entity("AlertaClimatica.Domain.Sensor", b =>
@@ -503,9 +350,9 @@ namespace AlertaClimatica.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Comunidad");
+
                     b.Navigation("TipoSensor");
                 });
-
 #pragma warning restore 612, 618
         }
     }

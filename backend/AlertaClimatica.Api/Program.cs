@@ -127,6 +127,7 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IBitacoraRepository, BitacoraRepository>();
 builder.Services.AddScoped<ILecturaRepository, LecturaRepository>();
+builder.Services.AddScoped<IReglaAlertaRepository, ReglaAlertaRepository>();
 
 // Services (reglas de negocio, dependen de los repositorios de arriba)
 builder.Services.AddScoped<ISensorService, SensorService>();
@@ -136,6 +137,7 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IComunidadService, ComunidadService>();
 builder.Services.AddScoped<IRolService, RolService>();
 builder.Services.AddScoped<ILecturaService, LecturaService>();
+builder.Services.AddScoped<IReglaAlertaService, ReglaAlertaService>();
 
 
 // =========================================================

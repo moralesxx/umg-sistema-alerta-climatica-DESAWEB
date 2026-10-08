@@ -13,6 +13,9 @@ public class Alerta
     [Column("SensorId")]
     public int SensorId { get; set; }
 
+    [Column("ReglaAlertaId")]
+    public int? ReglaAlertaId { get; set; }
+
     [Column("NivelRiesgo")]
     public string NivelRiesgo { get; set; } = string.Empty;
 
@@ -21,4 +24,10 @@ public class Alerta
 
     [Column("FechaEmision")]
     public DateTime FechaEmision { get; set; }
+
+    [ForeignKey("SensorId")]
+    public virtual Sensor? Sensor { get; set; }
+
+    [ForeignKey("ReglaAlertaId")]
+    public virtual ReglaAlerta? ReglaAlerta { get; set; }
 }

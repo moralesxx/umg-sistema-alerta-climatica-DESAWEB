@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Evento> Eventos { get; set; }
     public DbSet<Alerta> Alertas { get; set; }
     public DbSet<Bitacora> Bitacora { get; set; }
+    public DbSet<ReglaAlerta> ReglasAlerta { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,5 +109,33 @@ public class ApplicationDbContext : DbContext
             .ToTable("Bitacora")
             .HasKey(b => b.BitacoraId);
         modelBuilder.Entity<Bitacora>().Property(b => b.BitacoraId).ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<Alerta>()
+            .HasOne(a => a.ReglaAlerta)
+            .WithMany()
+            .HasForeignKey(a => a.ReglaAlertaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ReglaAlerta>()
+            .ToTable("ReglasAlerta")
+            .HasKey(r => r.ReglaAlertaId);
+
+        modelBuilder.Entity<ReglaAlerta>()
+            .Property(r => r.ReglaAlertaId)
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<ReglaAlerta>()
+            .Property(r => r.ValorMinimo)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ReglaAlerta>()
+            .Property(r => r.ValorMaximo)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ReglaAlerta>()
+            .HasOne(r => r.TipoSensor)
+            .WithMany()
+            .HasForeignKey(r => r.TipoSensorId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
