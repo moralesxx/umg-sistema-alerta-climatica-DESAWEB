@@ -42,10 +42,13 @@ public class UsuarioService : IUsuarioService
     {
         var usuarios = await _usuarioRepository.ObtenerTodosAsync();
 
+        // Se elimina el registro automático de lectura para evitar falsos positivos
+        /*
         await _bitacoraService.RegistrarAsync(
             "CONSULTAR_USUARIOS",
             "El usuario consultó el listado de usuarios."
         );
+        */
 
         return usuarios.Select(AResumen);
     }
@@ -55,10 +58,13 @@ public class UsuarioService : IUsuarioService
     {
         var usuarios = await _usuarioRepository.ObtenerFiltradosAsync(texto, rolId, estado);
 
+        // Se elimina el registro automático de lectura para evitar falsos positivos
+        /*
         await _bitacoraService.RegistrarAsync(
             "CONSULTAR_USUARIOS",
             "El usuario consultó el listado de usuarios."
         );
+        */
 
         return usuarios.Select(AResumen);
     }
@@ -68,10 +74,13 @@ public class UsuarioService : IUsuarioService
         var usuario = await _usuarioRepository.ObtenerPorIdAsync(id);
         if (usuario == null) return null;
 
+        // Se elimina el registro automático de lectura individual
+        /*
         await _bitacoraService.RegistrarAsync(
             "CONSULTAR_USUARIO",
             $"El usuario consultó la información del usuario con ID {id}."
         );
+        */
 
         return AResumen(usuario);
     }
@@ -87,8 +96,6 @@ public class UsuarioService : IUsuarioService
         if (string.IsNullOrWhiteSpace(registro.Contrasenia) || registro.Contrasenia.Length < 6)
             throw new ArgumentException("La contraseña debe tener al menos 6 caracteres.");
 
-        // Rol fijo: "Usuario de consulta". Se busca por nombre (no por Id)
-        // para no depender de que el seed lo haya creado con un Id específico.
         var rolPorDefecto = await _rolRepository.ObtenerPorNombreAsync("Usuario de consulta");
         if (rolPorDefecto == null)
         {
@@ -233,12 +240,9 @@ public class UsuarioService : IUsuarioService
 
         var token = _tokenService.GenerarToken(usuario, rol.NombreRol);
 
-        // RF-ADM-55: registrar el último acceso.
         usuario.UltimoAcceso = DateTime.Now;
         await _usuarioRepository.GuardarCambiosAsync();
 
-        // RF-ADM-56: registrar el login. Se usa RegistrarConUsuarioIdAsync
-        // porque en este momento todavía no existe un JWT en el request.
         await _bitacoraService.RegistrarConUsuarioIdAsync(
             usuario.UsuarioId,
             "LOGIN",

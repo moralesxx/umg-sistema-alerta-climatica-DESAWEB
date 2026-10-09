@@ -48,7 +48,7 @@ export interface EventoEstadisticas {
   providedIn: 'root'
 })
 export class EventoService {
-  private apiUrl = 'http://localhost:5081/api/eventos';
+  private apiUrl = '/api/eventos';
 
   constructor(private http: HttpClient) { }
 

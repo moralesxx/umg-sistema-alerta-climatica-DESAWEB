@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 using AlertaClimatica.Infrastructure;
+using AlertaClimatica.Infrastructure.Services;
 using AlertaClimatica.Domain;
 
 namespace AlertaClimatica.Api.Controllers;
@@ -13,11 +15,21 @@ namespace AlertaClimatica.Api.Controllers;
 [Authorize]
 public class AlertasController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    // Mismos valores que usa el historial de eventos (RF-ADM-31).
+    private static readonly string[] Niveles = { "Verde", "Amarillo", "Naranja", "Rojo" };
 
-    public AlertasController(ApplicationDbContext context)
+    private readonly ApplicationDbContext _context;
+    private readonly IBitacoraService _bitacoraService;
+    private readonly ILogger<AlertasController> _logger;
+
+    public AlertasController(
+        ApplicationDbContext context,
+        IBitacoraService bitacoraService,
+        ILogger<AlertasController> logger)
     {
         _context = context;
+        _bitacoraService = bitacoraService;
+        _logger = logger;
     }
 
     // ============================================================
@@ -64,10 +76,21 @@ public class AlertasController : ControllerBase
     {
         try
         {
-            // Si no viene fecha, usamos la fecha actual.
+            // Lo que el cliente NO debe decidir: el id y los objetos relacionados.
+            // (Si llegaran en el JSON, EF intentaría insertar también un Sensor/Regla.)
+            alerta.AlertaId = 0;
+            alerta.Sensor = null!;
+            alerta.ReglaAlerta = null!;
+
+            // Si no viene fecha, usamos la fecha actual. Si viene en UTC (con "Z")
+            // se pasa a hora local para no mezclar zonas con el resto del sistema.
             if (alerta.FechaEmision == default)
             {
                 alerta.FechaEmision = DateTime.Now;
+            }
+            else if (alerta.FechaEmision.Kind == DateTimeKind.Utc)
+            {
+                alerta.FechaEmision = alerta.FechaEmision.ToLocalTime();
             }
 
             // Validar que el sensor exista.
@@ -106,6 +129,21 @@ public class AlertasController : ControllerBase
                 alerta.Mensaje = regla.Mensaje;
             }
 
+            // El nivel debe ser uno de los 4 oficiales: si no, el historial y
+            // las estadísticas de eventos quedarían con valores sueltos.
+            var nivelOficial = Niveles.FirstOrDefault(n =>
+                n.Equals(alerta.NivelRiesgo?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (nivelOficial == null)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "El nivel de riesgo debe ser: Verde, Amarillo, Naranja o Rojo."
+                });
+            }
+
+            alerta.NivelRiesgo = nivelOficial;
+
             _context.Alertas.Add(alerta);
 
             // ====================================================
@@ -134,12 +172,25 @@ public class AlertasController : ControllerBase
             {
                 TipoFenomeno = tipoFenomeno,
                 Descripcion = alerta.Mensaje,
-                FechaHora = alerta.FechaEmision
+                FechaHora = alerta.FechaEmision,
+                // Datos que necesita el Historial (filtros y estadisticas):
+                SensorId = sensor.SensorId,
+                ComunidadId = sensor.ComunidadId,
+                NivelRiesgo = alerta.NivelRiesgo,
+                Estado = "Activa"
             };
 
             _context.Eventos.Add(nuevoEvento);
 
             await _context.SaveChangesAsync();
+
+            // RF-ADM-56: toda alta queda en la bitácora de auditoría.
+            await _bitacoraService.RegistrarAsync(
+                "CREAR_ALERTA",
+                $"Se creó la alerta #{alerta.AlertaId} (nivel {alerta.NivelRiesgo}) para el sensor #{sensor.SensorId}.",
+                "Alerta",
+                alerta.AlertaId
+            );
 
             return CreatedAtAction(
                 nameof(GetAlerta),
@@ -149,10 +200,12 @@ public class AlertasController : ControllerBase
         }
         catch (Exception ex)
         {
+            // El detalle técnico va al log del servidor, no al cliente.
+            _logger.LogError(ex, "No fue posible crear la alerta.");
+
             return StatusCode(500, new
             {
-                mensaje = "No fue posible crear la alerta.",
-                detalle = ex.Message
+                mensaje = "No fue posible crear la alerta."
             });
         }
     }
@@ -169,8 +222,8 @@ public class AlertasController : ControllerBase
         string texto = mensaje?.ToLowerInvariant() ?? "";
 
         if (texto.Contains("desbordamiento") ||
-            texto.Contains("río") ||
-            texto.Contains("rio") ||
+            ContienePalabra(texto, "río") ||
+            ContienePalabra(texto, "rio") ||
             texto.Contains("inundación") ||
             texto.Contains("inundacion"))
         {
@@ -202,13 +255,19 @@ public class AlertasController : ControllerBase
         // Compatibilidad con el comportamiento anterior.
         if (nivel.Contains("rojo") &&
             (texto.Contains("agua") ||
-             texto.Contains("río") ||
-             texto.Contains("rio")))
+             ContienePalabra(texto, "río") ||
+             ContienePalabra(texto, "rio")))
         {
             return "Inundación";
         }
 
         return "Tormenta";
+    }
+
+    // Busca la palabra completa (no una parte de otra): "río" si, "frío" no.
+    private static bool ContienePalabra(string texto, string palabra)
+    {
+        return Regex.IsMatch(texto, @"\b" + Regex.Escape(palabra) + @"\b");
     }
 
     // ============================================================
@@ -222,10 +281,19 @@ public class AlertasController : ControllerBase
         try
         {
             var todasLasAlertas = await _context.Alertas.ToListAsync();
+            var cantidad = todasLasAlertas.Count;
 
             _context.Alertas.RemoveRange(todasLasAlertas);
 
             await _context.SaveChangesAsync();
+
+            // RF-ADM-56 (eliminación): se deja constancia de quién limpió el historial.
+            // Los eventos NO se borran: el historial de eventos (RF-ADM-44) se conserva.
+            await _bitacoraService.RegistrarAsync(
+                "ELIMINAR_ALERTAS",
+                $"Se eliminaron {cantidad} alertas (limpieza del historial de alertas).",
+                "Alerta"
+            );
 
             return Ok(new
             {
@@ -234,10 +302,11 @@ public class AlertasController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "No fue posible limpiar el historial de alertas.");
+
             return StatusCode(500, new
             {
-                mensaje = "No fue posible limpiar el historial de alertas.",
-                detalle = ex.Message
+                mensaje = "No fue posible limpiar el historial de alertas."
             });
         }
     }

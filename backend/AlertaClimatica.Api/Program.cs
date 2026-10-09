@@ -7,6 +7,9 @@ using AlertaClimatica.Infrastructure.Repositories;
 using AlertaClimatica.Infrastructure.Repositories.Interfaces;
 using AlertaClimatica.Infrastructure.Services.Interfaces;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +21,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        // En producción el navegador llama a /api en el mismo origen (Nginx),
+        // así que CORS solo hace falta en desarrollo (ng serve en :4200).
+        // Orígenes extra: Cors__AllowedOrigins__0=https://tu-dominio (variable de entorno).
+        var extraOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        policy.WithOrigins(new[] { "http://localhost:4200" }.Concat(extraOrigins).ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -65,6 +75,15 @@ if (string.IsNullOrWhiteSpace(jwtAudience))
     );
 }
 
+// HS256 necesita una clave de al menos 256 bits; si es más corta el login
+// revienta en tiempo de ejecución. Mejor fallar al arrancar con un mensaje claro.
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:Key debe tener al menos 32 caracteres. Defínala por variable de entorno (Jwt__Key), no en el código."
+    );
+}
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -102,6 +121,48 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // =========================================================
+// 4.1 PROXY INVERSO (Nginx) Y LÍMITE DE INTENTOS DE LOGIN
+// =========================================================
+
+// Detrás de Nginx la IP y el esquema reales llegan en X-Forwarded-*.
+// Se limpian KnownNetworks/KnownProxies porque la API solo es alcanzable
+// desde la red interna de Docker (el puerto 5081 no se publica a Internet).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// RNF-ADM (seguridad): frena la fuerza bruta sobre el login.
+// 10 intentos por minuto por IP; el resto de la API no se limita.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        if (HttpMethods.IsPost(context.Request.Method) &&
+            context.Request.Path.Equals("/api/usuarios/login", StringComparison.OrdinalIgnoreCase))
+        {
+            var ip = context.Connection.RemoteIpAddress?.ToString() ?? "desconocida";
+
+            return RateLimitPartition.GetFixedWindowLimiter(
+                $"login:{ip}",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                });
+        }
+
+        return RateLimitPartition.GetNoLimiter("sin-limite");
+    });
+});
+
+// =========================================================
 // 5. CONFIGURAR CONTROLADORES
 // =========================================================
 
@@ -127,6 +188,7 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IBitacoraRepository, BitacoraRepository>();
 builder.Services.AddScoped<ILecturaRepository, LecturaRepository>();
+builder.Services.AddScoped<IEventoRepository, EventoRepository>();
 builder.Services.AddScoped<IReglaAlertaRepository, ReglaAlertaRepository>();
 
 // Services (reglas de negocio, dependen de los repositorios de arriba)
@@ -137,6 +199,7 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IComunidadService, ComunidadService>();
 builder.Services.AddScoped<IRolService, RolService>();
 builder.Services.AddScoped<ILecturaService, LecturaService>();
+builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IReglaAlertaService, ReglaAlertaService>();
 
 
@@ -145,6 +208,12 @@ builder.Services.AddScoped<IReglaAlertaService, ReglaAlertaService>();
 // =========================================================
 
 var app = builder.Build();
+
+// =========================================================
+// 8.1 CABECERAS DEL PROXY (debe ir primero en el pipeline)
+// =========================================================
+
+app.UseForwardedHeaders();
 
 // =========================================================
 // 9. CONFIGURACIÓN PARA DESARROLLO
@@ -160,6 +229,8 @@ if (app.Environment.IsDevelopment())
 // =========================================================
 
 app.UseCors("AllowAngular");
+
+app.UseRateLimiter();
 
 // =========================================================
 // 11. AUTENTICACIÓN
@@ -181,6 +252,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Endpoint público y liviano para el healthcheck de Docker / monitoreo.
+// No toca la base de datos ni expone información.
+app.MapGet("/health", () => Results.Ok(new { estado = "ok" })).AllowAnonymous();
+
 // =========================================================
 // 14. INICIALIZAR BASE DE DATOS Y APLICAR MIGRACIONES
 // =========================================================
@@ -188,27 +263,43 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var context = services.GetRequiredService<ApplicationDbContext>();
 
-    try
+    // En Docker Compose SQL Server tarda en aceptar conexiones: se reintenta.
+    // Si después de todos los intentos sigue fallando, la API NO debe quedar
+    // "viva pero rota": se relanza la excepción para que el contenedor se
+    // reinicie y el error se vea en `docker compose logs backend`.
+    const int maxIntentos = 12;
+
+    for (var intento = 1; ; intento++)
     {
-        var context =
-            services.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            // Aplica las migraciones pendientes automáticamente
+            context.Database.Migrate();
 
-        // Ejecutar las migraciones pendientes automáticamente en la BD vacía
-        context.Database.Migrate();
+            // Siembra los datos iniciales (rol/usuario administrador)
+            DbInitializer.Seed(context);
 
-        // Sembrar los datos iniciales (como el usuario administrador)
-        DbInitializer.Seed(context);
-    }
-    catch (Exception ex)
-    {
-        var logger =
-            services.GetRequiredService<ILogger<Program>>();
+            break;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Error al inicializar la base de datos (intento {Intento}/{Max}).",
+                intento,
+                maxIntentos
+            );
 
-        logger.LogError(
-            ex,
-            "Ocurrió un error al inicializar la base de datos."
-        );
+            if (intento >= maxIntentos)
+            {
+                throw;
+            }
+
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
     }
 }
 

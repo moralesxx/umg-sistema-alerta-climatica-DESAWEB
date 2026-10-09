@@ -15,7 +15,7 @@ export interface LecturaClimatica {
   providedIn: 'root'
 })
 export class LecturaService {
-  private apiUrl = 'http://localhost:5081/api/lecturasclimaticas';
+  private apiUrl = '/api/lecturasclimaticas';
 
   constructor(private http: HttpClient) { }
 

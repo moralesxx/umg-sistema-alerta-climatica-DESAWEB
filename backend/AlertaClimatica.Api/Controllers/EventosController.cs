@@ -1,55 +1,71 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using AlertaClimatica.Infrastructure;
-using AlertaClimatica.Domain;
+using AlertaClimatica.Application.DTOs;
+using AlertaClimatica.Infrastructure.Services;
 
 namespace AlertaClimatica.Api.Controllers;
 
-// El PDF no menciona "Eventos" en el ejemplo de RF-ADM-07, pero es parte
-// del mismo dominio operativo (se generan a partir de Alertas). Aplico
-// la misma matriz por consistencia: GET para cualquier autenticado,
-// POST restringido a Administrador/Operador.
+// RF-ADM-07: consultar (GET) cualquier usuario autenticado; registrar (POST) solo Administrador y Operador.
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public class EventosController : ControllerBase
 {
-    // Contexto de base de datos inyectado para realizar consultas y operaciones directas con Entity Framework
-    private readonly ApplicationDbContext _context;
+    private readonly IEventoService _eventoService;
 
-    // Constructor que inicializa el controlador recibiendo el contexto de la base de datos
-    public EventosController(ApplicationDbContext context)
+    public EventosController(IEventoService eventoService)
     {
-        _context = context;
+        _eventoService = eventoService;
     }
 
-    // Endpoint GET que permite consultar la lista completa de eventos ordenada de forma descendente por su fecha y hora
+    // GET: api/eventos?fechaInicio=2026-10-01&fechaFin=2026-10-07&comunidadId=1&fenomeno=Inundación&nivel=Rojo
+    // RF-ADM-46 y RF-ADM-47. Todos los filtros son opcionales.
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Evento>>> GetEventos()
+    public async Task<ActionResult<IEnumerable<EventoDto>>> GetEventos(
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] int? comunidadId,
+        [FromQuery] string? fenomeno,
+        [FromQuery] string? nivel)
     {
-        // Consulta los eventos en la base de datos ordenándolos del más reciente al más antiguo y los retorna como lista
-        return await _context.Eventos
-            .OrderByDescending(e => e.FechaHora)
-            .ToListAsync();
+        var eventos = await _eventoService.GetEventosAsync(fechaInicio, fechaFin, comunidadId, fenomeno, nivel);
+        return Ok(eventos);
     }
 
-    // Endpoint POST accesible por Administradores y Operadores para registrar un nuevo evento en el sistema
+    // GET: api/eventos/5  (detalle de un evento)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<EventoDto>> GetEvento(int id)
+    {
+        var evento = await _eventoService.GetEventoAsync(id);
+        return evento == null ? NotFound() : Ok(evento);
+    }
+
+    // GET: api/eventos/estadisticas (mismos filtros). RF-ADM-48
+    [HttpGet("estadisticas")]
+    public async Task<ActionResult<EventoEstadisticasDto>> GetEstadisticas(
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] int? comunidadId,
+        [FromQuery] string? fenomeno,
+        [FromQuery] string? nivel)
+    {
+        var stats = await _eventoService.GetEstadisticasAsync(fechaInicio, fechaFin, comunidadId, fenomeno, nivel);
+        return Ok(stats);
+    }
+
+    // POST: api/eventos. RF-ADM-44
     [HttpPost]
     [Authorize(Roles = "Administrador,Operador")]
-    public async Task<ActionResult<Evento>> CreateEvento(Evento evento)
+    public async Task<ActionResult<EventoDto>> CreateEvento([FromBody] CrearEventoDto dto)
     {
-        // Validación: Si la fecha y hora no fueron asignadas, se establece automáticamente la fecha y hora actual
-        if (evento.FechaHora == default)
+        try
         {
-            evento.FechaHora = DateTime.Now;
+            var creado = await _eventoService.CrearEventoAsync(dto);
+            return CreatedAtAction(nameof(GetEvento), new { id = creado.EventoId }, creado);
         }
-
-        // Agrega el nuevo evento al contexto y guarda los cambios en la base de datos de manera asíncrona
-        _context.Eventos.Add(evento);
-        await _context.SaveChangesAsync();
-
-        // Retorna una respuesta HTTP 201 Created apuntando al método de consulta general de eventos
-        return CreatedAtAction(nameof(GetEventos), new { id = evento.EventoId }, evento);
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 }

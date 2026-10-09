@@ -10,30 +10,26 @@ namespace AlertaClimatica.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateIndex(
-                name: "IX_LecturasClimaticas_SensorId",
-                table: "LecturasClimaticas",
-                column: "SensorId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LecturasClimaticas_SensorId' AND object_id = OBJECT_ID('LecturasClimaticas'))
+    CREATE INDEX [IX_LecturasClimaticas_SensorId] ON [LecturasClimaticas] ([SensorId]);");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_LecturasClimaticas_Sensores_SensorId",
-                table: "LecturasClimaticas",
-                column: "SensorId",
-                principalTable: "Sensores",
-                principalColumn: "SensorId",
-                onDelete: ReferentialAction.Cascade);
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_LecturasClimaticas_Sensores_SensorId')
+    ALTER TABLE [LecturasClimaticas] WITH NOCHECK ADD CONSTRAINT [FK_LecturasClimaticas_Sensores_SensorId]
+        FOREIGN KEY ([SensorId]) REFERENCES [Sensores] ([SensorId]) ON DELETE CASCADE;");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_LecturasClimaticas_Sensores_SensorId",
-                table: "LecturasClimaticas");
+            migrationBuilder.Sql(@"
+IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_LecturasClimaticas_Sensores_SensorId')
+    ALTER TABLE [LecturasClimaticas] DROP CONSTRAINT [FK_LecturasClimaticas_Sensores_SensorId];");
 
-            migrationBuilder.DropIndex(
-                name: "IX_LecturasClimaticas_SensorId",
-                table: "LecturasClimaticas");
+            migrationBuilder.Sql(@"
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LecturasClimaticas_SensorId' AND object_id = OBJECT_ID('LecturasClimaticas'))
+    DROP INDEX [IX_LecturasClimaticas_SensorId] ON [LecturasClimaticas];");
         }
     }
 }

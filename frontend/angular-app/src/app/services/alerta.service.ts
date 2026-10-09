@@ -17,7 +17,7 @@ export interface Alerta {
   providedIn: 'root'
 })
 export class AlertaService {
-  private apiUrl = 'http://localhost:5081/api/alertas';
+  private apiUrl = '/api/alertas';
 
   // Subject para sincronizar el nivel de riesgo global entre componentes
   private nivelAlertaSource = new BehaviorSubject<string>('Verde');
@@ -41,15 +41,17 @@ export class AlertaService {
     return this.http.post<Alerta>(this.apiUrl, alerta);
   }
 
-  simularAlerta(nivelRiesgo: string, mensajeDesc: string): Observable<Alerta> {
+  // sensorId es opcional para no romper las llamadas existentes (antes era fijo = 1).
+  simularAlerta(nivelRiesgo: string, mensajeDesc: string, sensorId: number = 1): Observable<Alerta> {
+    // No se envía fechaEmision: la API usa su propia hora. Antes se mandaba en UTC
+    // (toISOString) y quedaba desfasada respecto a bitácora y eventos.
     const nuevaAlerta: Alerta = {
-      sensorId: 1,
+      sensorId,
       eventoId: null,
       tipoAlerta: 'Climática',
       mensaje: mensajeDesc,
       nivelRiesgo: nivelRiesgo,
-      atendida: false,
-      fechaEmision: new Date().toISOString()
+      atendida: false
     };
     return this.createAlerta(nuevaAlerta);
   }

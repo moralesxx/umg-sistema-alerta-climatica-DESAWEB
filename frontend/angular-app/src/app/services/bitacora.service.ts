@@ -13,6 +13,12 @@ export interface Bitacora {
   accion: string;
   detalle: string;
   fechaHora: string;
+  // RF-ADM-57: sobre qué entidad se hizo la acción (null en Login/Logout).
+  entidad?: string | null;
+  entidadId?: number | null;
+  // Según cómo lo devuelva la API puede venir el nombre plano o el usuario anidado.
+  usuarioNombre?: string | null;
+  usuario?: { nombre?: string | null } | null;
 }
 
 @Injectable({
@@ -20,7 +26,7 @@ export interface Bitacora {
 })
 export class BitacoraService {
 
-  private apiUrl = 'http://localhost:5081/api/bitacora';
+  private apiUrl = '/api/bitacora';
 
   constructor(private http: HttpClient) {}
 

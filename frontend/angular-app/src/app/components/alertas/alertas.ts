@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlertaService, Alerta } from '../../services/alerta.service';
-import { BitacoraService } from '../../services/bitacora.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 
@@ -31,7 +30,6 @@ export class AlertasComponent implements OnInit, OnDestroy {
 
   constructor(
     private alertaService: AlertaService,
-    private bitacoraService: BitacoraService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {
@@ -53,9 +51,8 @@ export class AlertasComponent implements OnInit, OnDestroy {
     }
   }
 
-  private registrarAccion(accion: string, detalle: string): void {
-    this.bitacoraService.registrarAccion(accion, detalle).subscribe();
-  }
+  // La bitácora de estas acciones (CREAR_ALERTA y ELIMINAR_ALERTAS) ahora la
+  // registra el backend, así que ya no se envía desde aquí (evitaba filas duplicadas).
 
   cargarAlertas(): void {
     this.alertaService.getAlertas().subscribe({
@@ -89,7 +86,6 @@ export class AlertasComponent implements OnInit, OnDestroy {
 
     this.alertaService.simularAlerta(nivelActual, mensajePrueba).subscribe({
       next: () => {
-        this.registrarAccion('SIMULAR_ALERTA', `El usuario simuló una alerta de nivel ${nivelActual}.`);
         this.cargarAlertas();
         this.mostrarToast('Alerta simulada correctamente.');
       },
@@ -103,7 +99,6 @@ export class AlertasComponent implements OnInit, OnDestroy {
       this.alertaService.limpiarHistorial().subscribe({
         next: () => {
           this.alertasRecientes = [];
-          this.registrarAccion('LIMPIAR_HISTORIAL_ALERTAS', 'El usuario limpió el historial de alertas del sistema.');
           this.cdr.detectChanges();
           this.mostrarToast('Historial de alertas limpiado.');
         },

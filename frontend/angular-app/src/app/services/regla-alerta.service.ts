@@ -39,7 +39,7 @@ export interface ActualizarReglaAlerta extends CrearReglaAlerta {}
 })
 export class ReglaAlertaService {
 
-  private apiUrl = 'http://localhost:5081/api/ReglaAlerta';
+  private apiUrl = '/api/ReglaAlerta';
 
   constructor(private http: HttpClient) {}
 

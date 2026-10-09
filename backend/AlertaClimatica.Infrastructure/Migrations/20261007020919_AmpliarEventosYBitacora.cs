@@ -60,10 +60,6 @@ namespace AlertaClimatica.Infrastructure.Migrations
                 type: "int",
                 nullable: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_LecturasClimaticas_SensorId",
-                table: "LecturasClimaticas",
-                column: "SensorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Eventos_ComunidadId",
@@ -104,13 +100,6 @@ namespace AlertaClimatica.Infrastructure.Migrations
                 principalColumn: "UsuarioId",
                 onDelete: ReferentialAction.Restrict);
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_LecturasClimaticas_Sensores_SensorId",
-                table: "LecturasClimaticas",
-                column: "SensorId",
-                principalTable: "Sensores",
-                principalColumn: "SensorId",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
@@ -128,13 +117,7 @@ namespace AlertaClimatica.Infrastructure.Migrations
                 name: "FK_Eventos_Usuarios_UsuarioResponsableId",
                 table: "Eventos");
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_LecturasClimaticas_Sensores_SensorId",
-                table: "LecturasClimaticas");
 
-            migrationBuilder.DropIndex(
-                name: "IX_LecturasClimaticas_SensorId",
-                table: "LecturasClimaticas");
 
             migrationBuilder.DropIndex(
                 name: "IX_Eventos_ComunidadId",

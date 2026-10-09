@@ -12,7 +12,7 @@ export interface TipoSensor {
   providedIn: 'root'
 })
 export class TipoSensorService {
-  private apiUrl = 'http://localhost:5081/api/tipossensor';
+  private apiUrl = '/api/tipossensor';
 
   constructor(private http: HttpClient) { }
 

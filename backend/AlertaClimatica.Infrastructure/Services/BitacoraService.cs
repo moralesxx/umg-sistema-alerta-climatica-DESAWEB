@@ -2,7 +2,6 @@ using AlertaClimatica.Domain;
 using AlertaClimatica.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
-using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace AlertaClimatica.Infrastructure.Services;
 
@@ -23,7 +22,9 @@ public class BitacoraService : IBitacoraService
 
     public async Task RegistrarAsync(
         string accion,
-        string detalle)
+        string detalle,
+        string? entidad = null,
+        int? entidadId = null)
     {
         var httpContext = _httpContextAccessor.HttpContext;
 
@@ -46,11 +47,6 @@ public class BitacoraService : IBitacoraService
 
         if (string.IsNullOrWhiteSpace(usuarioIdClaim))
         {
-            usuarioIdClaim = httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-        }
-
-        if (string.IsNullOrWhiteSpace(usuarioIdClaim))
-        {
             usuarioIdClaim = httpContext.User.FindFirst("sub")?.Value;
         }
 
@@ -61,13 +57,15 @@ public class BitacoraService : IBitacoraService
             );
         }
 
-        await RegistrarConUsuarioIdAsync(usuarioId, accion, detalle);
+        await RegistrarConUsuarioIdAsync(usuarioId, accion, detalle, entidad, entidadId);
     }
 
     public async Task RegistrarConUsuarioIdAsync(
         int usuarioId,
         string accion,
-        string detalle)
+        string detalle,
+        string? entidad = null,
+        int? entidadId = null)
     {
         if (string.IsNullOrWhiteSpace(accion))
         {
@@ -90,7 +88,10 @@ public class BitacoraService : IBitacoraService
             UsuarioId = usuarioId,
             Accion = accion.Trim(),
             Detalle = detalle?.Trim() ?? string.Empty,
-            FechaHora = DateTime.Now
+            FechaHora = DateTime.Now,
+            // RF-ADM-57: sobre qué entidad se hizo la acción y su identificador.
+            Entidad = string.IsNullOrWhiteSpace(entidad) ? null : entidad.Trim(),
+            EntidadId = entidadId
         };
 
         await _bitacoraRepository.AgregarAsync(bitacora);
