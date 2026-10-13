@@ -110,6 +110,25 @@ public class ApplicationDbContext : DbContext
             .HasKey(b => b.BitacoraId);
         modelBuilder.Entity<Bitacora>().Property(b => b.BitacoraId).ValueGeneratedOnAdd();
 
+        modelBuilder.Entity<Sensor>().Property(s => s.ValorSimulado).HasPrecision(18, 2);
+
+        modelBuilder.Entity<Alerta>().Property(a => a.ValorDetectado).HasPrecision(18, 2);
+        modelBuilder.Entity<Alerta>().Property(a => a.Estado).HasMaxLength(20).HasDefaultValue("Activa");
+
+        modelBuilder.Entity<Alerta>()
+            .HasOne(a => a.Evento)
+            .WithMany()
+            .HasForeignKey(a => a.EventoId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Alerta>()
+            .HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(a => a.UsuarioResponsableId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
         modelBuilder.Entity<Alerta>()
             .HasOne(a => a.ReglaAlerta)
             .WithMany()

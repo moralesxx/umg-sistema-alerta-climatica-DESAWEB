@@ -16,6 +16,10 @@ public class Sensor
     public DateTime? FechaInstalacion { get; set; }
     public string? Descripcion { get; set; }
 
+    // RF-ADM-21: valor que el administrador fuerza para este sensor simulado.
+    // Si es null, el motor de simulación genera valores automáticos.
+    public decimal? ValorSimulado { get; set; }
+
     // Propiedades de navegación
     public TipoSensor? TipoSensor { get; set; }
     public Comunidad? Comunidad { get; set; }

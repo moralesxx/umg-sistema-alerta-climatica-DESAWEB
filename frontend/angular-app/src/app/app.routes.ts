@@ -7,7 +7,7 @@ import { Dashboard } from './components/dashboard/dashboard';
 import { SensoresComponent } from './components/sensores/sensores';
 import { ComunidadesComponent } from './components/comunidades/comunidades';
 import { UsuariosComponent } from './components/usuarios/usuarios';
-import { AlertasComponent } from './components/alertas/alertas';
+import { AlertasGestionComponent } from './components/alertas-gestion/alertas-gestion';
 import { HistorialComponent } from './components/historial/historial';
 import { LecturasComponent } from './components/lecturas/lecturas.component';
 import { BitacoraComponent } from './components/bitacora/bitacora';
@@ -40,7 +40,7 @@ export const routes: Routes = [
       { path: 'usuarios', component: UsuariosComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
       { path: 'sensores', component: SensoresComponent },
       { path: 'lecturas', component: LecturasComponent },
-      { path: 'alertas', component: AlertasComponent },
+      { path: 'alertas', component: AlertasGestionComponent },
       { path: 'historial', component: HistorialComponent },
       { path: 'bitacora', component: BitacoraComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
       { path: 'reglas-alerta', component: ReglasAlertaComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } }

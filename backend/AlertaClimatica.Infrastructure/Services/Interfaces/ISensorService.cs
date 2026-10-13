@@ -11,5 +11,7 @@ public interface ISensorService
     Task<bool> UpdateSensorAsync(int id, Sensor sensor);
     Task<bool> CambiarEstadoSensorAsync(int id, bool activo);
     Task ReiniciarSistemaAsync();
+    // RF-ADM-21: fija (o quita, con null) el valor simulado de un sensor.
+    Task<bool> EstablecerValorSimuladoAsync(int id, decimal? valor);
     Task<bool> SensorExistsAsync(int id);
 }

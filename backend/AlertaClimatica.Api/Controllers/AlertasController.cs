@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
+using AlertaClimatica.Application.DTOs;
 using AlertaClimatica.Infrastructure;
 using AlertaClimatica.Infrastructure.Services;
 using AlertaClimatica.Domain;
@@ -33,37 +35,203 @@ public class AlertasController : ControllerBase
     }
 
     // ============================================================
-    // GET: api/alertas
-    // Obtener todas las alertas
+    // GET: api/alertas?fechaDesde=&fechaHasta=&comunidadId=&sensorId=&fenomeno=&nivel=&estado=
+    // RF-ADM-37 / 38 / 39: listado con filtros opcionales (más recientes primero).
     // ============================================================
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Alerta>>> GetAlertas()
+    public async Task<ActionResult<IEnumerable<AlertaDto>>> GetAlertas(
+        [FromQuery] DateTime? fechaDesde,
+        [FromQuery] DateTime? fechaHasta,
+        [FromQuery] int? comunidadId,
+        [FromQuery] int? sensorId,
+        [FromQuery] string? fenomeno,
+        [FromQuery] string? nivel,
+        [FromQuery] string? estado)
     {
-        return await _context.Alertas
-            .Include(a => a.Sensor)
-                .ThenInclude(s => s!.TipoSensor)
-            .Include(a => a.ReglaAlerta)
+        var query = ConsultaBase();
+
+        if (fechaDesde.HasValue)
+            query = query.Where(a => a.FechaEmision >= fechaDesde.Value.Date);
+
+        if (fechaHasta.HasValue)
+        {
+            var finDia = fechaHasta.Value.Date.AddDays(1);
+            query = query.Where(a => a.FechaEmision < finDia);
+        }
+
+        if (comunidadId.HasValue)
+            query = query.Where(a => a.Sensor != null && a.Sensor.ComunidadId == comunidadId.Value);
+
+        if (sensorId.HasValue)
+            query = query.Where(a => a.SensorId == sensorId.Value);
+
+        if (!string.IsNullOrWhiteSpace(nivel))
+        {
+            var n = nivel.Trim();
+            query = query.Where(a => a.NivelRiesgo == n);
+        }
+
+        if (!string.IsNullOrWhiteSpace(estado))
+        {
+            var e = estado.Trim();
+            query = query.Where(a => a.Estado == e);
+        }
+
+        if (!string.IsNullOrWhiteSpace(fenomeno))
+        {
+            var f = fenomeno.Trim();
+            query = query.Where(a =>
+                (a.Evento != null && a.Evento.TipoFenomeno == f) ||
+                (a.Evento == null && a.ReglaAlerta != null && a.ReglaAlerta.TipoFenomeno == f));
+        }
+
+        var alertas = await query
             .OrderByDescending(a => a.FechaEmision)
+            .Take(500)
             .ToListAsync();
+
+        return Ok(await ConvertirAsync(alertas));
     }
 
     // ============================================================
     // GET: api/alertas/{id}
-    // Obtener una alerta específica
+    // RF-ADM-40: detalle de una alerta
     // ============================================================
     [HttpGet("{id}")]
-    public async Task<ActionResult<Alerta>> GetAlerta(int id)
+    public async Task<ActionResult<AlertaDto>> GetAlerta(int id)
+    {
+        var alerta = await ConsultaBase().FirstOrDefaultAsync(a => a.AlertaId == id);
+
+        if (alerta == null)
+            return NotFound(new { mensaje = "Alerta no encontrada." });
+
+        var dto = (await ConvertirAsync(new List<Alerta> { alerta })).First();
+        return Ok(dto);
+    }
+
+    // ============================================================
+    // POST: api/alertas/{id}/atender
+    // RF-ADM-41 / 42: Activa -> Atendida, registrando quién la atendió.
+    // ============================================================
+    [HttpPost("{id}/atender")]
+    [Authorize(Roles = "Administrador,Operador")]
+    public Task<IActionResult> Atender(int id) => CambiarEstadoAsync(id, "Atendida");
+
+    // ============================================================
+    // POST: api/alertas/{id}/cerrar
+    // RF-ADM-41 / 42: Activa o Atendida -> Cerrada, registrando quién la cerró.
+    // ============================================================
+    [HttpPost("{id}/cerrar")]
+    [Authorize(Roles = "Administrador,Operador")]
+    public Task<IActionResult> Cerrar(int id) => CambiarEstadoAsync(id, "Cerrada");
+
+    private async Task<IActionResult> CambiarEstadoAsync(int id, string nuevoEstado)
     {
         var alerta = await _context.Alertas
-            .Include(a => a.Sensor)
-                .ThenInclude(s => s!.TipoSensor)
-            .Include(a => a.ReglaAlerta)
+            .Include(a => a.Evento)
             .FirstOrDefaultAsync(a => a.AlertaId == id);
 
         if (alerta == null)
-            return NotFound();
+            return NotFound(new { mensaje = "Alerta no encontrada." });
 
-        return alerta;
+        if (alerta.Estado == "Cerrada")
+            return Conflict(new { mensaje = "La alerta ya está cerrada." });
+
+        if (nuevoEstado == "Atendida" && alerta.Estado != "Activa")
+            return Conflict(new { mensaje = "Solo se puede atender una alerta activa." });
+
+        var usuarioIdTexto = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? User.FindFirst("sub")?.Value;
+        if (!int.TryParse(usuarioIdTexto, out var usuarioId))
+            return Unauthorized(new { mensaje = "No se pudo identificar al usuario." });
+
+        var ahora = DateTime.Now;
+        var anterior = alerta.Estado;
+
+        alerta.Estado = nuevoEstado;
+        alerta.UsuarioResponsableId = usuarioId;
+        alerta.FechaGestion = ahora;
+
+        // El evento del historial refleja el mismo estado y responsable.
+        if (alerta.Evento != null)
+        {
+            alerta.Evento.Estado = nuevoEstado;
+            alerta.Evento.UsuarioResponsableId = usuarioId;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var accion = nuevoEstado == "Atendida" ? "ATENDER_ALERTA" : "CERRAR_ALERTA";
+        await _bitacoraService.RegistrarAsync(
+            accion,
+            $"La alerta #{alerta.AlertaId} pasó de {anterior} a {nuevoEstado}.",
+            "Alerta",
+            alerta.AlertaId);
+
+        return Ok(new { mensaje = $"Alerta {nuevoEstado.ToLowerInvariant()}.", alertaId = alerta.AlertaId, estado = nuevoEstado });
+    }
+
+    // ------------------------------------------------------------
+    // Auxiliares de consulta y conversión a AlertaDto
+    // ------------------------------------------------------------
+    private IQueryable<Alerta> ConsultaBase()
+    {
+        return _context.Alertas
+            .AsNoTracking()
+            .Include(a => a.Sensor).ThenInclude(s => s!.TipoSensor)
+            .Include(a => a.Sensor).ThenInclude(s => s!.Comunidad)
+            .Include(a => a.ReglaAlerta)
+            .Include(a => a.Evento);
+    }
+
+    private async Task<List<AlertaDto>> ConvertirAsync(List<Alerta> alertas)
+    {
+        var ids = alertas
+            .Where(a => a.UsuarioResponsableId.HasValue)
+            .Select(a => a.UsuarioResponsableId!.Value)
+            .Distinct()
+            .ToList();
+
+        var nombres = ids.Count == 0
+            ? new Dictionary<int, string>()
+            : await _context.Usuarios
+                .Where(u => ids.Contains(u.UsuarioId))
+                .ToDictionaryAsync(u => u.UsuarioId, u => u.Nombre);
+
+        return alertas.Select(a => new AlertaDto
+        {
+            AlertaId = a.AlertaId,
+            FechaEmision = a.FechaEmision,
+            SensorId = a.SensorId,
+            SensorCodigo = a.Sensor?.Codigo,
+            SensorNombre = a.Sensor?.NombreSensor,
+            ComunidadId = a.Sensor?.ComunidadId,
+            ComunidadNombre = a.Sensor?.Comunidad?.Nombre,
+            ReglaAlertaId = a.ReglaAlertaId,
+            ReglaNombre = a.ReglaAlerta?.Nombre,
+            Fenomeno = a.Evento?.TipoFenomeno ?? a.ReglaAlerta?.TipoFenomeno,
+            NivelRiesgo = a.NivelRiesgo,
+            ValorDetectado = a.ValorDetectado,
+            Unidad = a.Sensor?.TipoSensor?.UnidadMedida,
+            Umbral = FormatearUmbral(a.ReglaAlerta),
+            Mensaje = a.Mensaje,
+            Estado = a.Estado,
+            EventoId = a.EventoId,
+            UsuarioResponsableId = a.UsuarioResponsableId,
+            UsuarioResponsableNombre = a.UsuarioResponsableId.HasValue
+                && nombres.TryGetValue(a.UsuarioResponsableId.Value, out var nombre) ? nombre : null,
+            FechaGestion = a.FechaGestion
+        }).ToList();
+    }
+
+    private static string? FormatearUmbral(ReglaAlerta? r)
+    {
+        if (r == null) return null;
+        if (r.ValorMinimo.HasValue && r.ValorMaximo.HasValue)
+            return $"{r.ValorMinimo:0.##} – {r.ValorMaximo:0.##}";
+        if (r.ValorMinimo.HasValue) return $"≥ {r.ValorMinimo:0.##}";
+        if (r.ValorMaximo.HasValue) return $"≤ {r.ValorMaximo:0.##}";
+        return null;
     }
 
     // ============================================================
@@ -81,6 +249,11 @@ public class AlertasController : ControllerBase
             alerta.AlertaId = 0;
             alerta.Sensor = null!;
             alerta.ReglaAlerta = null!;
+            alerta.Evento = null;
+            alerta.EventoId = null;
+            alerta.Estado = "Activa";
+            alerta.UsuarioResponsableId = null;
+            alerta.FechaGestion = null;
 
             // Si no viene fecha, usamos la fecha actual. Si viene en UTC (con "Z")
             // se pasa a hora local para no mezclar zonas con el resto del sistema.
@@ -181,6 +354,7 @@ public class AlertasController : ControllerBase
             };
 
             _context.Eventos.Add(nuevoEvento);
+            alerta.Evento = nuevoEvento; // enlaza alerta y evento
 
             await _context.SaveChangesAsync();
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using AlertaClimatica.Application.DTOs;
 using AlertaClimatica.Domain;
 using AlertaClimatica.Infrastructure.Services;
 
@@ -15,12 +16,14 @@ public class SensoresController : ControllerBase
 {
     // Servicio privado encargado de manejar la lógica de negocio y operaciones de los sensores
     private readonly ISensorService _sensorService;
+    private readonly IBitacoraService _bitacora;
 
     // Ahora depende diamente de ISensorService en vez de ApplicationDbContext directamente.
     // Constructor que inyecta la dependencia del servicio de sensores
-    public SensoresController(ISensorService sensorService)
+    public SensoresController(ISensorService sensorService, IBitacoraService bitacora)
     {
         _sensorService = sensorService;
+        _bitacora = bitacora;
     }
 
     // GET: api/sensores
@@ -121,6 +124,24 @@ public class SensoresController : ControllerBase
 
         // Retorna un mensaje de éxito confirmando la actualización del estado del sensor
         return Ok(new { mensaje = "Estado del sensor actualizado correctamente.", sensorId = id, nuevoEstado = activo });
+    }
+
+    // PATCH: api/sensores/5/valor-simulado   body: { "valor": 45.5 }  (valor null = volver a automático)
+    // RF-ADM-21: el administrador fija el valor que "mide" el sensor simulado.
+    [HttpPatch("{id}/valor-simulado")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> EstablecerValorSimulado(int id, [FromBody] ValorSimuladoDto dto)
+    {
+        var ok = await _sensorService.EstablecerValorSimuladoAsync(id, dto.Valor);
+        if (!ok)
+            return NotFound(new { mensaje = "Sensor no encontrado." });
+
+        var detalle = dto.Valor.HasValue
+            ? $"Valor simulado fijado en {dto.Valor.Value:0.##} para el sensor {id}."
+            : $"Valor simulado eliminado; el sensor {id} vuelve a modo automático.";
+        await _bitacora.RegistrarAsync("VALOR_SIMULADO_SENSOR", detalle, "Sensor", id);
+
+        return Ok(new { mensaje = "Valor simulado actualizado.", sensorId = id, valor = dto.Valor });
     }
 
     // POST: api/sensores/reiniciar

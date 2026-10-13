@@ -68,9 +68,16 @@ public class LecturasClimaticasController : ControllerBase
     [Authorize(Roles = "Administrador,Operador")]
     public async Task<ActionResult<LecturaClimatica>> CreateLectura(LecturaClimatica lectura)
     {
-        // Envía la nueva lectura al servicio para ser almacenada
-        await _service.CrearLecturaAsync(lectura);
-        // Retorna una respuesta HTTP 201 Created apuntando al método de consulta general y la lectura creada
-        return CreatedAtAction(nameof(GetLecturas), new { id = lectura.LecturaId }, lectura);
+        try
+        {
+            // Envía la nueva lectura al servicio para ser almacenada y evaluada
+            await _service.CrearLecturaAsync(lectura);
+            // Retorna una respuesta HTTP 201 Created apuntando al método de consulta general y la lectura creada
+            return CreatedAtAction(nameof(GetLecturas), new { id = lectura.LecturaId }, lectura);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 }

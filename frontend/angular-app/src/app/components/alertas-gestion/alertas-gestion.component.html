@@ -1,0 +1,149 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="card-title fw-bold mb-0">Gestión de Alertas</h5>
+            <small class="text-muted">
+              Se actualiza sola cada 15 segundos ·
+              <strong>{{ activas }}</strong> activa(s) en esta lista
+            </small>
+          </div>
+          <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="cargar()">Actualizar</button>
+        </div>
+
+        <!-- Filtros (RF-ADM-39) -->
+        <div class="row g-2 mb-3 bg-light p-3 rounded">
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">Desde</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="filtroDesde">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">Hasta</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="filtroHasta">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">Comunidad</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroComunidad">
+              <option value="">Todas</option>
+              <option *ngFor="let c of comunidades" [value]="c.comunidadId">{{ c.nombre }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">Sensor</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroSensor">
+              <option value="">Todos</option>
+              <option *ngFor="let s of sensores" [value]="s.sensorId">{{ s.nombreSensor }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">Fenómeno</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroFenomeno">
+              <option value="">Todos</option>
+              <option *ngFor="let f of fenomenos" [value]="f">{{ f }}</option>
+            </select>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small fw-bold">Nivel</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroNivel">
+              <option value="">Todos</option>
+              <option *ngFor="let n of niveles" [value]="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small fw-bold">Estado</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroEstado">
+              <option value="">Todos</option>
+              <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+            </select>
+          </div>
+          <div class="col-12 d-flex gap-2">
+            <button class="btn btn-primary btn-sm px-4" (click)="cargar()">Filtrar</button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">Limpiar</button>
+          </div>
+        </div>
+
+        <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" *ngIf="alertas.length > 0">
+            <thead class="table-light small text-uppercase">
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Comunidad</th>
+                <th>Sensor</th>
+                <th>Fenómeno</th>
+                <th>Nivel</th>
+                <th>Valor</th>
+                <th>Umbral</th>
+                <th>Mensaje</th>
+                <th>Estado</th>
+                <th *ngIf="puedeGestionar" class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let a of alertas">
+                <tr class="fila-alerta" (click)="alternarDetalle(a)">
+                  <td class="small">
+                    {{ a.fechaEmision | date:'dd/MM/yyyy' }}<br>
+                    <span class="text-muted">{{ a.fechaEmision | date:'HH:mm:ss' }}</span>
+                  </td>
+                  <td class="small">{{ a.comunidadNombre || '—' }}</td>
+                  <td class="small">{{ a.sensorNombre || ('#' + a.sensorId) }}</td>
+                  <td class="small">{{ a.fenomeno || '—' }}</td>
+                  <td><span class="badge" [ngClass]="nivelClase(a.nivelRiesgo)">{{ a.nivelRiesgo }}</span></td>
+                  <td class="small">
+                    <ng-container *ngIf="a.valorDetectado != null; else sinValor">
+                      {{ a.valorDetectado | number:'1.0-2' }} {{ a.unidad }}
+                    </ng-container>
+                    <ng-template #sinValor>—</ng-template>
+                  </td>
+                  <td class="small">{{ a.umbral || '—' }}</td>
+                  <td class="small mensaje-corto" [title]="a.mensaje">{{ a.mensaje }}</td>
+                  <td><span class="badge" [ngClass]="estadoClase(a.estado)">{{ a.estado }}</span></td>
+                  <td *ngIf="puedeGestionar" class="text-end text-nowrap">
+                    <button *ngIf="a.estado === 'Activa'" class="btn btn-outline-primary btn-sm py-0 me-1"
+                            [disabled]="procesandoId === a.alertaId" (click)="atender(a, $event)">Atender</button>
+                    <button *ngIf="a.estado !== 'Cerrada'" class="btn btn-outline-secondary btn-sm py-0"
+                            [disabled]="procesandoId === a.alertaId" (click)="cerrar(a, $event)">Cerrar</button>
+                  </td>
+                </tr>
+
+                <!-- Detalle (RF-ADM-40) -->
+                <tr *ngIf="alertaAbiertaId === a.alertaId" class="table-light">
+                  <td [attr.colspan]="puedeGestionar ? 10 : 9">
+                    <div class="row small g-2 p-2">
+                      <div class="col-md-4"><strong>Alerta:</strong> #{{ a.alertaId }}</div>
+                      <div class="col-md-4"><strong>Sensor:</strong> {{ a.sensorCodigo || '—' }} · {{ a.sensorNombre || '—' }}</div>
+                      <div class="col-md-4"><strong>Comunidad:</strong> {{ a.comunidadNombre || 'Sin comunidad asignada' }}</div>
+                      <div class="col-md-4"><strong>Regla:</strong> {{ a.reglaNombre || 'Sin regla (alerta manual)' }}</div>
+                      <div class="col-md-4"><strong>Fenómeno:</strong> {{ a.fenomeno || '—' }}</div>
+                      <div class="col-md-4"><strong>Umbral:</strong> {{ a.umbral || '—' }}</div>
+                      <div class="col-12"><strong>Mensaje:</strong> {{ a.mensaje }}</div>
+                      <div class="col-md-4" *ngIf="a.usuarioResponsableNombre">
+                        <strong>Responsable:</strong> {{ a.usuarioResponsableNombre }}
+                      </div>
+                      <div class="col-md-4" *ngIf="a.fechaGestion">
+                        <strong>Gestionada:</strong> {{ a.fechaGestion | date:'dd/MM/yyyy HH:mm' }}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+
+          <div *ngIf="!cargando && alertas.length === 0" class="text-center text-muted py-4">
+            No hay alertas con estos filtros.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="showToast" class="toast-flotante">
+  <div class="alert alert-dark shadow py-2 px-3 mb-0 small">{{ toastMessage }}</div>
+</div>

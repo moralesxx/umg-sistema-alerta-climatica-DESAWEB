@@ -129,6 +129,17 @@ public class SensorService : ISensorService
         return true;
     }
 
+    public async Task<bool> EstablecerValorSimuladoAsync(int id, decimal? valor)
+    {
+        var sensor = await _sensorRepository.ObtenerParaActualizarAsync(id);
+        if (sensor == null)
+            return false;
+
+        sensor.ValorSimulado = valor;
+        await _sensorRepository.GuardarCambiosAsync();
+        return true;
+    }
+
     public async Task ReiniciarSistemaAsync()
     {
         var sensores = await _sensorRepository.ObtenerTodosParaActualizarAsync();

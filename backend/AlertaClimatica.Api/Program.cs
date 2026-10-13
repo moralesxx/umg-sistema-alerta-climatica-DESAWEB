@@ -202,6 +202,10 @@ builder.Services.AddScoped<ILecturaService, LecturaService>();
 builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IReglaAlertaService, ReglaAlertaService>();
 
+// Motor de datos: evalúa lecturas contra reglas y genera lecturas simuladas.
+builder.Services.AddScoped<IEvaluadorAlertas, EvaluadorAlertas>();
+builder.Services.AddHostedService<SimuladorLecturasService>();
+
 
 // =========================================================
 // 8. CONSTRUIR APLICACIÓN
