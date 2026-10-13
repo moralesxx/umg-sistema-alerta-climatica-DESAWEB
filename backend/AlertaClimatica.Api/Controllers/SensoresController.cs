@@ -72,6 +72,10 @@ public class SensoresController : ControllerBase
         {
             // Ejecuta el servicio para crear el nuevo sensor en el sistema
             var creado = await _sensorService.CreateSensorAsync(sensor);
+            await _bitacora.RegistrarAsync(
+                "AGREGAR_SENSOR",
+                $"Se agregó el sensor \"{creado.NombreSensor}\" ({creado.Codigo}) en la ubicación \"{creado.Ubicacion}\".",
+                "Sensor", creado.SensorId);
             // Retorna una respuesta HTTP 201 Created apuntando al método de consulta por ID y el objeto creado
             return CreatedAtAction(nameof(GetSensor), new { id = creado.SensorId }, creado);
         }
@@ -98,6 +102,11 @@ public class SensoresController : ControllerBase
             if (!actualizado)
                 return NotFound(new { mensaje = "Sensor no encontrado." });
 
+            await _bitacora.RegistrarAsync(
+                "EDITAR_SENSOR",
+                $"Se modificó el sensor #{id}. Nombre: \"{sensor.NombreSensor}\", ubicación: \"{sensor.Ubicacion}\".",
+                "Sensor", id);
+
             // Retorna una respuesta exitosa sin contenido (HTTP 204 No Content)
             return NoContent();
         }
@@ -121,6 +130,11 @@ public class SensoresController : ControllerBase
         // Si el sensor no existe, retorna una respuesta HTTP 404 Not Found
         if (!actualizado)
             return NotFound(new { mensaje = "Sensor no encontrado." });
+
+        await _bitacora.RegistrarAsync(
+            "CAMBIAR_ESTADO_SENSOR",
+            $"Se cambió el estado del sensor #{id} a {(activo ? "Activo" : "Inactivo")}.",
+            "Sensor", id);
 
         // Retorna un mensaje de éxito confirmando la actualización del estado del sensor
         return Ok(new { mensaje = "Estado del sensor actualizado correctamente.", sensorId = id, nuevoEstado = activo });
@@ -155,6 +169,10 @@ public class SensoresController : ControllerBase
         {
             // Llama al servicio para ejecutar el reinicio del sistema de monitoreo
             await _sensorService.ReiniciarSistemaAsync();
+            await _bitacora.RegistrarAsync(
+                "REINICIAR_SISTEMA",
+                "Se ejecutó el reinicio general del sistema de monitoreo (todos los sensores activados).",
+                "Sensor");
             // Retorna una respuesta HTTP 200 OK informando el éxito de la operación
             return Ok(new { mensaje = "Sistema de monitoreo reiniciado con éxito." });
         }

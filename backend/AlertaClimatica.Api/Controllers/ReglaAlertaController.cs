@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AlertaClimatica.Application.DTOs;
+using AlertaClimatica.Infrastructure.Services;
 using AlertaClimatica.Infrastructure.Services.Interfaces;
 
 namespace AlertaClimatica.Api.Controllers;
@@ -11,10 +12,17 @@ namespace AlertaClimatica.Api.Controllers;
 public class ReglaAlertaController : ControllerBase
 {
     private readonly IReglaAlertaService _service;
+    private readonly IBitacoraService _bitacora;
+    private readonly ILogger<ReglaAlertaController> _logger;
 
-    public ReglaAlertaController(IReglaAlertaService service)
+    public ReglaAlertaController(
+        IReglaAlertaService service,
+        IBitacoraService bitacora,
+        ILogger<ReglaAlertaController> logger)
     {
         _service = service;
+        _bitacora = bitacora;
+        _logger = logger;
     }
 
     // =========================================================
@@ -65,6 +73,10 @@ public class ReglaAlertaController : ControllerBase
         try
         {
             var regla = await _service.CrearAsync(dto);
+            await _bitacora.RegistrarAsync(
+                "CREAR_REGLA",
+                $"Se creó la regla \"{regla.Nombre}\" ({regla.NivelPeligro}, {regla.TipoFenomeno}).",
+                "ReglaAlerta", regla.ReglaAlertaId);
 
             return CreatedAtAction(
                 nameof(ObtenerPorId),
@@ -94,6 +106,8 @@ public class ReglaAlertaController : ControllerBase
     {
         try
         {
+            var estadoAntes = (await _service.ObtenerPorIdAsync(id))?.Estado;
+
             var regla = await _service.ActualizarAsync(id, dto);
 
             if (regla == null)
@@ -103,6 +117,19 @@ public class ReglaAlertaController : ControllerBase
                     mensaje = "La regla de alerta no existe."
                 });
             }
+
+            if (estadoAntes.HasValue && estadoAntes.Value != regla.Estado)
+            {
+                await _bitacora.RegistrarAsync(
+                    regla.Estado ? "ACTIVAR_REGLA" : "DESACTIVAR_REGLA",
+                    $"La regla \"{regla.Nombre}\" fue {(regla.Estado ? "activada" : "desactivada")} (además de editarse).",
+                    "ReglaAlerta", regla.ReglaAlertaId);
+            }
+
+            await _bitacora.RegistrarAsync(
+                "EDITAR_REGLA",
+                $"Se modificó la regla \"{regla.Nombre}\" ({regla.NivelPeligro}, {regla.TipoFenomeno}).",
+                "ReglaAlerta", regla.ReglaAlertaId);
 
             return Ok(regla);
         }
@@ -153,6 +180,11 @@ public class ReglaAlertaController : ControllerBase
 
         var actualizada = await _service.ActualizarAsync(id, dto);
 
+        await _bitacora.RegistrarAsync(
+            estado ? "ACTIVAR_REGLA" : "DESACTIVAR_REGLA",
+            $"La regla \"{regla.Nombre}\" fue {(estado ? "activada" : "desactivada")}.",
+            "ReglaAlerta", id);
+
         return Ok(new
         {
             mensaje = estado
@@ -174,6 +206,7 @@ public class ReglaAlertaController : ControllerBase
     {
         try
         {
+            var nombre = (await _service.ObtenerPorIdAsync(id))?.Nombre;
             var eliminado = await _service.EliminarAsync(id);
 
             if (!eliminado)
@@ -184,6 +217,11 @@ public class ReglaAlertaController : ControllerBase
                 });
             }
 
+            await _bitacora.RegistrarAsync(
+                "ELIMINAR_REGLA",
+                $"Se eliminó la regla \"{nombre}\".",
+                "ReglaAlerta", id);
+
             return Ok(new
             {
                 mensaje = "Regla de alerta eliminada correctamente."
@@ -191,10 +229,11 @@ public class ReglaAlertaController : ControllerBase
         }
         catch (Exception ex)
         {
+            // El detalle técnico va al log, no al cliente.
+            _logger.LogWarning(ex, "No se pudo eliminar la regla {Id}.", id);
             return Conflict(new
             {
-                mensaje = "No se puede eliminar la regla porque puede estar asociada a alertas existentes.",
-                detalle = ex.Message
+                mensaje = "No se puede eliminar la regla porque puede estar asociada a alertas existentes."
             });
         }
     }

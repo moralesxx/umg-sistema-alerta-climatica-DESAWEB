@@ -2,11 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export interface RegistrarBitacoraRequest {
-  accion: string;
-  detalle: string;
-}
-
 export interface Bitacora {
   bitacoraId: number;
   usuarioId: number;
@@ -30,28 +25,8 @@ export class BitacoraService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Registra una acción realizada por el usuario.
-   *
-   * El UsuarioId NO se envía desde Angular.
-   * El backend lo obtiene directamente del JWT.
-   */
-  registrarAccion(
-    accion: string,
-    detalle: string
-  ): Observable<Bitacora> {
-
-    const request: RegistrarBitacoraRequest = {
-      accion,
-      detalle
-    };
-
-    return this.http.post<Bitacora>(
-      this.apiUrl,
-      request
-    );
-  }
-
+  // La bitácora solo se escribe desde el backend (el cliente no puede
+  // inventar registros). Aquí únicamente se consulta.
   /**
    * Obtiene los últimos registros de la bitácora.
    */

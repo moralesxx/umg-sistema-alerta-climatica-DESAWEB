@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { SensorService, Sensor, SensorFiltros } from '../../services/sensor.service';
 import { TipoSensorService, TipoSensor } from '../../services/tipo-sensor.service';
 import { ComunidadService, Comunidad } from '../../services/comunidad.service';
-import { BitacoraService } from '../../services/bitacora.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -62,7 +61,6 @@ export class SensoresComponent implements OnInit {
     private sensorService: SensorService,
     private tipoSensorService: TipoSensorService,
     private comunidadService: ComunidadService,
-    private bitacoraService: BitacoraService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {
@@ -74,10 +72,6 @@ export class SensoresComponent implements OnInit {
     this.cargarSensores();
     this.cargarTiposSensor();
     this.cargarComunidades();
-  }
-
-  private registrarAccion(accion: string, detalle: string): void {
-    this.bitacoraService.registrarAccion(accion, detalle).subscribe();
   }
 
   cargarSensores(filtros?: SensorFiltros): void {
@@ -194,7 +188,6 @@ export class SensoresComponent implements OnInit {
 
     this.sensorService.createSensor(nuevoSensor).subscribe({
       next: () => {
-        this.registrarAccion('AGREGAR_SENSOR', `El usuario agregó el sensor "${nombreSensor}" en la ubicación "${ubicacion}".`);
         this.cargarSensores();
         this.showAddSensorModal = false;
         this.mostrarToast('Sensor agregado correctamente.');
@@ -249,7 +242,6 @@ export class SensoresComponent implements OnInit {
 
     this.sensorService.updateSensor(sensorId, sensorActualizado).subscribe({
       next: () => {
-        this.registrarAccion('EDITAR_SENSOR', `El usuario modificó el sensor #${sensorId}. Nuevo nombre: "${nombreSensor}", ubicación: "${ubicacion}".`);
         this.cargarSensores();
         this.showEditSensorModal = false;
         this.sensorEnEdicionId = null;
@@ -264,7 +256,6 @@ export class SensoresComponent implements OnInit {
     this.sensorService.cambiarEstadoSensor(sensor.sensorId, nuevoEstado).subscribe({
       next: () => {
         sensor.estado = nuevoEstado;
-        this.registrarAccion('CAMBIAR_ESTADO_SENSOR', `El usuario cambió el estado del sensor #${sensor.sensorId} a ${nuevoEstado ? 'Activo' : 'Inactivo'}.`);
         this.cdr.detectChanges();
         this.mostrarToast(`Sensor ${nuevoEstado ? 'activado' : 'desactivado'} correctamente.`);
       },
@@ -277,7 +268,6 @@ export class SensoresComponent implements OnInit {
     this.confirmAction = () => {
       this.sensorService.reiniciarSistema().subscribe({
         next: () => {
-          this.registrarAccion('REINICIAR_SISTEMA', 'El usuario ejecutó el reinicio general del sistema de monitoreo.');
           this.cargarSensores();
           this.mostrarToast('Sistema de monitoreo reiniciado con éxito.');
         },
