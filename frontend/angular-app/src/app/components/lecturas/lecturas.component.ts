@@ -44,21 +44,15 @@ export class LecturasComponent implements OnInit {
   }
 
   buscarPorFiltros(): void {
-    // Si seleccionan comunidad específica
-    if (this.filtroComunidadId) {
-      this.lecturaService.getLecturasPorComunidad(this.filtroComunidadId).subscribe({
-        next: (data) => {
-          this.lecturas = data;
-          this.paginaActual = 1;
-          this.cdr.detectChanges();
-        },
-        error: (err) => console.error('Error al filtrar por comunidad:', err)
-      });
+    if (this.fechaInicio && this.fechaFin && this.fechaInicio > this.fechaFin) {
+      alert('La fecha inicial no puede ser mayor que la fecha final.');
       return;
     }
 
-    // Filtros por fechas o sensor general (RF-ADM-26)
-    this.lecturaService.getLecturasPorFiltro(this.filtroSensorId, this.fechaInicio, this.fechaFin).subscribe({
+    // Sensor, comunidad y fechas se combinan en una sola consulta (RF-ADM-26 y RF-ADM-27)
+    this.lecturaService.getLecturasPorFiltro(
+      this.filtroSensorId, this.fechaInicio, this.fechaFin, this.filtroComunidadId
+    ).subscribe({
       next: (data) => {
         this.lecturas = data;
         this.paginaActual = 1;

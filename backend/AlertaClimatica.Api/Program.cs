@@ -41,6 +41,13 @@ builder.Services.AddCors(options =>
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection");
 
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Falta la cadena de conexión. Defínala con la variable de entorno " +
+        "ConnectionStrings__DefaultConnection (en desarrollo está en appsettings.Development.json).");
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -57,21 +64,21 @@ var jwtAudience = jwtSettings["Audience"];
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
     throw new InvalidOperationException(
-        "Jwt:Key no está configurado en appsettings.json."
+        "Jwt:Key no está configurado (appsettings o variable de entorno Jwt__Key)."
     );
 }
 
 if (string.IsNullOrWhiteSpace(jwtIssuer))
 {
     throw new InvalidOperationException(
-        "Jwt:Issuer no está configurado en appsettings.json."
+        "Jwt:Issuer no está configurado (appsettings o variable de entorno Jwt__Issuer)."
     );
 }
 
 if (string.IsNullOrWhiteSpace(jwtAudience))
 {
     throw new InvalidOperationException(
-        "Jwt:Audience no está configurado en appsettings.json."
+        "Jwt:Audience no está configurado (appsettings o variable de entorno Jwt__Audience)."
     );
 }
 
@@ -283,8 +290,13 @@ using (var scope = app.Services.CreateScope())
             // Aplica las migraciones pendientes automáticamente
             context.Database.Migrate();
 
-            // Siembra los datos iniciales (rol/usuario administrador)
-            DbInitializer.Seed(context);
+            // Siembra los datos iniciales (rol/usuario administrador).
+            // La contraseña inicial del administrador NO va en el código: se lee de
+            // Seed:AdminPassword (variable de entorno Seed__AdminPassword). Solo en
+            // Development hay un valor de prueba. Solo se usa si la base está vacía.
+            var adminPasswordInicial = builder.Configuration["Seed:AdminPassword"]
+                ?? (app.Environment.IsDevelopment() ? "Admin123!" : null);
+            DbInitializer.Seed(context, adminPasswordInicial);
 
             break;
         }

@@ -8,6 +8,9 @@ public class LecturaRepository : ILecturaRepository
 {
     private readonly ApplicationDbContext _context;
 
+    // El simulador genera lecturas continuamente: ninguna consulta devuelve más que esto.
+    private const int MaximoResultados = 2000;
+
     public LecturaRepository(ApplicationDbContext context)
     {
         _context = context;
@@ -30,6 +33,7 @@ public class LecturaRepository : ILecturaRepository
                 .ThenInclude(s => s.TipoSensor)
             .Where(l => l.SensorId == sensorId)
             .OrderByDescending(l => l.FechaHora)
+            .Take(MaximoResultados)
             .ToListAsync();
     }
 
@@ -45,15 +49,21 @@ public class LecturaRepository : ILecturaRepository
                 .ThenInclude(s => s.TipoSensor)
             .Where(l => sensorIds.Contains(l.SensorId))
             .OrderByDescending(l => l.FechaHora)
+            .Take(MaximoResultados)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<LecturaClimatica>> ObtenerPorFiltroAsync(int? sensorId, DateTime? fechaInicio, DateTime? fechaFin)
+    public async Task<IEnumerable<LecturaClimatica>> ObtenerPorFiltroAsync(int? sensorId, int? comunidadId, DateTime? fechaInicio, DateTime? fechaFin)
     {
         var query = _context.LecturasClimaticas
             .Include(l => l.Sensor)
                 .ThenInclude(s => s.TipoSensor)
             .AsQueryable();
+
+        if (comunidadId.HasValue)
+        {
+            query = query.Where(l => l.Sensor != null && l.Sensor.ComunidadId == comunidadId.Value);
+        }
 
         if (sensorId.HasValue)
         {
@@ -68,7 +78,7 @@ public class LecturaRepository : ILecturaRepository
             query = query.Where(l => l.FechaHora <= fechaFin.Value);
         }
 
-        return await query.OrderByDescending(l => l.FechaHora).ToListAsync();
+        return await query.OrderByDescending(l => l.FechaHora).Take(MaximoResultados).ToListAsync();
     }
 
     public async Task CrearAsync(LecturaClimatica lectura)

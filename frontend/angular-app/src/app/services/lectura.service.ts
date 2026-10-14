@@ -33,9 +33,10 @@ export class LecturaService {
   }
 
   // RF-ADM-26: Filtrar por rango de fechas y/o sensor
-  getLecturasPorFiltro(sensorId?: number, fechaInicio?: string, fechaFin?: string): Observable<LecturaClimatica[]> {
+  getLecturasPorFiltro(sensorId?: number, fechaInicio?: string, fechaFin?: string, comunidadId?: number): Observable<LecturaClimatica[]> {
     let params = new HttpParams();
     if (sensorId) params = params.set('sensorId', sensorId.toString());
+    if (comunidadId) params = params.set('comunidadId', comunidadId.toString());
     if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
     if (fechaFin) params = params.set('fechaFin', fechaFin);
 

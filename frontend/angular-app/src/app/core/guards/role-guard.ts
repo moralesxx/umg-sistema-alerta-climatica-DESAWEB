@@ -1,17 +1,17 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 export const roleGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
+  const authService = inject(AuthService);
 
-  // Obtenemos los datos del usuario guardados al iniciar sesión
-  const usuarioStr = localStorage.getItem('usuario');
+  // Usuario guardado al iniciar sesión (lectura protegida contra JSON dañado).
+  const usuario = authService.estaAutenticado() ? authService.obtenerUsuario() : null;
 
-  if (usuarioStr) {
-    const usuario = JSON.parse(usuarioStr);
-
-    // Obtenemos los roles permitidos definidos en las rutas (data: { roles: [...] })
-    const rolesPermitidos = route.data['roles'] as Array<string>;
+  if (usuario) {
+    // Roles permitidos definidos en las rutas (data: { roles: [...] })
+    const rolesPermitidos = route.data['roles'] as Array<string> | undefined;
 
     // Si la ruta no exige roles específicos o el rol del usuario está incluido, permitimos el paso
     if (!rolesPermitidos || rolesPermitidos.includes(usuario.rol)) {
@@ -19,7 +19,7 @@ export const roleGuard: CanActivateFn = (route, state) => {
     }
   }
 
-  // Si no tiene permisos suficientes, lo redirigimos al dashboard o página principal
+  // Sin permisos suficientes: se redirige al dashboard
   router.navigate(['/dashboard']);
   return false;
 };

@@ -54,13 +54,21 @@ public class LecturasClimaticasController : ControllerBase
     [HttpGet("filtro")]
     public async Task<ActionResult<IEnumerable<LecturaClimatica>>> GetLecturasPorFiltro(
         [FromQuery] int? sensorId, 
+        [FromQuery] int? comunidadId,
         [FromQuery] DateTime? fechaInicio, 
         [FromQuery] DateTime? fechaFin)
     {
-        // Ejecuta la consulta filtrada en el servicio con los parámetros de consulta opcionales proporcionados
-        var lecturas = await _service.GetLecturasPorFiltroAsync(sensorId, fechaInicio, fechaFin);
-        // Retorna el resultado con código HTTP 200 OK
-        return Ok(lecturas);
+        try
+        {
+            // Los filtros (sensor, comunidad y fechas) se pueden combinar (RF-ADM-26 y RF-ADM-27)
+            var lecturas = await _service.GetLecturasPorFiltroAsync(sensorId, comunidadId, fechaInicio, fechaFin);
+            // Retorna el resultado con código HTTP 200 OK
+            return Ok(lecturas);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 
     // Endpoint POST exclusivo para Administradores y Operadores que permite registrar una nueva lectura climática en el sistema

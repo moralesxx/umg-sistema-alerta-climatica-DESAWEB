@@ -6,7 +6,7 @@ namespace AlertaClimatica.Infrastructure;
 
 public static class DbInitializer
 {
-    public static void Seed(ApplicationDbContext context)
+    public static void Seed(ApplicationDbContext context, string? adminPassword = null)
     {
         // 0. Crear la base de datos y sus tablas automáticamente en SQL Server si no existen
         context.Database.EnsureCreated();
@@ -14,7 +14,18 @@ public static class DbInitializer
         // 1. Verificar si la base de datos ya contiene datos para evitar duplicados
         if (context.Roles.Any() || context.TiposSensor.Any())
         {
-            return; // La base de datos ya fue poblada anteriormente
+            // La base ya estaba poblada: solo se completan los tipos que falten
+            // (instalaciones anteriores no tenían reservorio, humo ni presión).
+            SembrarTiposAdicionales(context);
+            return;
+        }
+
+        // Sin contraseña inicial no se crea el administrador (RNF-ADM-07: nada de credenciales en el código).
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            throw new InvalidOperationException(
+                "La base de datos está vacía y falta la contraseña inicial del administrador. " +
+                "Defina la variable de entorno Seed__AdminPassword.");
         }
 
         // 2. Sembrar Roles (RF-ADM-06: nombres exactos según el PDF de Fase 2)
@@ -41,7 +52,7 @@ public static class DbInitializer
         };
 
         adminUser.ContraseniaHash =
-        passwordHasher.HashPassword(adminUser, "Admin123!");
+        passwordHasher.HashPassword(adminUser, adminPassword);
         context.Usuarios.Add(adminUser);
         context.SaveChanges();
 
@@ -74,5 +85,28 @@ public static class DbInitializer
         };
         context.Sensores.AddRange(sensores);
         context.SaveChanges();
+
+        SembrarTiposAdicionales(context);
+    }
+
+    // RF-ADM-15: tipos de sensor que pide el enunciado además de los cinco
+    // iniciales. Se agregan solo si no existen (se puede ejecutar muchas veces).
+    private static void SembrarTiposAdicionales(ApplicationDbContext context)
+    {
+        var adicionales = new[]
+        {
+            new TipoSensor { NombreTipo = "Nivel de Reservorio", UnidadMedida = "m" },
+            new TipoSensor { NombreTipo = "Humo / Incendio", UnidadMedida = "ppm" },
+            new TipoSensor { NombreTipo = "Presión Atmosférica", UnidadMedida = "hPa" }
+        };
+
+        var existentes = context.TiposSensor.Select(t => t.NombreTipo).ToList();
+        var faltantes = adicionales.Where(a => !existentes.Contains(a.NombreTipo)).ToList();
+
+        if (faltantes.Count > 0)
+        {
+            context.TiposSensor.AddRange(faltantes);
+            context.SaveChanges();
+        }
     }
 }

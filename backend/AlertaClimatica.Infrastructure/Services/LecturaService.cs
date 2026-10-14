@@ -35,9 +35,12 @@ public class LecturaService : ILecturaService
         return await _repository.ObtenerPorComunidadAsync(comunidadId);
     }
 
-    public async Task<IEnumerable<LecturaClimatica>> GetLecturasPorFiltroAsync(int? sensorId, DateTime? fechaInicio, DateTime? fechaFin) 
+    public async Task<IEnumerable<LecturaClimatica>> GetLecturasPorFiltroAsync(int? sensorId, int? comunidadId, DateTime? fechaInicio, DateTime? fechaFin) 
     {
-        return await _repository.ObtenerPorFiltroAsync(sensorId, fechaInicio, fechaFin);
+        if (fechaInicio.HasValue && fechaFin.HasValue && fechaInicio.Value > fechaFin.Value)
+            throw new ArgumentException("La fecha inicial no puede ser mayor que la fecha final.");
+
+        return await _repository.ObtenerPorFiltroAsync(sensorId, comunidadId, fechaInicio, fechaFin);
     }
 
     public async Task CrearLecturaAsync(LecturaClimatica lectura) 
