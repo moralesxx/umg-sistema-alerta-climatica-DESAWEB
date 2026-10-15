@@ -31,6 +31,10 @@ import {
 })
 export class ReglasAlertaComponent implements OnInit {
 
+  // RF-ADM-47: fenómenos que maneja el sistema.
+  readonly fenomenos = ['Inundación', 'Sequía', 'Tormenta', 'Helada', 'Incendio forestal'];
+
+
   reglas: ReglaAlerta[] = [];
   tiposSensor: TipoSensor[] = [];
 
@@ -594,7 +598,7 @@ export class ReglasAlertaComponent implements OnInit {
     if (!this.regla.tipoFenomeno.trim()) {
 
       this.errorMessage =
-        'Debe ingresar el tipo de fenómeno.';
+        'Debe seleccionar el tipo de fenómeno.';
 
       return false;
     }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\backend\AlertaClimatica.Application\AlertaClimatica.Application.csproj" />
+    <ProjectReference Include="..\..\backend\AlertaClimatica.Domain\AlertaClimatica.Domain.csproj" />
+    <ProjectReference Include="..\..\backend\AlertaClimatica.Infrastructure\AlertaClimatica.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

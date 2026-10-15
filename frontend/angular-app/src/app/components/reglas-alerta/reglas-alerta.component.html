@@ -366,11 +366,17 @@
         Tipo de fenómeno
       </label>
 
-      <input
-        type="text"
-        class="form-control"
-        [(ngModel)]="regla.tipoFenomeno"
-        placeholder="Ej. Ola de calor">
+      <select
+        class="form-select"
+        [(ngModel)]="regla.tipoFenomeno">
+        <option value="">Seleccione un fenómeno</option>
+        @for (f of fenomenos; track f) {
+          <option [value]="f">{{ f }}</option>
+        }
+        @if (regla.tipoFenomeno && !fenomenos.includes(regla.tipoFenomeno)) {
+          <option [value]="regla.tipoFenomeno">{{ regla.tipoFenomeno }} (anterior)</option>
+        }
+      </select>
 
     </div>
 

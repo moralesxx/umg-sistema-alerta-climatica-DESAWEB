@@ -28,9 +28,13 @@ public class ReglaAlertaService : IReglaAlertaService
         CrearReglaAlertaDto dto)
     {
         ValidarRegla(
+            dto.Nombre,
+            dto.TipoSensorId,
             dto.ValorMinimo,
             dto.ValorMaximo,
-            dto.NivelPeligro);
+            dto.NivelPeligro,
+            dto.TipoFenomeno,
+            dto.Mensaje);
 
         var regla = new ReglaAlerta
         {
@@ -54,9 +58,13 @@ public class ReglaAlertaService : IReglaAlertaService
         ActualizarReglaAlertaDto dto)
     {
         ValidarRegla(
+            dto.Nombre,
+            dto.TipoSensorId,
             dto.ValorMinimo,
             dto.ValorMaximo,
-            dto.NivelPeligro);
+            dto.NivelPeligro,
+            dto.TipoFenomeno,
+            dto.Mensaje);
 
         var regla = await _repository.ObtenerPorIdAsync(id);
 
@@ -89,11 +97,40 @@ public class ReglaAlertaService : IReglaAlertaService
         return true;
     }
 
+    private static readonly string[] FenomenosValidos =
+        { "Inundación", "Sequía", "Tormenta", "Helada", "Incendio forestal" };
+
+    // Validación de negocio de una regla (campos obligatorios, rango y nivel).
     private static void ValidarRegla(
+        string? nombre,
+        int tipoSensorId,
         decimal? valorMinimo,
         decimal? valorMaximo,
-        string nivelPeligro)
+        string? nivelPeligro,
+        string? tipoFenomeno,
+        string? mensaje)
     {
+        if (string.IsNullOrWhiteSpace(nombre))
+            throw new ArgumentException("El nombre de la regla es obligatorio.");
+
+        if (tipoSensorId <= 0)
+            throw new ArgumentException("Debe seleccionar un tipo de sensor.");
+
+        if (string.IsNullOrWhiteSpace(tipoFenomeno))
+            throw new ArgumentException("El tipo de fenómeno es obligatorio.");
+
+        // RF-ADM-47: solo los fenómenos que maneja el sistema.
+        if (!FenomenosValidos.Contains(tipoFenomeno.Trim(), StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                "El tipo de fenómeno debe ser Inundación, Sequía, Tormenta, Helada o Incendio forestal.");
+
+        if (string.IsNullOrWhiteSpace(mensaje))
+            throw new ArgumentException("El mensaje de la alerta es obligatorio.");
+
+        if (string.IsNullOrWhiteSpace(nivelPeligro))
+            throw new ArgumentException(
+                "El nivel de peligro debe ser Verde, Amarillo, Naranja o Rojo.");
+
         if (!valorMinimo.HasValue && !valorMaximo.HasValue)
         {
             throw new ArgumentException(
