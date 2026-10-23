@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata: { name: alerta-climatica }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: alerta-climatica }
+data:
+  JWT_ISSUER: AlertaClimatica.Auth
+  JWT_AUDIENCE: AlertaClimatica.Client
+  APP_TZ: America/Guatemala
+  SEED_DEMO: "false"
+  PUBLIC_URL: https://sistema-climatico.example
+---
+# PLANTILLA: no suba valores reales a Git. Cree el Secret con:
+#   kubectl -n alerta-climatica create secret generic app-secrets --from-env-file=.env.k8s
+apiVersion: v1
+kind: Secret
+metadata: { name: app-secrets, namespace: alerta-climatica }
+type: Opaque
+stringData:
+  JWT_KEY: CAMBIAR_MINIMO_32_CARACTERES_ALEATORIOS_000000
+  ADMIN_PASSWORD: CAMBIAR
+  AUTH_DB_PASSWORD: CAMBIAR
+  COMMUNITY_DB_PASSWORD: CAMBIAR
+  ALERT_DB_PASSWORD: CAMBIAR
+  SA_PASSWORD: CAMBIAR_Aa1!

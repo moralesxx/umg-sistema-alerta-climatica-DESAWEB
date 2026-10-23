@@ -22,7 +22,7 @@ export interface LoginResponse {
 })
 export class AuthService {
 
-  private apiUrl = '/api/usuarios';
+  private apiUrl = '/api/auth';
 
   constructor(private http: HttpClient) {}
 
@@ -43,7 +43,7 @@ export class AuthService {
     rolId: number
   ): Observable<any> {
     return this.http.post(
-      this.apiUrl,
+      `${this.apiUrl}/register`,
       {
         nombre,
         correo,

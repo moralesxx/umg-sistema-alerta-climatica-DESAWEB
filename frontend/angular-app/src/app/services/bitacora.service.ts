@@ -21,7 +21,7 @@ export interface Bitacora {
 })
 export class BitacoraService {
 
-  private apiUrl = '/api/bitacora';
+  private apiUrl = '/api/audit';
 
   constructor(private http: HttpClient) {}
 

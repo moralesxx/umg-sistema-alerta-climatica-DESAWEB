@@ -12,7 +12,7 @@ export interface Rol {
   providedIn: 'root'
 })
 export class RolService {
-  private apiUrl = '/api/roles';
+  private apiUrl = '/api/auth/roles';
 
   constructor(private http: HttpClient) { }
 

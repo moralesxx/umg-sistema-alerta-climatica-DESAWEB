@@ -48,7 +48,7 @@ export interface EventoEstadisticas {
   providedIn: 'root'
 })
 export class EventoService {
-  private apiUrl = '/api/eventos';
+  private apiUrl = '/api/alerts/events';
 
   constructor(private http: HttpClient) { }
 

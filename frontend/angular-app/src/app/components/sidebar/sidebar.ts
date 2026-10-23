@@ -25,6 +25,12 @@ export class SidebarComponent {
     return this.authService.obtenerUsuario()?.rol === 'Administrador';
   }
 
+  // Reportes PDF (Fase 3): generan Administrador y Operador; la descarga la valida el backend.
+  get puedeVerReportes(): boolean {
+    const rol = this.authService.obtenerUsuario()?.rol;
+    return rol === 'Administrador' || rol === 'Operador';
+  }
+
   cerrarSesion(): void {
     // RF-ADM-03: cierra sesión (backend + localStorage, vía AuthService)
     // y redirige al login, para que la pantalla cambie de inmediato.

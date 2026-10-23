@@ -52,7 +52,7 @@ export interface AlertaFiltros {
   providedIn: 'root'
 })
 export class AlertaService {
-  private apiUrl = '/api/alertas';
+  private apiUrl = '/api/alerts';
 
   // Subject para sincronizar el nivel de riesgo global entre componentes
   private nivelAlertaSource = new BehaviorSubject<string>('Verde');

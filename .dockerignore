@@ -1,0 +1,11 @@
+@'
+**/bin/
+**/obj/
+**/node_modules/
+**/.git/
+**/.vs/
+**/TestResults/
+**/coverage/
+*.user
+*.suo
+'@ | Set-Content -Path .\.dockerignore -Encoding utf8

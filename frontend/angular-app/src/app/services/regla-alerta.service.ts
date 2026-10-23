@@ -39,7 +39,7 @@ export interface ActualizarReglaAlerta extends CrearReglaAlerta {}
 })
 export class ReglaAlertaService {
 
-  private apiUrl = '/api/ReglaAlerta';
+  private apiUrl = '/api/alerts/rules';
 
   constructor(private http: HttpClient) {}
 

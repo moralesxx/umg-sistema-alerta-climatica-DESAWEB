@@ -30,7 +30,7 @@ export interface SensorFiltros {
   providedIn: 'root'
 })
 export class SensorService {
-  private apiUrl = '/api/sensores';
+  private apiUrl = '/api/sensors';
 
   constructor(private http: HttpClient) { }
 

@@ -1,116 +1,56 @@
-# Sistema de Alerta Climática — Fase 2 (UMG, Desarrollo Web)
+# Sistema de Alerta Climática — Fase 3 (UMG, Desarrollo Web)
 
-Sistema de monitoreo y alerta temprana de riesgos climáticos por comunidad.
-Administración de usuarios, comunidades, sensores y reglas; lecturas simuladas;
-generación y gestión de alertas; historial de eventos; bitácora de auditoría y
-dashboard.
+Monitoreo y alerta temprana de riesgos climáticos. En la Fase 3 el monolito .NET se reingenierizó en **microservicios**
+detrás de un **API Gateway**, y se añadió un **módulo de reportería PDF** generado en backend.
+Detalle de la arquitectura: [`docs/ARQUITECTURA-FASE3.md`](docs/ARQUITECTURA-FASE3.md).
 
-## Tecnologías
+| Servicio | Tecnología | Base de datos |
+|---|---|---|
+| `services/gateway` | ASP.NET Core 10 + YARP | — |
+| `services/auth-service` | Node.js · NestJS · TypeScript · JWT | PostgreSQL |
+| `services/community-service` | C# · .NET 10 | PostgreSQL |
+| `services/sensor-service` | C# · .NET 10 | SQL Server 2022 |
+| `services/alert-service` | Java 21 · Spring Boot 3 | PostgreSQL |
+| `services/report-service` | Python · FastAPI · Jinja2 · WeasyPrint | MongoDB (+GridFS) |
+| `services/audit-service` | Python · FastAPI | MongoDB |
+| `frontend/angular-app` | Angular 22 (+ sección Reportes) | — |
+| `legacy/` | Monolito de la Fase 2 (referencia) | — |
 
-| Capa | Tecnología |
-|---|---|
-| Frontend | Angular 22 (componentes standalone) servido por Nginx |
-| Backend | ASP.NET Core (.NET 10), arquitectura por capas (Api / Application / Domain / Infrastructure) |
-| Datos | SQL Server 2022 + Entity Framework Core (migraciones) |
-| Seguridad | JWT, roles `Administrador`, `Operador`, `Usuario de consulta`, hash con `PasswordHasher` |
-| Despliegue | Docker Compose, Nginx, HTTPS (Let's Encrypt) en VPS Linux |
-
-## Estructura
-
-```
-backend/        API .NET (Api, Application, Domain, Infrastructure)
-frontend/       Aplicación Angular (frontend/angular-app)
-tests/          Pruebas unitarias (xUnit)
-deploy/         Ejemplo de Nginx, script de respaldo, guía de despliegue
-docker-compose.yml        Entorno de desarrollo
-docker-compose.prod.yml   Producción (usa variables de .env)
-```
-
-## Ejecutar en local (desarrollo)
-
-Requisitos: Docker Desktop, .NET SDK 10, Node.js.
-
+## Ejecutar
 ```bash
-# 1) Base de datos (SQL Server en el puerto 14333)
-docker compose up -d db
-
-# 2) API (desde la carpeta backend) -> http://localhost:5081
-cd backend
-dotnet run --project AlertaClimatica.Api
-
-# 3) Frontend (otra terminal) -> http://localhost:4200
-cd frontend/angular-app
-npm install
-npm start
+cp .env.example .env        # cambie TODOS los secretos
+docker compose up -d --build
+# Frontend: http://localhost:4200   ·   Gateway (loopback): http://localhost:8080/health/services
 ```
+Usuario inicial: `admin@alerta.com` con la contraseña `ADMIN_PASSWORD` del `.env`. Con `SEED_DEMO=true` se crean 3 comunidades y 5 sensores de ejemplo.
 
-También se puede levantar todo con `docker compose up -d --build`.
+Desarrollo del frontend: `cd frontend/angular-app && npm install && npm start` (proxy a `localhost:8080`).
 
-Al iniciar, la API **aplica las migraciones automáticamente** y, si la base está
-vacía, siembra roles, tipos de sensor y el usuario administrador inicial:
+## Producción (VPS + HTTPS)
+Nginx de borde con Let's Encrypt: ver `deploy/nginx-edge.conf.example` (dominio `https://sistema-climatico.example`). Reenvía al puerto del contenedor `frontend`; el gateway no se expone a Internet.
 
-- Desarrollo: `admin@alerta.com` / `Admin123!`
-- Producción: la contraseña inicial viene de la variable `Seed__AdminPassword`.
-
-> El esquema de la base lo define EF Core (carpeta `Migrations`). Los archivos
-> de `database/` ya no se usan.
-
-## Módulos y permisos
-
+## Roles
 | Módulo | Administrador | Operador | Usuario de consulta |
 |---|:-:|:-:|:-:|
-| Dashboard, Lecturas (consulta), Historial | ✔ | ✔ | ✔ |
-| Comunidades (ver) | ✔ | ✔ | ✔ |
-| Comunidades (crear/editar/activar) | ✔ | | |
-| Sensores (ver) | ✔ | ✔ | ✔ |
-| Sensores (crear/editar/estado/valor simulado) | ✔ | ✔ | |
-| Alertas (ver) | ✔ | ✔ | ✔ |
-| Alertas (atender/cerrar) | ✔ | ✔ | |
-| Reglas de alerta | ✔ | | |
-| Usuarios (crear, editar, rol, activar, filtros) | ✔ | | |
-| Bitácora de auditoría | ✔ | | |
+| Dashboard, lecturas, historial, comunidades/sensores/alertas (ver) | ✔ | ✔ | ✔ |
+| Sensores y alertas (gestionar) | ✔ | ✔ | |
+| Comunidades (gestionar), reglas, usuarios, bitácora | ✔ | | |
+| Reportes: generar e historial | ✔ | ✔ | |
+| Reportes: **descargar PDF** | ✔ | | |
 
-## Cómo funciona el motor de alertas
+## Arduino / IoT (base de la fase final)
+API `POST /api/sensors/ingest` (clave `X-Device-Key`), sketches para UNO y ESP32 en `iot/`, puente USB `iot/bridge/bridge.py` (con `--simular`). Guía paso a paso: [`docs/ARDUINO-GUIA.md`](docs/ARDUINO-GUIA.md).
 
-1. El **simulador** (servicio en segundo plano) genera lecturas periódicas para
-   cada sensor activo (o usa el *valor simulado* fijado por un operador).
-2. Cada lectura pasa por el **evaluador de reglas**: se compara con las reglas
-   activas del tipo de sensor, se toma el nivel más alto que coincide y se
-   ignora el nivel Verde.
-3. Se crea una **alerta** (Activa) sin duplicar mientras exista otra abierta
-   para el mismo sensor y regla; los cambios de estado se reflejan en el
-   **historial de eventos**.
-4. Un operador **atiende** y luego **cierra** la alerta; queda registrado el
-   responsable y la fecha.
-5. Todas las acciones administrativas se registran en la **bitácora** desde el
-   backend (el frontend no puede escribir en ella).
-
-Parámetros del simulador (sección `Simulador` de `appsettings.json` o variables
-`Simulador__*`): `Habilitado`, `IntervaloSegundos` y `RetencionDias`
-
-## Configuración y secretos
-
-Nunca se suben credenciales al repositorio. Se leen de variables de entorno:
-
-| Variable | Uso |
-|---|---|
-| `ConnectionStrings__DefaultConnection` | Cadena de conexión a SQL Server |
-| `Jwt__Key` | Clave de firma del JWT (mínimo 32 caracteres) |
-| `Seed__AdminPassword` | Contraseña del admin inicial (solo base vacía) |
-
-En producción se usa `docker-compose.prod.yml` con un archivo `.env`
-(ver `.env.example`; `.env` está en `.gitignore`). La guía paso a paso del VPS,
-Nginx, HTTPS y respaldos está en `deploy/LEEME-DESPLIEGUE.md`.
-
-## Pruebas
-
+## Verificación y operación
 ```bash
-dotnet test tests/AlertaClimatica.Application.Tests
+ADMIN_PASSWORD='su_clave' ./scripts/smoke.sh      # prueba E2E vía gateway (login, CRUD, alerta, 8 reportes PDF)
+./deploy/backup.sh                                # respaldo de las 5 bases
 ```
+Guía de VPS: `deploy/LEEME-DESPLIEGUE.md` · Kubernetes/K3s: `deploy/k8s/` · API: `docs/postman_collection.json` · Estado de requisitos: `docs/MATRIZ-REQUISITOS-FASE3.md`.
 
-## Flujo de trabajo del equipo
-
-1. Trabajar en una rama `feature/...`, probar en local.
-2. `git pull` + resolver conflictos, `git push`, pull request.
-3. En el VPS: respaldo de la base, `git pull`, reconstruir contenedores. Las
-   migraciones se aplican solas al arrancar la API.
+## Pruebas automáticas incluidas
+```bash
+(cd services/audit-service  && pip install -r requirements.txt && pytest)
+(cd services/report-service && pip install -r requirements.txt && pytest)   # genera PDFs reales
+(cd services/auth-service   && npm ci && npm test)
+```

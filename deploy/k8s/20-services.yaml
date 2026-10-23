@@ -1,0 +1,244 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: gateway, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: gateway } }
+  template:
+    metadata: { labels: { app: gateway } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: gateway
+          image: REGISTRY/alerta/gateway:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: Jwt__Key, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: Jwt__Issuer, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: Jwt__Audience, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: Cors__AllowedOrigins__0, valueFrom: { configMapKeyRef: { name: app-config, key: PUBLIC_URL } } }
+            - { name: APP_TZ, valueFrom: { configMapKeyRef: { name: app-config, key: APP_TZ } } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: gateway, namespace: alerta-climatica }
+spec: { selector: { app: gateway }, ports: [{ port: 8080, targetPort: 8080 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: auth-service, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: auth-service } }
+  template:
+    metadata: { labels: { app: auth-service } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: auth-service
+          image: REGISTRY/alerta/auth-service:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: JWT_KEY, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: JWT_ISSUER, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: JWT_AUDIENCE, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: DATABASE_URL, value: "postgres://auth:$(AUTH_DB_PASSWORD)@auth-db:5432/auth_db" }
+            - { name: AUTH_DB_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: AUTH_DB_PASSWORD } } }
+            - { name: ADMIN_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: ADMIN_PASSWORD } } }
+            - { name: AUDIT_SERVICE_URL, value: "http://audit-service:8000" }
+          readinessProbe: { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: auth-service, namespace: alerta-climatica }
+spec: { selector: { app: auth-service }, ports: [{ port: 8080, targetPort: 8080 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: community-service, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: community-service } }
+  template:
+    metadata: { labels: { app: community-service } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: community-service
+          image: REGISTRY/alerta/community-service:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: Jwt__Key, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: Jwt__Issuer, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: Jwt__Audience, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: COMMUNITY_DB_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: COMMUNITY_DB_PASSWORD } } }
+            - { name: ConnectionStrings__Default, value: "Host=community-db;Database=community_db;Username=community;Password=$(COMMUNITY_DB_PASSWORD)" }
+            - { name: Services__Sensor, value: "http://sensor-service:8080" }
+            - { name: Services__Audit, value: "http://audit-service:8000" }
+            - { name: Seed__Demo, valueFrom: { configMapKeyRef: { name: app-config, key: SEED_DEMO } } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: community-service, namespace: alerta-climatica }
+spec: { selector: { app: community-service }, ports: [{ port: 8080, targetPort: 8080 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: sensor-service, namespace: alerta-climatica }
+spec:
+  replicas: 1
+  # Sensor Service ejecuta el simulador: mantenga 1 réplica o deshabilite Simulador__Habilitado en las demás.
+  selector: { matchLabels: { app: sensor-service } }
+  template:
+    metadata: { labels: { app: sensor-service } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: sensor-service
+          image: REGISTRY/alerta/sensor-service:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: Jwt__Key, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: Jwt__Issuer, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: Jwt__Audience, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: SA_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: SA_PASSWORD } } }
+            - { name: ConnectionStrings__Default, value: "Server=sensor-db;Database=SensorDb;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;" }
+            - { name: Services__Community, value: "http://community-service:8080" }
+            - { name: Services__Alert, value: "http://alert-service:8080" }
+            - { name: Services__Audit, value: "http://audit-service:8000" }
+            - { name: Seed__Demo, valueFrom: { configMapKeyRef: { name: app-config, key: SEED_DEMO } } }
+            - { name: APP_TZ, valueFrom: { configMapKeyRef: { name: app-config, key: APP_TZ } } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: sensor-service, namespace: alerta-climatica }
+spec: { selector: { app: sensor-service }, ports: [{ port: 8080, targetPort: 8080 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: alert-service, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: alert-service } }
+  template:
+    metadata: { labels: { app: alert-service } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: alert-service
+          image: REGISTRY/alerta/alert-service:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: JWT_KEY, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: JWT_ISSUER, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: JWT_AUDIENCE, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: DATABASE_URL, value: "jdbc:postgresql://alert-db:5432/alert_db" }
+            - { name: DATABASE_USER, value: "alert" }
+            - { name: DATABASE_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: ALERT_DB_PASSWORD } } }
+            - { name: COMMUNITY_SERVICE_URL, value: "http://community-service:8080" }
+            - { name: SENSOR_SERVICE_URL, value: "http://sensor-service:8080" }
+            - { name: AUDIT_SERVICE_URL, value: "http://audit-service:8000" }
+            - { name: SEED_DEMO, valueFrom: { configMapKeyRef: { name: app-config, key: SEED_DEMO } } }
+            - { name: APP_TZ, valueFrom: { configMapKeyRef: { name: app-config, key: APP_TZ } } }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /actuator/health/liveness, port: 8080 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: alert-service, namespace: alerta-climatica }
+spec: { selector: { app: alert-service }, ports: [{ port: 8080, targetPort: 8080 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: report-service, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: report-service } }
+  template:
+    metadata: { labels: { app: report-service } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: report-service
+          image: REGISTRY/alerta/report-service:latest
+          ports: [{ containerPort: 8000 }]
+          env:
+            - { name: JWT_KEY, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: JWT_ISSUER, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: JWT_AUDIENCE, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: MONGO_URI, value: "mongodb://mongo:27017" }
+            - { name: MONGO_DB, value: "report_db" }
+            - { name: COMMUNITY_SERVICE_URL, value: "http://community-service:8080" }
+            - { name: SENSOR_SERVICE_URL, value: "http://sensor-service:8080" }
+            - { name: ALERT_SERVICE_URL, value: "http://alert-service:8080" }
+            - { name: AUDIT_SERVICE_URL, value: "http://audit-service:8000" }
+            - { name: REPORT_TZ, valueFrom: { configMapKeyRef: { name: app-config, key: APP_TZ } } }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8000 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /health, port: 8000 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: report-service, namespace: alerta-climatica }
+spec: { selector: { app: report-service }, ports: [{ port: 8000, targetPort: 8000 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: audit-service, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: audit-service } }
+  template:
+    metadata: { labels: { app: audit-service } }
+    spec:
+      terminationGracePeriodSeconds: 30        # graceful shutdown
+      containers:
+        - name: audit-service
+          image: REGISTRY/alerta/audit-service:latest
+          ports: [{ containerPort: 8000 }]
+          env:
+            - { name: JWT_KEY, valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_KEY } } }
+            - { name: JWT_ISSUER, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_ISSUER } } }
+            - { name: JWT_AUDIENCE, valueFrom: { configMapKeyRef: { name: app-config, key: JWT_AUDIENCE } } }
+            - { name: MONGO_URI, value: "mongodb://mongo:27017" }
+            - { name: MONGO_DB, value: "audit_db" }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8000 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 }
+          livenessProbe:  { httpGet: { path: /health, port: 8000 }, initialDelaySeconds: 40, periodSeconds: 20 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 768Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: audit-service, namespace: alerta-climatica }
+spec: { selector: { app: audit-service }, ports: [{ port: 8000, targetPort: 8000 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: frontend, namespace: alerta-climatica }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata: { labels: { app: frontend } }
+    spec:
+      containers:
+        - name: frontend
+          image: REGISTRY/alerta/frontend:latest
+          ports: [{ containerPort: 80 }]
+          readinessProbe: { httpGet: { path: /index.html, port: 80 } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: frontend, namespace: alerta-climatica }
+spec: { selector: { app: frontend }, ports: [{ port: 80 }] }

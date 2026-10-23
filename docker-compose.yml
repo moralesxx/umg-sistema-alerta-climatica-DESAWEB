@@ -1,51 +1,196 @@
-version: '3.8'
+# Sistema de Alerta Climática — Fase 3 (microservicios).
+# Cada servicio tiene su propia base de datos y solo se comunica con los demás por API.
+# Todos son stateless: el estado vive en las bases de datos / volúmenes (listo para K8s/K3s).
+# Variables: copiar .env.example a .env.
+
+x-restart: &restart
+  restart: unless-stopped
+  stop_grace_period: 30s          # graceful shutdown (SIGTERM)
+
+x-jwt: &jwt
+  Jwt__Key: ${JWT_KEY:?defina JWT_KEY en .env}
+  Jwt__Issuer: ${JWT_ISSUER:-AlertaClimatica.Auth}
+  Jwt__Audience: ${JWT_AUDIENCE:-AlertaClimatica.Client}
+
+x-jwt-py: &jwt-py
+  JWT_KEY: ${JWT_KEY:?defina JWT_KEY en .env}
+  JWT_ISSUER: ${JWT_ISSUER:-AlertaClimatica.Auth}
+  JWT_AUDIENCE: ${JWT_AUDIENCE:-AlertaClimatica.Client}
 
 services:
-  db:
+  # ------------------------------------------------------------------ borde
+  frontend:                       # Angular + Nginx (proxy /api -> gateway)
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    <<: *restart
+    ports: ["${FRONTEND_PORT:-4200}:80"]
+    depends_on: { gateway: { condition: service_healthy } }
+    networks: [edge, backend]
+
+  gateway:                        # ASP.NET Core 10 + YARP
+    build: { context: ., dockerfile: services/gateway/Dockerfile }
+    <<: *restart
+    environment:
+      <<: *jwt
+      Cors__AllowedOrigins__0: ${PUBLIC_URL:-http://localhost:4200}
+      Cors__AllowedOrigins__1: http://localhost:4200
+      RateLimit__LoginPerMinute: ${RATE_LOGIN_PER_MIN:-10}
+      APP_TZ: ${APP_TZ:-America/Guatemala}
+    ports: ["127.0.0.1:${GATEWAY_PORT:-8080}:8080"]   # solo loopback (útil para `ng serve`)
+    healthcheck: &hc-dotnet
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /health HTTP/1.0\\r\\n\\r\\n\" >&3 && head -1 <&3 | grep -q 200'"]
+      interval: 15s
+      timeout: 4s
+      retries: 6
+      start_period: 20s
+    depends_on:
+      auth-service: { condition: service_healthy }
+      community-service: { condition: service_healthy }
+      sensor-service: { condition: service_healthy }
+      alert-service: { condition: service_healthy }
+      report-service: { condition: service_healthy }
+      audit-service: { condition: service_healthy }
+    networks: [backend]
+
+  # ------------------------------------------------------------------ microservicios
+  auth-service:                   # Node.js / NestJS / PostgreSQL
+    build: ./services/auth-service
+    <<: *restart
+    environment:
+      <<: *jwt-py
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
+      DATABASE_URL: postgres://auth:${AUTH_DB_PASSWORD:?}@auth-db:5432/auth_db
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD en .env}
+      AUDIT_SERVICE_URL: http://audit-service:8000
+    depends_on: { auth-db: { condition: service_healthy } }
+    networks: [backend]
+
+  community-service:              # C# / .NET 10 / PostgreSQL
+    build: { context: ., dockerfile: services/community-service/Dockerfile }
+    <<: *restart
+    environment:
+      <<: *jwt
+      ConnectionStrings__Default: Host=community-db;Database=community_db;Username=community;Password=${COMMUNITY_DB_PASSWORD:?}
+      Services__Sensor: http://sensor-service:8080
+      Services__Audit: http://audit-service:8000
+      Seed__Demo: ${SEED_DEMO:-true}
+    healthcheck: *hc-dotnet
+    depends_on: { community-db: { condition: service_healthy } }
+    networks: [backend]
+
+  sensor-service:                 # C# / .NET 10 / SQL Server
+    build: { context: ., dockerfile: services/sensor-service/Dockerfile }
+    <<: *restart
+    environment:
+      <<: *jwt
+      ConnectionStrings__Default: Server=sensor-db;Database=SensorDb;User Id=sa;Password=${SA_PASSWORD:?};TrustServerCertificate=True;
+      Services__Community: http://community-service:8080
+      Services__Alert: http://alert-service:8080
+      Services__Audit: http://audit-service:8000
+      Devices__ApiKey: ${DEVICE_API_KEY:-}
+      Simulador__Habilitado: ${SIMULADOR_HABILITADO:-true}
+      Simulador__IntervaloSegundos: ${SIMULADOR_INTERVALO:-15}
+      Seed__Demo: ${SEED_DEMO:-true}
+      APP_TZ: ${APP_TZ:-America/Guatemala}
+    healthcheck: *hc-dotnet
+    depends_on: { sensor-db: { condition: service_healthy } }
+    networks: [backend]
+
+  alert-service:                  # Java / Spring Boot / PostgreSQL
+    build: ./services/alert-service
+    <<: *restart
+    environment:
+      <<: *jwt-py
+      DATABASE_URL: jdbc:postgresql://alert-db:5432/alert_db
+      DATABASE_USER: alert
+      DATABASE_PASSWORD: ${ALERT_DB_PASSWORD:?}
+      COMMUNITY_SERVICE_URL: http://community-service:8080
+      SENSOR_SERVICE_URL: http://sensor-service:8080
+      AUDIT_SERVICE_URL: http://audit-service:8000
+      APP_TZ: ${APP_TZ:-America/Guatemala}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /health HTTP/1.0\\r\\n\\r\\n\" >&3 && head -1 <&3 | grep -q 200'"]
+      interval: 15s
+      timeout: 4s
+      retries: 8
+      start_period: 40s
+    depends_on: { alert-db: { condition: service_healthy } }
+    networks: [backend]
+
+  report-service:                 # Python / FastAPI / MongoDB / Jinja2 / WeasyPrint
+    build: ./services/report-service
+    <<: *restart
+    environment:
+      <<: *jwt-py
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: report_db
+      COMMUNITY_SERVICE_URL: http://community-service:8080
+      SENSOR_SERVICE_URL: http://sensor-service:8080
+      ALERT_SERVICE_URL: http://alert-service:8080
+      AUDIT_SERVICE_URL: http://audit-service:8000
+      REPORT_TZ: ${APP_TZ:-America/Guatemala}
+      REPORT_MAX_ROWS: ${REPORT_MAX_ROWS:-20000}
+    depends_on: { mongo: { condition: service_healthy } }
+    networks: [backend]
+
+  audit-service:                  # Python / FastAPI / MongoDB
+    build: ./services/audit-service
+    <<: *restart
+    environment:
+      <<: *jwt-py
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: audit_db
+    depends_on: { mongo: { condition: service_healthy } }
+    networks: [backend]
+
+  # ------------------------------------------------------------------ bases de datos (una por servicio)
+  auth-db:
+    image: postgres:16-alpine
+    <<: *restart
+    environment: { POSTGRES_DB: auth_db, POSTGRES_USER: auth, POSTGRES_PASSWORD: "${AUTH_DB_PASSWORD:?}" }
+    volumes: [auth_pg:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U auth -d auth_db"], interval: 5s, timeout: 3s, retries: 20 }
+    networks: [backend]
+
+  community-db:
+    image: postgres:16-alpine
+    <<: *restart
+    environment: { POSTGRES_DB: community_db, POSTGRES_USER: community, POSTGRES_PASSWORD: "${COMMUNITY_DB_PASSWORD:?}" }
+    volumes: [community_pg:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U community -d community_db"], interval: 5s, timeout: 3s, retries: 20 }
+    networks: [backend]
+
+  alert-db:
+    image: postgres:16-alpine
+    <<: *restart
+    environment: { POSTGRES_DB: alert_db, POSTGRES_USER: alert, POSTGRES_PASSWORD: "${ALERT_DB_PASSWORD:?}" }
+    volumes: [alert_pg:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U alert -d alert_db"], interval: 5s, timeout: 3s, retries: 20 }
+    networks: [backend]
+
+  sensor-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver_alerta_climatica
+    <<: *restart
     user: "0:0"
-    environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=SqlAdmin2026!
-      - MSSQL_FORCE_ENCRYPTION=0
-    ports:
-      - "14333:1433"
-    volumes:
-      - mssql_data:/var/opt/mssql/data
-    networks:
-      - red-clima
+    environment: { ACCEPT_EULA: "Y", MSSQL_SA_PASSWORD: "${SA_PASSWORD:?}", MSSQL_FORCE_ENCRYPTION: "0" }
+    volumes: [mssql_data:/var/opt/mssql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [backend]
 
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: api_alerta_climatica
-    ports:
-      - "5081:5081"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=AlertaClimaticaDb;User Id=sa;Password=SqlAdmin2026!;TrustServerCertificate=True;
-    depends_on:
-      - db
-    networks:
-      - red-clima
+  mongo:                          # reportes (report_db, PDF en GridFS) y auditoría (audit_db)
+    image: mongo:7
+    <<: *restart
+    volumes: [mongo_data:/data/db]
+    healthcheck: { test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"], interval: 10s, timeout: 5s, retries: 10 }
+    networks: [backend]
 
-  frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    container_name: frontend_alerta_climatica
-    ports:
-      - "4200:80"
-    depends_on:
-      - backend
-    networks:
-      - red-clima
-
-volumes:
-  mssql_data:
+volumes: { auth_pg: {}, community_pg: {}, alert_pg: {}, mssql_data: {}, mongo_data: {} }
 
 networks:
-  red-clima:
-    driver: bridge
+  edge: {}
+  backend: { internal: false }

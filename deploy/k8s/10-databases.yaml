@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: auth-db, namespace: alerta-climatica }
+spec:
+  serviceName: auth-db
+  replicas: 1
+  selector: { matchLabels: { app: auth-db } }
+  template:
+    metadata: { labels: { app: auth-db } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - { name: POSTGRES_DB, value: auth_db }
+            - { name: POSTGRES_USER, value: auth }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: AUTH_DB_PASSWORD } } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe: { exec: { command: ["pg_isready","-U","auth","-d","auth_db"] }, periodSeconds: 5 }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec: { accessModes: ["ReadWriteOnce"], resources: { requests: { storage: 2Gi } } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: auth-db, namespace: alerta-climatica }
+spec: { selector: { app: auth-db }, ports: [{ port: 5432 }] }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: community-db, namespace: alerta-climatica }
+spec:
+  serviceName: community-db
+  replicas: 1
+  selector: { matchLabels: { app: community-db } }
+  template:
+    metadata: { labels: { app: community-db } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - { name: POSTGRES_DB, value: community_db }
+            - { name: POSTGRES_USER, value: community }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: COMMUNITY_DB_PASSWORD } } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe: { exec: { command: ["pg_isready","-U","community","-d","community_db"] }, periodSeconds: 5 }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec: { accessModes: ["ReadWriteOnce"], resources: { requests: { storage: 2Gi } } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: community-db, namespace: alerta-climatica }
+spec: { selector: { app: community-db }, ports: [{ port: 5432 }] }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: alert-db, namespace: alerta-climatica }
+spec:
+  serviceName: alert-db
+  replicas: 1
+  selector: { matchLabels: { app: alert-db } }
+  template:
+    metadata: { labels: { app: alert-db } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - { name: POSTGRES_DB, value: alert_db }
+            - { name: POSTGRES_USER, value: alert }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: ALERT_DB_PASSWORD } } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe: { exec: { command: ["pg_isready","-U","alert","-d","alert_db"] }, periodSeconds: 5 }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec: { accessModes: ["ReadWriteOnce"], resources: { requests: { storage: 2Gi } } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: alert-db, namespace: alerta-climatica }
+spec: { selector: { app: alert-db }, ports: [{ port: 5432 }] }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: sensor-db, namespace: alerta-climatica }
+spec:
+  serviceName: sensor-db
+  replicas: 1
+  selector: { matchLabels: { app: sensor-db } }
+  template:
+    metadata: { labels: { app: sensor-db } }
+    spec:
+      containers:
+        - name: mssql
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          env:
+            - { name: ACCEPT_EULA, value: "Y" }
+            - { name: MSSQL_SA_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: SA_PASSWORD } } }
+          ports: [{ containerPort: 1433 }]
+          resources: { requests: { memory: 2Gi } }
+          readinessProbe: { tcpSocket: { port: 1433 }, initialDelaySeconds: 20, periodSeconds: 10 }
+          volumeMounts: [{ name: data, mountPath: /var/opt/mssql }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec: { accessModes: ["ReadWriteOnce"], resources: { requests: { storage: 5Gi } } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: sensor-db, namespace: alerta-climatica }
+spec: { selector: { app: sensor-db }, ports: [{ port: 1433 }] }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: mongo, namespace: alerta-climatica }
+spec:
+  serviceName: mongo
+  replicas: 1
+  selector: { matchLabels: { app: mongo } }
+  template:
+    metadata: { labels: { app: mongo } }
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7
+          ports: [{ containerPort: 27017 }]
+          readinessProbe: { exec: { command: ["mongosh","--quiet","--eval","db.adminCommand('ping').ok"] }, periodSeconds: 10 }
+          volumeMounts: [{ name: data, mountPath: /data/db }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec: { accessModes: ["ReadWriteOnce"], resources: { requests: { storage: 5Gi } } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: mongo, namespace: alerta-climatica }
+spec: { selector: { app: mongo }, ports: [{ port: 27017 }] }

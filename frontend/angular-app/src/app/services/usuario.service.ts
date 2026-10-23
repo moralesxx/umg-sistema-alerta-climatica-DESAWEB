@@ -40,7 +40,7 @@ export interface ActualizarUsuarioPayload {
   providedIn: 'root'
 })
 export class UsuarioService {
-  private apiUrl = '/api/usuarios';
+  private apiUrl = '/api/auth/usuarios';
 
   constructor(private http: HttpClient) { }
 

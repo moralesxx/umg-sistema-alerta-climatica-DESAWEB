@@ -67,6 +67,16 @@
       Reglas de Alerta
     </a>
 
+    <!-- REPORTES PDF -->
+    <a
+      *ngIf="puedeVerReportes"
+      routerLink="/reportes"
+      routerLinkActive="active"
+      class="list-group-item list-group-item-action bg-dark text-white p-3">
+      <i class="bi bi-file-earmark-pdf me-2"></i>
+      Reportes
+    </a>
+
     <!-- BITÁCORA - SOLO ADMINISTRADORES -->
     <a
       *ngIf="esAdministrador"

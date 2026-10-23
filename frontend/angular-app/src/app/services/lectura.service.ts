@@ -15,7 +15,7 @@ export interface LecturaClimatica {
   providedIn: 'root'
 })
 export class LecturaService {
-  private apiUrl = '/api/lecturasclimaticas';
+  private apiUrl = '/api/sensors/readings';
 
   constructor(private http: HttpClient) { }
 
@@ -29,7 +29,7 @@ export class LecturaService {
 
   // RF-ADM-27: Consultar lecturas por comunidad
   getLecturasPorComunidad(comunidadId: number): Observable<LecturaClimatica[]> {
-    return this.http.get<LecturaClimatica[]>(`${this.apiUrl}/comunidad/${comunidadId}`);
+    return this.http.get<LecturaClimatica[]>(`${this.apiUrl}/community/${comunidadId}`);
   }
 
   // RF-ADM-26: Filtrar por rango de fechas y/o sensor
@@ -40,6 +40,6 @@ export class LecturaService {
     if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
     if (fechaFin) params = params.set('fechaFin', fechaFin);
 
-    return this.http.get<LecturaClimatica[]>(`${this.apiUrl}/filtro`, { params });
+    return this.http.get<LecturaClimatica[]>(`${this.apiUrl}/filter`, { params });
   }
 }

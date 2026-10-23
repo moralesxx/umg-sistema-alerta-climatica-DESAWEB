@@ -41,7 +41,7 @@ export interface ComunidadPayload {
   providedIn: 'root'
 })
 export class ComunidadService {
-  private apiUrl = '/api/comunidades';
+  private apiUrl = '/api/communities';
 
   constructor(private http: HttpClient) { }
 

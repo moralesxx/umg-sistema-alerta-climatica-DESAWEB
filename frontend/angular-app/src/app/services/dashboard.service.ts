@@ -53,6 +53,8 @@ export interface DashboardResumen {
   sensoresInactivos: number;
   alertasActivas: number;
   nivelRiesgoGlobal: string;
+  sensoresSinComunicacion?: number;
+  alertasPorFenomeno?: { nombre: string; total: number }[];
   alertasPorNivel: ConteoNivel[];
   alertasActivasRecientes: AlertaActivaResumen[];
   valoresActuales: ValorActual[];
@@ -65,7 +67,7 @@ export interface DashboardResumen {
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = '/api/dashboard';
+  private apiUrl = '/api/reports/dashboard';
 
   constructor(private http: HttpClient) { }
 

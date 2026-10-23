@@ -17,3 +17,13 @@ Thumbs.db
 
 # Secretos (nunca se suben)
 .env
+
+# Servicios
+services/**/node_modules/
+services/**/dist/
+services/**/dist-test/
+services/**/target/
+services/**/bin/
+services/**/obj/
+__pycache__/
+.pytest_cache/
