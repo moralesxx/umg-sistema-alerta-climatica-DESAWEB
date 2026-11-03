@@ -5,7 +5,7 @@ COPY services/sensor-service/*.csproj services/sensor-service/
 RUN dotnet restore services/sensor-service/Sensor.Service.csproj
 COPY services/shared-dotnet services/shared-dotnet
 COPY services/sensor-service services/sensor-service
-RUN dotnet publish services/sensor-service/Sensor.Service.csproj -c Release -o /app --no-restore
+RUN find /src -type d \( -name obj -o -name bin \) -prune -exec rm -rf {} + ; dotnet restore services/sensor-service/*.csproj && dotnet publish services/sensor-service/Sensor.Service.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app

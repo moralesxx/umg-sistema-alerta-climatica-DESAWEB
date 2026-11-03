@@ -12,6 +12,8 @@ import { HistorialComponent } from './components/historial/historial';
 import { LecturasComponent } from './components/lecturas/lecturas.component';
 import { BitacoraComponent } from './components/bitacora/bitacora';
 import { ReportesComponent } from './components/reportes/reportes';
+import { NotificacionesComponent } from './components/notificaciones/notificaciones';
+import { DispositivosComponent } from './components/dispositivos/dispositivos';
 import { ReglasAlertaComponent } from './components/reglas-alerta/reglas-alerta';
 
 import { authGuard } from './core/guards/auth-guard';
@@ -44,6 +46,8 @@ export const routes: Routes = [
       { path: 'alertas', component: AlertasGestionComponent },
       { path: 'historial', component: HistorialComponent },
       { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard], data: { roles: ['Administrador', 'Operador'] } },
+      { path: 'dispositivos', component: DispositivosComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
+      { path: 'notificaciones', component: NotificacionesComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
       { path: 'bitacora', component: BitacoraComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } },
       { path: 'reglas-alerta', component: ReglasAlertaComponent, canActivate: [roleGuard], data: { roles: ['Administrador'] } }
     ]

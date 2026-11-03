@@ -7,10 +7,10 @@ import itertools
 import os
 import signal
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     yield  # uvicorn gestiona SIGTERM (graceful shutdown); no hay estado local que vaciar.
 
 
-app = FastAPI(title="Audit Service", lifespan=lifespan)
+app = FastAPI(title="Audit Service", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 
 class RegistroIn(BaseModel):
@@ -92,11 +92,29 @@ def registrar(body: RegistroIn, _: Principal = Depends(require_roles("Servicio")
     return {"bitacoraId": doc["bitacoraId"]}
 
 
+def _parse_dt(v: Optional[str], end: bool = False) -> Optional[datetime]:
+    """YYYY-MM-DD (día completo, UTC) o ISO 8601 con hora. `end` => límite superior exclusivo."""
+    if not v:
+        return None
+    try:
+        if len(v) == 10:
+            d = datetime.strptime(v, "%Y-%m-%d")
+            return d.replace(hour=0) + (timedelta(days=1) if end else timedelta(0))
+        d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+        return d.astimezone(timezone.utc).replace(tzinfo=None) if d.tzinfo else d
+    except ValueError:
+        raise HTTPException(status_code=400, detail={"mensaje": f"Fecha no válida: {v}"})
+
+
 @app.get("/api/audit")
 def listar(
     limite: int = Query(500, ge=1, le=2000),
+    pagina: int = Query(1, ge=1),
     usuarioId: Optional[int] = None,
     accion: Optional[str] = None,
+    servicio: Optional[str] = None,
+    desde: Optional[str] = None,
+    hasta: Optional[str] = None,
     _: Principal = Depends(require_roles("Administrador")),
 ):
     q: dict = {}
@@ -104,5 +122,10 @@ def listar(
         q["usuarioId"] = usuarioId
     if accion:
         q["accion"] = accion
-    docs = get_db().bitacora.find(q).sort("fechaHora", DESCENDING).limit(limite)
-    return [_out(d) for d in docs]
+    if servicio:
+        q["servicio"] = servicio
+    d, h = _parse_dt(desde), _parse_dt(hasta, end=True)
+    if d or h:
+        q["fechaHora"] = {**({"$gte": d} if d else {}), **({"$lt": h} if h else {})}
+    docs = get_db().bitacora.find(q).sort("fechaHora", DESCENDING).skip((pagina - 1) * limite).limit(limite)
+    return [_out(x) for x in docs]

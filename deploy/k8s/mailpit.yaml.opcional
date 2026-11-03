@@ -1,0 +1,31 @@
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
+# Buzón de pruebas (captura correos). Aplicar solo si no se usa un SMTP real:  kubectl apply -n alerta-climatica -f mailpit.yaml.opcional
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: mailpit, namespace: alerta-climatica }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: mailpit } }
+  template:
+    metadata: { labels: { app: mailpit } }
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:latest
+          ports: [{ containerPort: 1025 }, { containerPort: 8025 }]
+          resources: { requests: { cpu: 20m, memory: 32Mi }, limits: { memory: 128Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: mailpit, namespace: alerta-climatica }
+spec: { selector: { app: mailpit }, ports: [{ name: smtp, port: 1025 }, { name: web, port: 8025 }] }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-notification-to-mailpit, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: mailpit } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: notification-service } } }]
+      ports: [{ port: 1025 }]

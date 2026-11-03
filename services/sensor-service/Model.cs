@@ -34,11 +34,25 @@ public class LecturaClimatica
     public Sensor? Sensor { get; set; }
 }
 
+/// <summary>Dispositivo IoT autorizado (Arduino/ESP32) con su propia clave, revocable. Solo se guarda el hash de la clave.</summary>
+public class DispositivoIot
+{
+    public int DispositivoId { get; set; }
+    public string Nombre { get; set; } = "";
+    public string KeyHash { get; set; } = "";
+    /// <summary>Si se define (p. ej. "ARD-"), el dispositivo solo puede enviar lecturas de sensores cuyo código empiece así.</summary>
+    public string? Prefijo { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime Creado { get; set; }
+    public DateTime? UltimoContacto { get; set; }
+}
+
 public class SensorDb(DbContextOptions<SensorDb> o) : DbContext(o)
 {
     public DbSet<TipoSensor> TiposSensor => Set<TipoSensor>();
     public DbSet<Sensor> Sensores => Set<Sensor>();
     public DbSet<LecturaClimatica> Lecturas => Set<LecturaClimatica>();
+    public DbSet<DispositivoIot> DispositivosIot => Set<DispositivoIot>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -50,6 +64,12 @@ public class SensorDb(DbContextOptions<SensorDb> o) : DbContext(o)
         s.HasIndex(x => x.Codigo).IsUnique();
         s.HasIndex(x => x.ComunidadId);
         s.HasOne(x => x.TipoSensor).WithMany().HasForeignKey(x => x.TipoSensorId).OnDelete(DeleteBehavior.Restrict);
+        var dv = m.Entity<DispositivoIot>();
+        dv.ToTable("Dispositivos").HasKey(x => x.DispositivoId);
+        dv.Property(x => x.Nombre).HasMaxLength(100);
+        dv.Property(x => x.KeyHash).HasMaxLength(64);
+        dv.Property(x => x.Prefijo).HasMaxLength(40);
+        dv.HasIndex(x => x.KeyHash).IsUnique();
         var l = m.Entity<LecturaClimatica>();
         l.ToTable("LecturasClimaticas").HasKey(x => x.LecturaId);
         l.Property(x => x.Valor).HasPrecision(18, 2);
@@ -70,6 +90,16 @@ public static class Database
                 using var scope = app.Services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<SensorDb>();
                 await db.Database.EnsureCreatedAsync();
+                // Bases ya existentes (creadas antes de esta tabla): EnsureCreated no agrega tablas nuevas, se crea aquí si falta.
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync(@"IF OBJECT_ID(N'dbo.Dispositivos', N'U') IS NULL
+CREATE TABLE dbo.Dispositivos (DispositivoId INT IDENTITY(1,1) NOT NULL PRIMARY KEY, Nombre NVARCHAR(100) NOT NULL, KeyHash NVARCHAR(64) NOT NULL,
+  Prefijo NVARCHAR(40) NULL, Activo BIT NOT NULL, Creado DATETIME2 NOT NULL, UltimoContacto DATETIME2 NULL);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Dispositivos_KeyHash' AND object_id = OBJECT_ID(N'dbo.Dispositivos'))
+CREATE UNIQUE INDEX IX_Dispositivos_KeyHash ON dbo.Dispositivos(KeyHash);");
+                }
+                catch (Exception ex) { app.Logger.LogWarning("No se pudo verificar la tabla Dispositivos: {Msg}", ex.Message); }
                 if (!await db.TiposSensor.AnyAsync())
                 {
                     db.TiposSensor.AddRange(

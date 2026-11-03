@@ -3,7 +3,7 @@ package com.alertaclimatica.alert.service;
 import static com.alertaclimatica.alert.service.Util.*;
 
 import com.alertaclimatica.alert.client.Upstream;
-import com.alertaclimatica.alert.domain.Evento;
+import com.alertaclimatica.alert.domain.Entities.Evento;
 import com.alertaclimatica.alert.domain.Repos.EventoRepo;
 import com.alertaclimatica.alert.service.Dtos.*;
 import jakarta.persistence.criteria.Predicate;

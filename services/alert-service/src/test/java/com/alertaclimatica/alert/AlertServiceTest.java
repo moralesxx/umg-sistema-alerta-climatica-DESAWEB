@@ -5,9 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.alertaclimatica.alert.client.Upstream;
-import com.alertaclimatica.alert.domain.Alerta;
-import com.alertaclimatica.alert.domain.Evento;
-import com.alertaclimatica.alert.domain.ReglaAlerta;
+import com.alertaclimatica.alert.domain.Entities.*;
 import com.alertaclimatica.alert.domain.Repos.*;
 import com.alertaclimatica.alert.service.AlertService;
 import com.alertaclimatica.alert.service.Dtos.Lectura;

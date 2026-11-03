@@ -13,6 +13,7 @@ Detalle de la arquitectura: [`docs/ARQUITECTURA-FASE3.md`](docs/ARQUITECTURA-FAS
 | `services/alert-service` | Java 21 · Spring Boot 3 | PostgreSQL |
 | `services/report-service` | Python · FastAPI · Jinja2 · WeasyPrint | MongoDB (+GridFS) |
 | `services/audit-service` | Python · FastAPI | MongoDB |
+| `services/notification-service` | Python · FastAPI · SMTP (correo de alertas) | MongoDB |
 | `frontend/angular-app` | Angular 22 (+ sección Reportes) | — |
 | `legacy/` | Monolito de la Fase 2 (referencia) | — |
 
@@ -38,8 +39,13 @@ Nginx de borde con Let's Encrypt: ver `deploy/nginx-edge.conf.example` (dominio 
 | Reportes: generar e historial | ✔ | ✔ | |
 | Reportes: **descargar PDF** | ✔ | | |
 
+## Seguridad, correo y Kubernetes
+* **Seguridad:** `docs/SEGURIDAD.md` y `python scripts/security_check.py --admin-password "..."` (el logout invalida el token al instante).
+* **Notificaciones por correo:** pantalla *Notificaciones* (Administrador); en pruebas los correos se ven en http://localhost:8025 (Mailpit); correo real: variables `SMTP_*` y `NOTIFY_DEFAULT_RECIPIENTS` del `.env`.
+* **Simular alertas:** `python scripts/demo_alertas.py todas` · **Kubernetes/K3s:** `./deploy/k8s/deploy.sh` (ver `deploy/k8s/LEEME.md`).
+
 ## Arduino / IoT (base de la fase final)
-API `POST /api/sensors/ingest` (clave `X-Device-Key`), sketches para UNO y ESP32 en `iot/`, puente USB `iot/bridge/bridge.py` (con `--simular`). Guía paso a paso: [`docs/ARDUINO-GUIA.md`](docs/ARDUINO-GUIA.md).
+API `POST /api/sensors/ingest` (clave `X-Device-Key`), sketches para UNO y ESP32 en `iot/`, puente USB `iot/bridge/bridge.py` (con `--simular`). Guía paso a paso: [`docs/ARDUINO-GUIA.md`](docs/ARDUINO-GUIA.md) (incluye el kit completo de componentes). Documentos de entrega y defensa: `docs/entregables/`.
 
 ## Verificación y operación
 ```bash

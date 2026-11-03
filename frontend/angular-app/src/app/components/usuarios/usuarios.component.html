@@ -109,7 +109,7 @@
 
     <!-- La contraseña solo se pide al crear: editar no la cambia (ver ActualizarUsuarioDto). -->
     <div class="mb-2" *ngIf="!modoEdicion">
-      <label class="form-label small text-muted">Contraseña (mínimo 6 caracteres)</label>
+      <label class="form-label small text-muted">Contraseña (mínimo 8 caracteres, con letras y números)</label>
       <div class="input-group">
         <input [type]="mostrarContrasenia ? 'text' : 'password'" class="form-control" [(ngModel)]="formContrasenia" autocomplete="new-password">
         <button type="button" class="btn btn-outline-secondary" (click)="mostrarContrasenia = !mostrarContrasenia">

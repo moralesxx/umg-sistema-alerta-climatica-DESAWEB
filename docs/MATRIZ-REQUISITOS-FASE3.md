@@ -23,6 +23,10 @@ Estado: ✅ implementado y probado automáticamente · 🟡 implementado, pendie
 | 17 | Despliegue en VPS con Docker Compose + HTTPS | `docker-compose.yml`, `deploy/` | ⬜ (requiere su VPS y dominio) |
 | 18 | Preparación K8s/K3s (stateless, health, env, Secrets, ConfigMaps, PVC, graceful shutdown) | `deploy/k8s/`, Dockerfiles | ✅ manifiestos válidos (YAML) · 🟡 no aplicados a un clúster |
 | 19 | Auth listo para OAuth2/OIDC | `identidades_externas`, `emitirToken` | ✅ |
+| 21 | (Adicional) Cierre de sesión que invalida el token | `auth-service` (sesiones), `SessionRevocation.cs`, `docs/SEGURIDAD.md` | ✅ Auth probado · 🟡 gateway |
+| 22 | (Adicional) Notificaciones de alertas por correo | `services/notification-service`, pantalla *Notificaciones* | ✅ probado con SMTP real de prueba · 🟡 integración Alert→Notification |
+| 23 | (Adicional) API y kit para Arduino | `/api/sensors/ingest`, `iot/`, `scripts/demo_alertas.py` | ✅ puente · 🟡 hardware |
+| 24 | (Adicional) Kubernetes listo para desplegar | `deploy/k8s/` (`deploy.sh`) | ✅ 46 recursos válidos (kustomize + kubeconform) · 🟡 clúster real |
 | 20 | Pruebas | pytest (Audit, Report), smoke Auth, JUnit (motor de alertas), `scripts/smoke.sh` E2E | ✅ las que corren aquí · 🟡 JUnit/E2E |
 
 ## Pendientes de la Fase 2 detectados y resueltos

@@ -91,7 +91,16 @@ def main():
     ap.add_argument("--url", default=os.getenv("BRIDGE_URL", "http://localhost:8080/api/sensors/ingest"))
     ap.add_argument("--clave", default=os.getenv("BRIDGE_CLAVE"), help="valor de DEVICE_API_KEY")
     ap.add_argument("--simular", action="store_true")
+    ap.add_argument("--listar", action="store_true", help="lista los puertos serie disponibles (para encontrar el COM del Arduino)")
     a = ap.parse_args()
+    if a.listar:
+        try:
+            from serial.tools import list_ports
+        except ImportError:
+            sys.exit("Instale pyserial:  pip install pyserial")
+        puertos = list(list_ports.comports())
+        print("\n".join(f"{p.device}\t{p.description}" for p in puertos) or "No se detectaron puertos serie. ¿Está conectado el Arduino?")
+        return
     if not a.clave:
         sys.exit("Falta --clave (DEVICE_API_KEY).")
     if not a.simular and not a.puerto:

@@ -8,9 +8,34 @@ public record LecturaEval(int SensorId, string SensorCodigo, string SensorNombre
 
 public static class Evaluacion
 {
+    // Lecturas que no pudieron entregarse al Alert Service (caída momentánea): se reintentan en el siguiente ciclo.
+    // Cola acotada en memoria: si el Alert Service tarda mucho en volver, se descartan los lotes más antiguos.
+    private static readonly System.Collections.Concurrent.ConcurrentQueue<LecturaEval[]> Pendientes = new();
+    private const int MaxLotesPendientes = 200;
+
     /// <summary>Envía las lecturas al Alert Service (API interna) para que evalúe reglas y genere alertas.</summary>
-    public static Task<bool> EnviarAsync(UpstreamClient up, IEnumerable<LecturaEval> lecturas, CancellationToken ct = default) =>
-        up.PostAsync("Alert", "/api/alerts/internal/evaluate", new { lecturas }, asService: true, ct);
+    public static async Task<bool> EnviarAsync(UpstreamClient up, IEnumerable<LecturaEval> lecturas, CancellationToken ct = default)
+    {
+        var lote = lecturas.ToArray();
+        if (lote.Length == 0) return true;
+        await ReintentarAsync(up, ct);                       // primero lo pendiente, para conservar el orden
+        if (await up.PostAsync("Alert", "/api/alerts/internal/evaluate", new { lecturas = lote }, asService: true, ct)) return true;
+        Pendientes.Enqueue(lote);
+        while (Pendientes.Count > MaxLotesPendientes) Pendientes.TryDequeue(out _);
+        return false;
+    }
+
+    public static async Task ReintentarAsync(UpstreamClient up, CancellationToken ct = default)
+    {
+        var intentos = Pendientes.Count;
+        while (intentos-- > 0 && Pendientes.TryPeek(out var lote))
+        {
+            if (!await up.PostAsync("Alert", "/api/alerts/internal/evaluate", new { lecturas = lote }, asService: true, ct)) return;
+            Pendientes.TryDequeue(out _);
+        }
+    }
+
+    public static int PendientesCount => Pendientes.Count;
 
     public static LecturaEval Map(LecturaClimatica l, Sensor s) =>
         new(s.SensorId, s.Codigo, s.NombreSensor, s.TipoSensorId, s.TipoSensor?.NombreTipo ?? "", s.TipoSensor?.UnidadMedida ?? "",
@@ -22,7 +47,6 @@ public class SimuladorLecturasService(IServiceScopeFactory scopeFactory, IConfig
 {
     private readonly Random _rnd = new();
     private readonly Dictionary<int, decimal> _ultimos = new();
-    private DateTime _ultimaLimpieza = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -63,17 +87,6 @@ public class SimuladorLecturasService(IServiceScopeFactory scopeFactory, IConfig
         var porId = sensores.ToDictionary(s => s.SensorId);
         if (!await Evaluacion.EnviarAsync(up, lecturas.Select(l => Evaluacion.Map(l, porId[l.SensorId])), ct))
             logger.LogWarning("Alert Service no aceptó las lecturas; se reintentará en el siguiente ciclo.");
-        await LimpiarAsync(db, ct);
-    }
-
-    private async Task LimpiarAsync(SensorDb db, CancellationToken ct)
-    {
-        if (DateTime.UtcNow - _ultimaLimpieza < TimeSpan.FromHours(1)) return;
-        _ultimaLimpieza = DateTime.UtcNow;
-        var dias = Math.Max(1, config.GetValue("Simulador:RetencionDias", 7));
-        var limite = DateTime.UtcNow.AddDays(-dias);
-        var n = await db.Lecturas.Where(l => l.FechaHora < limite).ExecuteDeleteAsync(ct);
-        if (n > 0) logger.LogInformation("Simulador: {N} lecturas anteriores a {D} días eliminadas.", n, dias);
     }
 
     private decimal Siguiente(Sensor s)
@@ -98,4 +111,35 @@ public class SimuladorLecturasService(IServiceScopeFactory scopeFactory, IConfig
         if (t.Contains("humo") || t.Contains("incendio")) return (0m, 1000m, 0m, 100m);
         return (0m, 100m, 20m, 60m);
     }
+}
+
+/// <summary>
+/// Retención de lecturas: elimina las más antiguas que Retencion:Dias (30 por defecto).
+/// Es independiente del simulador: sigue activa aunque el simulador esté deshabilitado y solo lleguen datos de hardware.
+/// </summary>
+public class RetencionLecturasService(IServiceScopeFactory scopeFactory, IConfiguration config, ILogger<RetencionLecturasService> logger) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var dias = Math.Max(1, config.GetValue("Retencion:Dias", config.GetValue("Simulador:RetencionDias", 30)));
+        try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); } catch (OperationCanceledException) { return; }
+        using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
+        do
+        {
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<SensorDb>();
+                var limite = DateTime.UtcNow.AddDays(-dias);
+                var n = await db.Lecturas.Where(l => l.FechaHora < limite).ExecuteDeleteAsync(stoppingToken);
+                if (n > 0) logger.LogInformation("Retención: {N} lecturas anteriores a {D} días eliminadas.", n, dias);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
+            catch (Exception ex) { logger.LogError(ex, "Error en la retención de lecturas."); }
+        }
+        while (await Next(timer, stoppingToken));
+    }
+
+    private static async Task<bool> Next(PeriodicTimer t, CancellationToken ct)
+    { try { return await t.WaitForNextTickAsync(ct); } catch (OperationCanceledException) { return false; } }
 }

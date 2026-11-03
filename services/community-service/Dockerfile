@@ -5,7 +5,7 @@ COPY services/community-service/*.csproj services/community-service/
 RUN dotnet restore services/community-service/Community.Service.csproj
 COPY services/shared-dotnet services/shared-dotnet
 COPY services/community-service services/community-service
-RUN dotnet publish services/community-service/Community.Service.csproj -c Release -o /app --no-restore
+RUN find /src -type d \( -name obj -o -name bin \) -prune -exec rm -rf {} + ; dotnet restore services/community-service/*.csproj && dotnet publish services/community-service/Community.Service.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app

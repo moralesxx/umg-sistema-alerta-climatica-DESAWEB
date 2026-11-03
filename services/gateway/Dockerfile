@@ -5,7 +5,7 @@ COPY services/gateway/*.csproj services/gateway/
 RUN dotnet restore services/gateway/Gateway.csproj
 COPY services/shared-dotnet services/shared-dotnet
 COPY services/gateway services/gateway
-RUN dotnet publish services/gateway/Gateway.csproj -c Release -o /app --no-restore
+RUN find /src -type d \( -name obj -o -name bin \) -prune -exec rm -rf {} + ; dotnet restore services/gateway/*.csproj && dotnet publish services/gateway/Gateway.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app

@@ -1,7 +1,7 @@
 package com.alertaclimatica.alert.config;
 
 import com.alertaclimatica.alert.client.Upstream;
-import com.alertaclimatica.alert.domain.ReglaAlerta;
+import com.alertaclimatica.alert.domain.Entities.ReglaAlerta;
 import com.alertaclimatica.alert.domain.Repos.ReglaRepo;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -32,7 +32,7 @@ public class DemoSeed implements ApplicationRunner {
         if (tipos.isEmpty()) { log.warn("Sin tipos de sensor disponibles; no se sembraron reglas de demostración."); return; }
         for (var t : tipos.values()) {
             String n = t.nombreTipo().toLowerCase();
-            if (n.contains("temperatura")) { r(t, "Temperatura extrema", null, 38, "Naranja", "Sequía", "Temperatura extrema detectada"); r(t, "Temperatura de helada", -50, 2, "Naranja", "Helada", "Riesgo de helada"); }
+            if (n.contains("temperatura")) { r(t, "Temperatura extrema", 38, null, "Naranja", "Sequía", "Temperatura extrema detectada"); r(t, "Temperatura de helada", -50, 2, "Naranja", "Helada", "Riesgo de helada"); }
             else if (n.contains("humedad")) r(t, "Humedad crítica", -1, 15, "Amarillo", "Sequía", "Humedad relativa críticamente baja");
             else if (n.contains("viento")) { r(t, "Viento fuerte", 60, null, "Naranja", "Tormenta", "Vientos fuertes"); r(t, "Viento extremo", 90, null, "Rojo", "Tormenta", "Vientos extremos"); }
             else if (n.contains("lluvia")) { r(t, "Lluvia intensa", 100, null, "Naranja", "Inundación", "Lluvia intensa acumulada"); r(t, "Lluvia extrema", 150, null, "Rojo", "Inundación", "Lluvia extrema: riesgo de inundación"); }

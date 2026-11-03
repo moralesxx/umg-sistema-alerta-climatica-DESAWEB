@@ -7,6 +7,10 @@ x-restart: &restart
   restart: unless-stopped
   stop_grace_period: 30s          # graceful shutdown (SIGTERM)
 
+x-hardened: &hardened             # contenedores de aplicación: sin privilegios adicionales ni capacidades de Linux
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
 x-jwt: &jwt
   Jwt__Key: ${JWT_KEY:?defina JWT_KEY en .env}
   Jwt__Issuer: ${JWT_ISSUER:-AlertaClimatica.Auth}
@@ -28,7 +32,7 @@ services:
 
   gateway:                        # ASP.NET Core 10 + YARP
     build: { context: ., dockerfile: services/gateway/Dockerfile }
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt
       Cors__AllowedOrigins__0: ${PUBLIC_URL:-http://localhost:4200}
@@ -49,15 +53,19 @@ services:
       alert-service: { condition: service_healthy }
       report-service: { condition: service_healthy }
       audit-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
     networks: [backend]
 
   # ------------------------------------------------------------------ microservicios
   auth-service:                   # Node.js / NestJS / PostgreSQL
     build: ./services/auth-service
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt-py
-      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-15}      # access token corto; la sesión se renueva con refresh token
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-7}
+      MAX_FAILED_LOGINS: ${MAX_FAILED_LOGINS:-5}
+      LOCK_MINUTES: ${LOCK_MINUTES:-15}
       DATABASE_URL: postgres://auth:${AUTH_DB_PASSWORD:?}@auth-db:5432/auth_db
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD en .env}
       AUDIT_SERVICE_URL: http://audit-service:8000
@@ -66,7 +74,7 @@ services:
 
   community-service:              # C# / .NET 10 / PostgreSQL
     build: { context: ., dockerfile: services/community-service/Dockerfile }
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt
       ConnectionStrings__Default: Host=community-db;Database=community_db;Username=community;Password=${COMMUNITY_DB_PASSWORD:?}
@@ -79,7 +87,7 @@ services:
 
   sensor-service:                 # C# / .NET 10 / SQL Server
     build: { context: ., dockerfile: services/sensor-service/Dockerfile }
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt
       ConnectionStrings__Default: Server=sensor-db;Database=SensorDb;User Id=sa;Password=${SA_PASSWORD:?};TrustServerCertificate=True;
@@ -87,6 +95,7 @@ services:
       Services__Alert: http://alert-service:8080
       Services__Audit: http://audit-service:8000
       Devices__ApiKey: ${DEVICE_API_KEY:-}
+      Retencion__Dias: ${RETENCION_DIAS:-30}
       Simulador__Habilitado: ${SIMULADOR_HABILITADO:-true}
       Simulador__IntervaloSegundos: ${SIMULADOR_INTERVALO:-15}
       Seed__Demo: ${SEED_DEMO:-true}
@@ -97,7 +106,7 @@ services:
 
   alert-service:                  # Java / Spring Boot / PostgreSQL
     build: ./services/alert-service
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt-py
       DATABASE_URL: jdbc:postgresql://alert-db:5432/alert_db
@@ -106,6 +115,7 @@ services:
       COMMUNITY_SERVICE_URL: http://community-service:8080
       SENSOR_SERVICE_URL: http://sensor-service:8080
       AUDIT_SERVICE_URL: http://audit-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
       APP_TZ: ${APP_TZ:-America/Guatemala}
       SEED_DEMO: ${SEED_DEMO:-true}
     healthcheck:
@@ -119,7 +129,7 @@ services:
 
   report-service:                 # Python / FastAPI / MongoDB / Jinja2 / WeasyPrint
     build: ./services/report-service
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt-py
       MONGO_URI: mongodb://mongo:27017
@@ -135,12 +145,36 @@ services:
 
   audit-service:                  # Python / FastAPI / MongoDB
     build: ./services/audit-service
-    <<: *restart
+    <<: [*restart, *hardened]
     environment:
       <<: *jwt-py
       MONGO_URI: mongodb://mongo:27017
       MONGO_DB: audit_db
     depends_on: { mongo: { condition: service_healthy } }
+    networks: [backend]
+
+  notification-service:           # Python / FastAPI / MongoDB / SMTP — avisos de alertas por correo
+    build: ./services/notification-service
+    <<: [*restart, *hardened]
+    environment:
+      <<: *jwt-py
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: notification_db
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Alerta Climática <alertas@sistema-climatico.example>}
+      SMTP_SECURITY: ${SMTP_SECURITY:-none}
+      NOTIFY_DEFAULT_RECIPIENTS: ${NOTIFY_DEFAULT_RECIPIENTS:-}
+      NOTIFY_MAX_PER_HOUR: ${NOTIFY_MAX_PER_HOUR:-30}
+    depends_on: { mongo: { condition: service_healthy } }
+    networks: [backend]
+
+  mailpit:                        # buzón de pruebas: captura los correos (http://localhost:8025). Con SMTP real no se usa.
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports: ["127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"]
     networks: [backend]
 
   # ------------------------------------------------------------------ bases de datos (una por servicio)
@@ -172,7 +206,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     <<: *restart
     user: "0:0"
-    environment: { ACCEPT_EULA: "Y", MSSQL_SA_PASSWORD: "${SA_PASSWORD:?}", MSSQL_FORCE_ENCRYPTION: "0" }
+    environment: { ACCEPT_EULA: "Y", MSSQL_SA_PASSWORD: "${SA_PASSWORD:?}", MSSQL_FORCE_ENCRYPTION: "0", MSSQL_MEMORY_LIMIT_MB: "1536" }
     volumes: [mssql_data:/var/opt/mssql/data]
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1'"]

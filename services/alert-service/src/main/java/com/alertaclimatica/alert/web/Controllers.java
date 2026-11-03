@@ -30,6 +30,7 @@ public final class Controllers {
 
         @PostMapping("/evaluate") @PreAuthorize("hasRole('Servicio')")
         public Map<String, Object> evaluate(@RequestBody EvaluarRequest req) {
+            if (req.lecturas() != null && req.lecturas().size() > 500) throw new IllegalArgumentException("Máximo 500 lecturas por solicitud.");
             return Map.of("alertasCreadas", svc.evaluar(req.lecturas() == null ? List.of() : req.lecturas()));
         }
     }
@@ -61,7 +62,7 @@ public final class Controllers {
         @PostMapping @PreAuthorize(EDITOR)
         public ResponseEntity<AlertaDto> crear(@RequestBody CrearAlerta in) { return ResponseEntity.status(HttpStatus.CREATED).body(svc.crear(in)); }
 
-        @DeleteMapping @PreAuthorize(EDITOR)
+        @DeleteMapping @PreAuthorize(ADMIN)   // acción destructiva: solo Administrador
         public Map<String, String> borrarTodas() { svc.eliminarTodas(); return Map.of("mensaje", "Historial de alertas limpiado correctamente."); }
     }
 

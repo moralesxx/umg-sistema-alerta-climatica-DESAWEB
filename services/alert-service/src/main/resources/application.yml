@@ -28,5 +28,6 @@ app:
     community: ${COMMUNITY_SERVICE_URL:http://community-service:8080}
     sensor: ${SENSOR_SERVICE_URL:http://sensor-service:8080}
     audit: ${AUDIT_SERVICE_URL:http://audit-service:8000}
+    notification: ${NOTIFICATION_SERVICE_URL:http://notification-service:8000}
   tz: ${APP_TZ:America/Guatemala}
   seed-demo: ${SEED_DEMO:false}

@@ -9,6 +9,11 @@ import {
 import { RolService, Rol } from '../../services/rol.service';
 import { AuthService } from '../../services/auth.service';
 
+// Misma política que el Auth Service: 8-72 caracteres, con letras y números.
+function contraseniaValida(p: string | null | undefined): boolean {
+  return !!p && p.length >= 8 && p.length <= 72 && /[A-Za-z]/.test(p) && /\d/.test(p);
+}
+
 @Component({
   selector: 'app-usuarios',
   standalone: true,
@@ -161,8 +166,8 @@ export class UsuariosComponent implements OnInit {
     if (!this.formNombre.trim()) return 'El nombre es obligatorio.';
     if (!this.formCorreo.trim()) return 'El correo es obligatorio.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formCorreo.trim())) return 'El correo no tiene un formato válido.';
-    if (!this.modoEdicion && (!this.formContrasenia || this.formContrasenia.length < 6)) {
-      return 'La contraseña debe tener al menos 6 caracteres.';
+    if (!this.modoEdicion && !contraseniaValida(this.formContrasenia)) {
+      return 'La contraseña debe tener entre 8 y 72 caracteres e incluir letras y números.';
     }
     if (this.formRolId === null) return 'Debes seleccionar un rol.';
     return '';

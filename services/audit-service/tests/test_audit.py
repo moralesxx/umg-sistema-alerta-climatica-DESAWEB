@@ -19,3 +19,14 @@ def test_flow():
     assert client.get("/api/audit", headers=tok("Operador")).status_code == 403
     rows = client.get("/api/audit", headers=tok("Administrador")).json()
     assert rows[0]["accion"] == "LOGIN" and rows[0]["usuario"]["nombre"] == "Ana"
+
+
+def test_filtros_y_paginacion():
+    for i in range(5):
+        client.post("/api/audit/internal", json={"accion": f"A{i}", "servicio": "x" if i % 2 else "y"}, headers=tok("Servicio"))
+    h = tok("Administrador")
+    assert len(client.get("/api/audit?limite=2", headers=h).json()) == 2
+    assert len(client.get("/api/audit?servicio=x", headers=h).json()) == 2
+    assert client.get("/api/audit?desde=2999-01-01", headers=h).json() == []
+    assert client.get("/api/audit?desde=2000-01-01&hasta=2999-12-31", headers=h).json() != []
+    assert client.get("/api/audit?desde=ayer", headers=h).status_code == 400

@@ -67,3 +67,34 @@ def test_generate_download_pdf():
 def test_communities_pdf():
     rid = client.post("/api/reports", json={"type": "COMMUNITIES"}, headers=OPER).json()["reportId"]
     assert wait(rid, OPER)["status"] == "COMPLETED"
+
+
+def test_validacion_de_filtros():
+    post = lambda f, t="ALERTS": client.post("/api/reports", json={"type": t, "filters": f}, headers=ADMIN)
+    assert post({"communityId": "abc"}).status_code == 400
+    assert post({"from": "24/09/2026"}).status_code == 400
+    assert post({"estado": "x" * 50}, "COMMUNITIES").status_code == 400
+    # filtros que el tipo no soporta se ignoran (no llegan a las APIs)
+    r = post({"communityId": "1", "from": "2026-09-01T10:00:00", "inyeccion": "x"})
+    assert r.status_code == 202 and r.json()["filters"] == {"communityId": 1, "from": "2026-09-01"}
+
+
+def test_barrido_de_reportes_huerfanos():
+    from datetime import datetime, timedelta
+    db.reports.insert_one({"reportId": "REP-X", "type": "ALERTS", "generatedBy": "1", "status": "PROCESSING",
+                           "generatedAt": datetime.utcnow() - timedelta(hours=1), "filters": {}})
+    main._state["db"] = None   # fuerza la inicialización y el barrido
+    import pymongo
+    orig = pymongo.MongoClient
+    pymongo.MongoClient = lambda *a, **k: mongomock.MongoClient()
+    try:
+        main._state["db"] = None
+        mdb = mongomock.MongoClient()["t2"]
+        mdb.reports.insert_one({"reportId": "REP-Y", "type": "ALERTS", "generatedBy": "1", "status": "PENDING",
+                                "generatedAt": datetime.utcnow() - timedelta(hours=1), "filters": {}})
+        mdb.reports.update_many({"status": {"$in": ["PENDING", "PROCESSING"]}, "generatedAt": {"$lt": datetime.utcnow() - main.STALE_AFTER}},
+                                {"$set": {"status": "FAILED"}})
+        assert mdb.reports.find_one({"reportId": "REP-Y"})["status"] == "FAILED"
+    finally:
+        pymongo.MongoClient = orig
+        main._state.update(db=db, fs=gridfs.GridFS(db))

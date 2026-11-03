@@ -8,6 +8,7 @@ builder.Services.AddDbContext<SensorDb>(o => o.UseSqlServer(
     builder.Configuration.GetConnectionString("Default") ?? throw new InvalidOperationException("Falta ConnectionStrings__Default.")));
 builder.Services.AddSingleton<CommunityDirectory>();
 builder.Services.AddHostedService<SimuladorLecturasService>();
+builder.Services.AddHostedService<RetencionLecturasService>();
 
 var app = builder.Build();
 app.UseClimaCommon();

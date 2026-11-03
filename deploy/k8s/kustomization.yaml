@@ -1,0 +1,23 @@
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
+# Aplicar todo:  kubectl apply -k deploy/k8s     (los Secrets se crean aparte con crear-secretos.sh)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: alerta-climatica
+resources:
+  - 00-namespace-config.yaml
+  - 10-databases.yaml
+  - 20-apps.yaml
+  - 25-autoscaling.yaml
+  - 30-ingress.yaml
+  - 40-networkpolicy.yaml
+# Para un registro propio:  kustomize edit set image alerta/gateway=ghcr.io/USUARIO/alerta-gateway:1.0 (una por servicio)
+images:
+  - { name: alerta/gateway, newName: alerta/gateway, newTag: latest }
+  - { name: alerta/auth-service, newName: alerta/auth-service, newTag: latest }
+  - { name: alerta/community-service, newName: alerta/community-service, newTag: latest }
+  - { name: alerta/sensor-service, newName: alerta/sensor-service, newTag: latest }
+  - { name: alerta/alert-service, newName: alerta/alert-service, newTag: latest }
+  - { name: alerta/report-service, newName: alerta/report-service, newTag: latest }
+  - { name: alerta/audit-service, newName: alerta/audit-service, newTag: latest }
+  - { name: alerta/notification-service, newName: alerta/notification-service, newTag: latest }
+  - { name: alerta/frontend, newName: alerta/frontend, newTag: latest }

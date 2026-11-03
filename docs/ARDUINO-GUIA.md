@@ -1,5 +1,22 @@
 # Guía: conectar un Arduino al sistema (paso a paso)
 
+## 00. Conexión rápida Arduino ↔ PC ↔ sistema (Windows)
+
+1. **Levante el sistema** (`docker compose up -d`) y confirme `curl.exe -s http://localhost:8080/health/services`.
+2. **Clave de dispositivo:** en el `.env` debe existir `DEVICE_API_KEY=<texto de 16+ caracteres>` (si no, la API responde 503). Tras cambiarla: `docker compose up -d sensor-service`.
+3. **Cree los sensores** en el sistema con los códigos `ARD-*` (ver tabla de la sección 11) — pantalla *Sensores*.
+4. **Pruebe la API sin Arduino** (debe decir `aceptadas`): `python scripts/demo_alertas.py rojo --arduino`.
+5. **Conecte el Arduino por USB**, abra el IDE, suba `iot/sensores_uno_completo/sensores_uno_completo.ino` (o `sensores_uno`) y **cierre el Monitor Serie**.
+6. **Busque el puerto:** `cd iot/bridge && pip install -r requirements.txt && python bridge.py --listar` (ej. `COM3`).
+7. **Ejecute el puente:** `python bridge.py --puerto COM3 --clave <DEVICE_API_KEY>` → verá `[OK] aceptadas=…` cada 10 s.
+8. **Vea los datos** en Dashboard/Lecturas y provoque alertas (potenciómetro, llama, agua); recibirá correo si configuró destinatarios en *Notificaciones*.
+
+> Mientras el Arduino envía datos de un sensor, el simulador lo omite. Para usar **solo** hardware real: `SIMULADOR_HABILITADO=false` en `.env`.
+> **Demostración sin hardware:** `python scripts/demo_alertas.py todas` recorre Verde → Amarillo → Naranja → Rojo usando la misma API.
+
+### Claves por dispositivo (recomendado)
+En lugar de compartir la clave general del `.env`, el Administrador puede registrar cada Arduino en la pantalla **Dispositivos** (menú lateral): se genera una clave propia (`dk_…`) que **solo se muestra una vez**, puede limitarse a sensores con un prefijo (p. ej. `ARD-`) y se **revoca** con un clic sin afectar a los demás. Se usa igual: `bridge.py --clave dk_…` o la cabecera `X-Device-Key`. La clave general `DEVICE_API_KEY` sigue funcionando como respaldo.
+
 ## 0. Cómo funciona (la idea completa)
 
 ```
@@ -103,3 +120,36 @@ Abra `iot/sensores_esp32/sensores_esp32.ino`, ponga `WIFI_SSID`, `WIFI_PASS`, `U
 | `nan` / falta temperatura | DHT mal conectado (se omite, no se envían NaN) |
 | `[ERROR 400] Sensor no registrado` | Cree el sensor con el **código exacto** (`ARD-TEMP`…) |
 | Valores de agua siempre 0 o 5 | Calibre `AGUA_CRUDO_MAX`; revise que use A0 y no un pin digital |
+
+## 11. Kit completo: componentes para simular TODO lo posible
+
+El sistema maneja **8 tipos de sensor**. Con los componentes de esta tabla puede cubrir los 8; donde no sea posible reproducir el fenómeno real (viento, lluvia fuerte, río), un **potenciómetro** de 10 kΩ lo simula: al girarlo, el valor sube o baja y puede provocar alertas de cualquier nivel en la demostración.
+
+| Variable del sistema | Componente real | Alternativa para simular | Pin (UNO) | Código en el sistema |
+|---|---|---|---|---|
+| Temperatura Ambiente | DHT11 / DHT22 (o LM35) | Encendedor/secador a distancia segura | D2 | `ARD-TEMP` |
+| Humedad Relativa | DHT11 / DHT22 (mismo módulo) | Aliento cerca del sensor | D2 | `ARD-HUM` |
+| Velocidad del Viento | Anemómetro de copas (interruptor reed) | **Potenciómetro** (o ventilador + hélice con sensor de efecto Hall) | A0 | `ARD-VIENTO` |
+| Nivel de Lluvia | Sensor de lluvia YL-83 / pluviómetro de balancín | Gotas de agua sobre la placa | A1 | `ARD-LLUVIA` |
+| Humo / Incendio (humo) | MQ-2 (humo/gas) | Humo de fósforo apagado a distancia | A2 | `ARD-HUMO` |
+| Humo / Incendio (fuego) | Módulo de llama LM393 | Encendedor a 20–30 cm | A3 | `ARD-FUEGO` |
+| Nivel de Río | **Ultrasónico HC-SR04** sobre un recipiente | Mover la mano/objeto frente al sensor | D3 (TRIG), D4 (ECHO) | `ARD-RIO` |
+| Nivel de Reservorio | Segundo HC-SR04 | Mover un objeto | D5 (TRIG), D6 (ECHO) | `ARD-RESERV` |
+| Presión Atmosférica | BMP280 (I2C, 3.3 V) | — | A4 (SDA), A5 (SCL) | `ARD-PRES` |
+| Alarma local (opcional) | 3 LEDs (verde, amarillo, rojo) + resistencias 220 Ω + buzzer activo | — | D9, D10, D11, D8 | — |
+
+**Lista de compra mínima:** Arduino UNO + cable USB, protoboard, cables dupont, DHT11 (o DHT22), 2 × HC-SR04, 2–3 potenciómetros 10 kΩ, sensor de lluvia YL-83, MQ-2, módulo de llama LM393, BMP280, 3 LEDs, 3 resistencias 220 Ω y un buzzer activo. **Opcional:** ESP32 (WiFi directo), pantalla LCD 16×2 I2C para ver valores, botón pulsador (simula un «botón de pánico» como evento manual).
+
+**Sketch listo:** `iot/sensores_uno_completo/sensores_uno_completo.ino` (lee todo, imprime el JSON y maneja el semáforo local con los mismos umbrales de las reglas de demostración). Para empezar simple use `iot/sensores_uno`.
+
+**Crear los sensores en el sistema** (pantalla *Sensores*, con estos códigos exactos): `ARD-TEMP` (Temperatura Ambiente), `ARD-HUM` (Humedad Relativa), `ARD-VIENTO` (Velocidad del Viento), `ARD-LLUVIA` (Nivel de Lluvia), `ARD-HUMO` y `ARD-FUEGO` (Humo / Incendio), `ARD-RIO` (Nivel de Río), `ARD-RESERV` (Nivel de Reservorio), `ARD-PRES` (Presión Atmosférica). Un código que no exista se rechaza solo para esa lectura; las demás se aceptan.
+
+**Umbrales de las reglas de demostración** (se pueden cambiar en *Reglas de Alerta*): viento ≥ 60 Naranja y ≥ 90 Rojo · lluvia ≥ 100 Naranja y ≥ 150 Rojo · río ≥ 3.5 Amarillo y ≥ 5 Rojo · humedad ≤ 15 Amarillo · temperatura ≥ 38 Naranja y ≤ 2 Naranja (helada) · humo ≥ 300 Rojo. Presión y reservorio no traen regla: créela si la necesita.
+
+**Precauciones del montaje**
+* **MQ-2:** necesita 1–2 minutos de calentamiento y su valor «en reposo» varía; anote la línea base y réstela o ajuste la regla.
+* **HC-SR04:** funciona a 5 V. Con un **ESP32** (lógica de 3.3 V) use un divisor de tensión en el pin ECHO.
+* **BMP280:** alimentar a **3.3 V**, no a 5 V (salvo módulo con regulador).
+* **Agua:** nunca moje la electrónica; solo las pistas del sensor, y sin alimentar permanentemente (se corroe).
+* **Fuego:** use un encendedor a distancia y supervisión; nunca cerca de la protoboard ni de materiales inflamables.
+* **Simulador:** con hardware real, desactívelo en `.env` (`SIMULADOR_HABILITADO=false`) para que no «rellene» datos falsos si el Arduino se desconecta más de 2 minutos.

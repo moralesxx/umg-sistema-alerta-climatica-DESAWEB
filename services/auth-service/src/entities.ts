@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('roles')
 export class Rol {
@@ -21,6 +21,31 @@ export class Usuario {
   @Column({ default: true }) estado: boolean;
   @CreateDateColumn({ name: 'fecha_creacion', type: 'timestamptz' }) fechaCreacion: Date;
   @Column({ name: 'ultimo_acceso', type: 'timestamptz', nullable: true }) ultimoAcceso: Date | null;
+  /** Protección contra fuerza bruta por cuenta (además del límite por IP del gateway). */
+  @Column({ name: 'intentos_fallidos', default: 0 }) intentosFallidos: number;
+  @Column({ name: 'bloqueado_hasta', type: 'timestamptz', nullable: true }) bloqueadoHasta: Date | null;
+}
+
+/** Sesión de usuario: su id viaja en el access token (claim `sid`). El gateway la consulta en cada petición, por eso el logout invalida el token al instante. */
+@Entity('sesiones')
+export class Sesion {
+  @PrimaryColumn({ type: 'uuid' }) id: string;
+  @Index() @Column({ name: 'usuario_id' }) usuarioId: number;
+  @Column({ name: 'expira_en', type: 'timestamptz' }) expiraEn: Date;
+  @Column({ name: 'revocada_en', type: 'timestamptz', nullable: true }) revocadaEn: Date | null;
+  @CreateDateColumn({ name: 'creada_en', type: 'timestamptz' }) creadaEn: Date;
+}
+
+/** Refresh token opaco: solo se guarda su hash SHA-256. Rotación en cada uso y revocación en logout. */
+@Entity('refresh_tokens')
+export class RefreshToken {
+  @PrimaryGeneratedColumn() id: number;
+  @Index({ unique: true }) @Column({ name: 'token_hash' }) tokenHash: string;
+  @Column({ name: 'usuario_id' }) usuarioId: number;
+  @Column({ name: 'sesion_id', type: 'uuid', nullable: true }) sesionId: string | null;
+  @Column({ name: 'expira_en', type: 'timestamptz' }) expiraEn: Date;
+  @Column({ name: 'revocado_en', type: 'timestamptz', nullable: true }) revocadoEn: Date | null;
+  @CreateDateColumn({ name: 'creado_en', type: 'timestamptz' }) creadoEn: Date;
 }
 
 /** Preparación OAuth 2.0 / OIDC: vincula un usuario local con (proveedor, subject externo). */

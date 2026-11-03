@@ -30,10 +30,14 @@ def get_db():
         _state["fs"] = gridfs.GridFS(_state["db"])
         _state["db"].reports.create_index("reportId", unique=True)
         _state["db"].reports.create_index([("generatedAt", DESCENDING)])
+        # Si un servicio murió generando un reporte, no debe quedar "PROCESSING" para siempre.
+        _state["db"].reports.update_many(
+            {"status": {"$in": ["PENDING", "PROCESSING"]}, "generatedAt": {"$lt": datetime.now(timezone.utc).replace(tzinfo=None) - STALE_AFTER}},
+            {"$set": {"status": "FAILED", "error": "La generación se interrumpió (reinicio del servicio)."}})
     return _state["db"]
 
 
-app = FastAPI(title="Report Service")
+app = FastAPI(title="Report Service", docs_url=None, redoc_url=None, openapi_url=None)
 
 
 @app.exception_handler(RequestValidationError)
@@ -112,9 +116,25 @@ def _generate(report_id: str, token: str, user_name: str):
 def generate(body: GenerateIn, bg: BackgroundTasks, user: Principal = Depends(require_permission("reports:generate"))):
     if body.type not in builders.REPORTS:
         raise HTTPException(400, {"mensaje": "Tipo de reporte no válido."})
-    f = {k: v for k, v in body.filters.items() if v not in (None, "")}
-    if f.get("from") and f.get("to") and str(f["from"]) > str(f["to"]):
+    allowed = set(builders.REPORTS[body.type][3])
+    f = {k: v for k, v in body.filters.items() if v not in (None, "") and k in allowed}   # solo filtros soportados por el tipo
+    for k in ("communityId", "sensorId", "sensorTypeId"):
+        if k in f:
+            try:
+                f[k] = int(f[k])
+            except (TypeError, ValueError):
+                raise HTTPException(400, {"mensaje": f"El filtro {k} debe ser un número."})
+    for k in ("from", "to"):
+        if k in f:
+            try:
+                datetime.strptime(str(f[k])[:10], "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(400, {"mensaje": f"El filtro {k} debe tener formato AAAA-MM-DD."})
+            f[k] = str(f[k])[:10]
+    if f.get("from") and f.get("to") and f["from"] > f["to"]:
         raise HTTPException(400, {"mensaje": "La fecha inicial no puede ser mayor que la final."})
+    if len(str(f.get("estado", ""))) > 20 or len(str(f.get("municipio", ""))) > 80 or len(str(f.get("departamento", ""))) > 80:
+        raise HTTPException(400, {"mensaje": "Algún filtro de texto es demasiado largo."})
     db = get_db()
     doc = {"reportId": _next_id(db), "type": body.type, "generatedBy": user.sub, "generatedByName": user.name,
            "generatedAt": datetime.now(timezone.utc).replace(tzinfo=None), "filters": f, "status": "PENDING",

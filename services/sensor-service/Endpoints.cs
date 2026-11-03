@@ -30,6 +30,7 @@ public static class Dispositivos
     public static void Marcar(int sensorId) => Ultima[sensorId] = DateTime.UtcNow;
     public static bool TieneHardware(int sensorId) => Ultima.TryGetValue(sensorId, out var t) && DateTime.UtcNow - t < TimeSpan.FromMinutes(2);
 }
+public record DispositivoInput(string? Nombre, string? Prefijo);
 public record ValorSimuladoInput(decimal? Valor);
 public class LecturaInput { public int SensorId { get; set; } public decimal Valor { get; set; } public DateTime? FechaHora { get; set; } }
 
@@ -37,6 +38,8 @@ public static class Endpoints
 {
     private static readonly string[] AdminOper = ["Administrador", "Operador"];
     private static readonly string[] Admin = ["Administrador"];
+    private static string HashClave(string clave) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(clave))).ToLowerInvariant();
+
     private static int MinutosSinComunicacion(IConfiguration c) => Math.Max(1, c.GetValue("Status:SinComunicacionMinutos", 5));
 
     public static void MapSensorEndpoints(this WebApplication app)
@@ -45,11 +48,20 @@ public static class Endpoints
         // Sin JWT de usuario: el dispositivo se identifica con la clave del header X-Device-Key (variable Devices__ApiKey).
         app.MapPost("/api/sensors/ingest", async (IngestInput input, HttpRequest req, SensorDb db, UpstreamClient up, IConfiguration cfg) =>
         {
+            // Dos formas de autenticarse: la clave maestra del entorno (Devices__ApiKey) o la clave propia de un dispositivo registrado (revocable).
             var expected = cfg["Devices:ApiKey"];
-            if (string.IsNullOrWhiteSpace(expected) || expected.Length < 16)
+            var maestraActiva = !string.IsNullOrWhiteSpace(expected) && expected.Length >= 16;
+            if (!maestraActiva && !await db.DispositivosIot.AnyAsync(d => d.Activo))
                 return Results.Json(new { mensaje = "La ingesta de dispositivos no está habilitada." }, statusCode: 503);
             var given = req.Headers["X-Device-Key"].ToString();
-            if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(given), Encoding.UTF8.GetBytes(expected)))
+            DispositivoIot? disp = null;
+            var esMaestra = maestraActiva && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(given), Encoding.UTF8.GetBytes(expected!));
+            if (!esMaestra && given.Length >= 16 && given.Length <= 200)
+            {
+                var hash = HashClave(given);
+                disp = await db.DispositivosIot.FirstOrDefaultAsync(d => d.KeyHash == hash && d.Activo);
+            }
+            if (!esMaestra && disp == null)
                 return Results.Json(new { mensaje = "Clave de dispositivo no válida." }, statusCode: 401);
 
             var items = input.Lecturas ?? new List<IngestItem>();
@@ -64,6 +76,8 @@ public static class Endpoints
             {
                 var codigo = it.Codigo?.Trim();
                 if (string.IsNullOrEmpty(codigo) || it.Valor is null) { rechazadas.Add(new { codigo, motivo = "Falta codigo o valor." }); continue; }
+                if (disp?.Prefijo is { Length: > 0 } pref && !codigo.StartsWith(pref, StringComparison.OrdinalIgnoreCase))
+                { rechazadas.Add(new { codigo, motivo = "El dispositivo no tiene permiso para ese sensor." }); continue; }
                 if (Math.Abs(it.Valor.Value) > 1_000_000m) { rechazadas.Add(new { codigo, motivo = "Valor fuera de rango." }); continue; }
                 var sensor = await db.Sensores.Include(x => x.TipoSensor).FirstOrDefaultAsync(x => x.Codigo == codigo);
                 if (sensor == null) { rechazadas.Add(new { codigo, motivo = "Sensor no registrado en el sistema." }); continue; }
@@ -75,11 +89,51 @@ public static class Endpoints
             if (aceptadas.Count == 0) return Results.BadRequest(new { mensaje = "Ninguna lectura fue aceptada.", rechazadas });
             await db.SaveChangesAsync();
             foreach (var (_, s) in aceptadas) Dispositivos.Marcar(s.SensorId);
+            if (disp != null) { disp.UltimoContacto = ahora; await db.SaveChangesAsync(); }
             await Evaluacion.EnviarAsync(up, aceptadas.Select(a => Evaluacion.Map(a.L, a.S)));
             return Results.Ok(new { aceptadas = aceptadas.Count, rechazadas, fechaHora = ahora });
         }).AllowAnonymous();
 
         var g = app.MapGroup("/api/sensors").RequireAuthorization();
+
+        // ------------------------------------------------------------------ dispositivos IoT (claves individuales, revocables)
+        g.MapPost("/devices", async (DispositivoInput i, SensorDb db, AuditClient audit) =>
+        {
+            if (string.IsNullOrWhiteSpace(i.Nombre) || i.Nombre.Trim().Length > 100) throw new ArgumentException("El nombre del dispositivo es obligatorio (máx. 100 caracteres).");
+            var prefijo = string.IsNullOrWhiteSpace(i.Prefijo) ? null : i.Prefijo.Trim();
+            if (prefijo is { Length: > 40 }) throw new ArgumentException("El prefijo no puede superar 40 caracteres.");
+            var clave = "dk_" + Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();   // 51 caracteres, 192 bits
+            var d = new DispositivoIot { Nombre = i.Nombre.Trim(), KeyHash = HashClave(clave), Prefijo = prefijo, Activo = true, Creado = DateTime.UtcNow };
+            db.DispositivosIot.Add(d);
+            await db.SaveChangesAsync();
+            audit.Registrar("CREAR_DISPOSITIVO", $"Se registró el dispositivo \"{d.Nombre}\" (prefijo {prefijo ?? "cualquiera"}).", "Dispositivo", d.DispositivoId);
+            return Results.Created($"/api/sensors/devices/{d.DispositivoId}", new
+            {
+                d.DispositivoId, d.Nombre, d.Prefijo, clave,
+                aviso = "Guarde esta clave ahora: no se vuelve a mostrar. Úsela en el encabezado X-Device-Key."
+            });
+        }).RequireRoles(Admin);
+
+        g.MapGet("/devices", async (SensorDb db) => Results.Ok(await db.DispositivosIot.AsNoTracking().OrderBy(d => d.DispositivoId)
+            .Select(d => new { d.DispositivoId, d.Nombre, d.Prefijo, d.Activo, d.Creado, d.UltimoContacto }).ToListAsync())).RequireRoles(Admin);
+
+        g.MapPatch("/devices/{id:int}/estado", async (int id, [FromBody] bool activo, SensorDb db, AuditClient audit) =>
+        {
+            var d = await db.DispositivosIot.FirstOrDefaultAsync(x => x.DispositivoId == id);
+            if (d == null) return Results.NotFound(new { mensaje = "Dispositivo no encontrado." });
+            d.Activo = activo; await db.SaveChangesAsync();
+            audit.Registrar(activo ? "ACTIVAR_DISPOSITIVO" : "REVOCAR_DISPOSITIVO", $"El dispositivo \"{d.Nombre}\" fue {(activo ? "activado" : "revocado")}.", "Dispositivo", id);
+            return Results.Ok(new { mensaje = activo ? "Dispositivo activado." : "Dispositivo revocado: su clave ya no funciona.", dispositivoId = id, activo });
+        }).RequireRoles(Admin);
+
+        g.MapDelete("/devices/{id:int}", async (int id, SensorDb db, AuditClient audit) =>
+        {
+            var d = await db.DispositivosIot.FirstOrDefaultAsync(x => x.DispositivoId == id);
+            if (d == null) return Results.NotFound(new { mensaje = "Dispositivo no encontrado." });
+            db.DispositivosIot.Remove(d); await db.SaveChangesAsync();
+            audit.Registrar("ELIMINAR_DISPOSITIVO", $"Se eliminó el dispositivo \"{d.Nombre}\".", "Dispositivo", id);
+            return Results.Ok(new { mensaje = "Dispositivo eliminado." });
+        }).RequireRoles(Admin);
 
         // ------------------------------------------------------------------ tipos
         g.MapGet("/types", async (SensorDb db) => Results.Ok(await db.TiposSensor.AsNoTracking().OrderBy(t => t.TipoSensorId).ToListAsync()));

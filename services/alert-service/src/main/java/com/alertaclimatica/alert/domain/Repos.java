@@ -1,8 +1,6 @@
 package com.alertaclimatica.alert.domain;
 
-import com.alertaclimatica.alert.domain.Alerta;
-import com.alertaclimatica.alert.domain.Evento;
-import com.alertaclimatica.alert.domain.ReglaAlerta;
+import com.alertaclimatica.alert.domain.Entities.*;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -49,9 +49,9 @@ export class RegistroComponent {
       return;
     }
 
-    if (this.contrasenia.length < 6) {
+    if (this.contrasenia.length < 8 || this.contrasenia.length > 72 || !/[A-Za-z]/.test(this.contrasenia) || !/\d/.test(this.contrasenia)) {
       this.error =
-        'La contraseña debe tener al menos 6 caracteres.';
+        'La contraseña debe tener entre 8 y 72 caracteres e incluir letras y números.';
       return;
     }
 
@@ -76,16 +76,18 @@ export class RegistroComponent {
       )
       .subscribe({
 
-        next: () => {
+        next: (respuesta: any) => {
 
           this.cargando = false;
 
+          // La cuenta queda pendiente: un administrador debe activarla antes de poder iniciar sesión.
           this.mensaje =
-            'Usuario registrado correctamente.';
+            respuesta?.mensaje ||
+            'Solicitud registrada. Un administrador debe activar su cuenta.';
 
           setTimeout(() => {
             this.router.navigate(['/login']);
-          }, 1200);
+          }, 3500);
         },
 
         error: (error) => {

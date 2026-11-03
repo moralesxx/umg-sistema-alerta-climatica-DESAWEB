@@ -25,7 +25,7 @@ import org.springframework.web.client.RestClient;
 public class Upstream {
     private static final Logger log = LoggerFactory.getLogger(Upstream.class);
     private final RestClient http;
-    private final String key, issuer, audience, community, sensor, audit;
+    private final String key, issuer, audience, community, sensor, audit, notification;
     private String cached; private long cachedExp;
 
     public record Tipo(Integer tipoSensorId, String nombreTipo, String unidadMedida) {}
@@ -34,9 +34,11 @@ public class Upstream {
 
     public Upstream(@Value("${app.jwt.key}") String key, @Value("${app.jwt.issuer}") String issuer, @Value("${app.jwt.audience}") String audience,
                     @Value("${app.services.community}") String community, @Value("${app.services.sensor}") String sensor,
-                    @Value("${app.services.audit}") String audit) {
+                    @Value("${app.services.audit}") String audit,
+                    @Value("${app.services.notification}") String notification) {
         this.key = key; this.issuer = issuer; this.audience = audience;
         this.community = community.replaceAll("/$", ""); this.sensor = sensor.replaceAll("/$", ""); this.audit = audit.replaceAll("/$", "");
+        this.notification = notification.replaceAll("/$", "");
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(Duration.ofSeconds(3)); f.setReadTimeout(Duration.ofSeconds(8));
         this.http = RestClient.builder().requestFactory(f).build();
@@ -100,6 +102,16 @@ public class Upstream {
         try { return get(sensor, "/api/sensors/" + id, new ParameterizedTypeReference<SensorInfo>() {}, false); }
         catch (org.springframework.web.client.HttpClientErrorException.NotFound e) { return null; }
         catch (org.springframework.web.client.HttpClientErrorException e) { throw e; }
+    }
+
+    // ------------------------------------------------------------ notificaciones por correo (mejor esfuerzo, asíncronas)
+    /** Avisa al Notification Service de una alerta nueva; un fallo de correo nunca afecta a la creación de la alerta. */
+    public void notificarAlerta(Map<String, Object> alerta) {
+        String token = serviceToken();
+        Thread.startVirtualThread(() -> {
+            try { http.post().uri(notification + "/api/notifications/internal/alert").header("Authorization", "Bearer " + token).body(alerta).retrieve().toBodilessEntity(); }
+            catch (Exception e) { log.warn("No se pudo notificar la alerta {}: {}", alerta.get("alertaId"), e.getMessage()); }
+        });
     }
 
     // ------------------------------------------------------------ auditoría (mejor esfuerzo, asíncrona)

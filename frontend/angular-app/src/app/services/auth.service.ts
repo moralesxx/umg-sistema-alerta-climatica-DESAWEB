@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, finalize, map, shareReplay, tap } from 'rxjs';
 
 export interface Usuario {
   usuarioId: number;
@@ -14,6 +14,8 @@ export interface Usuario {
 export interface LoginResponse {
   mensaje: string;
   token: string;
+  refreshToken?: string;
+  expiresIn?: number;
   usuario: Usuario;
 }
 
@@ -55,6 +57,9 @@ export class AuthService {
 
   guardarSesion(respuesta: LoginResponse): void {
     localStorage.setItem('token', respuesta.token);
+    if (respuesta.refreshToken) {
+      localStorage.setItem('refreshToken', respuesta.refreshToken);
+    }
     localStorage.setItem(
       'usuario',
       JSON.stringify(respuesta.usuario)
@@ -63,6 +68,34 @@ export class AuthService {
 
   obtenerToken(): string | null {
     return localStorage.getItem('token');
+  }
+
+  obtenerRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken');
+  }
+
+  limpiarSesion(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('usuario');
+  }
+
+  // Renueva el access token (corto, 15 min) con el refresh token. Una sola petición en vuelo:
+  // si varias llamadas reciben 401 a la vez, todas esperan la misma renovación.
+  private renovando$?: Observable<string>;
+
+  refrescar(): Observable<string> {
+    if (!this.renovando$) {
+      this.renovando$ = this.http
+        .post<LoginResponse>(`${this.apiUrl}/refresh`, { refreshToken: this.obtenerRefreshToken() })
+        .pipe(
+          tap((r) => this.guardarSesion(r)),
+          map((r) => r.token),
+          finalize(() => (this.renovando$ = undefined)),
+          shareReplay(1)
+        );
+    }
+    return this.renovando$;
   }
 
   obtenerUsuario(): Usuario | null {
@@ -97,29 +130,19 @@ export class AuthService {
   }
 
   cerrarSesion(): void {
-    // RF-ADM-56: avisamos al backend ANTES de borrar el token,
-    // para que quede registrado el LOGOUT en bitácora mientras
-    // el token todavía es válido. Es "best effort": si falla
-    // (por ejemplo sin conexión), igual cerramos sesión local.
-    // El token se envía explícito (no depende de que el interceptor lo lea
-    // antes de que lo borremos justo abajo).
-    const token = this.obtenerToken();
+    // RF-ADM-56: el backend revoca el refresh token y registra el LOGOUT en bitácora.
+    // Es "best effort": si falla (por ejemplo sin conexión), igual se cierra la sesión local.
+    const refreshToken = this.obtenerRefreshToken();
 
-    if (token) {
-      this.http.post(
-        `${this.apiUrl}/logout`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      ).subscribe({
+    if (refreshToken) {
+      this.http.post(`${this.apiUrl}/logout`, { refreshToken }).subscribe({
         error: () => {
-          // Silenciado a propósito: cerrar sesión localmente no
-          // debe depender de que el backend responda.
+          // Silenciado a propósito: cerrar sesión localmente no debe depender de que el backend responda.
         }
       });
     }
 
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
+    this.limpiarSesion();
   }
 
   // RF-ADM-02 y RF-ADM-04: con token vencido la sesión se limpia y se pide login de nuevo.
@@ -131,8 +154,11 @@ export class AuthService {
     }
 
     if (this.tokenExpirado(token)) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
+      // Con refresh token, el interceptor renovará el access token en la primera petición.
+      if (this.obtenerRefreshToken()) {
+        return true;
+      }
+      this.limpiarSesion();
       return false;
     }
 

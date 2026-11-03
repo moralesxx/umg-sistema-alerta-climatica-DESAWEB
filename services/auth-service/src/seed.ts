@@ -18,6 +18,7 @@ export async function seed(ds: DataSource) {
     if (!e) await roles.save(roles.create(r));
     else if (JSON.stringify(e.permisos) !== JSON.stringify(r.permisos)) await roles.update(e.rolId, { permisos: r.permisos });
   }
+  await ds.query('UPDATE usuarios SET correo = LOWER(correo) WHERE correo <> LOWER(correo)').catch(() => undefined);
   const users = ds.getRepository(Usuario);
   if ((await users.count()) > 0) return;
   const pass = process.env.ADMIN_PASSWORD;

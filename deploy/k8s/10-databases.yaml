@@ -1,3 +1,4 @@
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
 apiVersion: apps/v1
 kind: StatefulSet
 metadata: { name: auth-db, namespace: alerta-climatica }
@@ -6,7 +7,7 @@ spec:
   replicas: 1
   selector: { matchLabels: { app: auth-db } }
   template:
-    metadata: { labels: { app: auth-db } }
+    metadata: { labels: { app: auth-db, tier: data } }
     spec:
       containers:
         - name: postgres
@@ -18,6 +19,7 @@ spec:
             - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
           ports: [{ containerPort: 5432 }]
           readinessProbe: { exec: { command: ["pg_isready","-U","auth","-d","auth_db"] }, periodSeconds: 5 }
+          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
           volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
   volumeClaimTemplates:
     - metadata: { name: data }
@@ -36,7 +38,7 @@ spec:
   replicas: 1
   selector: { matchLabels: { app: community-db } }
   template:
-    metadata: { labels: { app: community-db } }
+    metadata: { labels: { app: community-db, tier: data } }
     spec:
       containers:
         - name: postgres
@@ -48,6 +50,7 @@ spec:
             - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
           ports: [{ containerPort: 5432 }]
           readinessProbe: { exec: { command: ["pg_isready","-U","community","-d","community_db"] }, periodSeconds: 5 }
+          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
           volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
   volumeClaimTemplates:
     - metadata: { name: data }
@@ -66,7 +69,7 @@ spec:
   replicas: 1
   selector: { matchLabels: { app: alert-db } }
   template:
-    metadata: { labels: { app: alert-db } }
+    metadata: { labels: { app: alert-db, tier: data } }
     spec:
       containers:
         - name: postgres
@@ -78,6 +81,7 @@ spec:
             - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
           ports: [{ containerPort: 5432 }]
           readinessProbe: { exec: { command: ["pg_isready","-U","alert","-d","alert_db"] }, periodSeconds: 5 }
+          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
           volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
   volumeClaimTemplates:
     - metadata: { name: data }
@@ -96,17 +100,18 @@ spec:
   replicas: 1
   selector: { matchLabels: { app: sensor-db } }
   template:
-    metadata: { labels: { app: sensor-db } }
+    metadata: { labels: { app: sensor-db, tier: data } }
     spec:
       containers:
         - name: mssql
           image: mcr.microsoft.com/mssql/server:2022-latest
           env:
             - { name: ACCEPT_EULA, value: "Y" }
+            - { name: MSSQL_MEMORY_LIMIT_MB, value: "1536" }
             - { name: MSSQL_SA_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: SA_PASSWORD } } }
           ports: [{ containerPort: 1433 }]
-          resources: { requests: { memory: 2Gi } }
-          readinessProbe: { tcpSocket: { port: 1433 }, initialDelaySeconds: 20, periodSeconds: 10 }
+          resources: { requests: { cpu: 200m, memory: 2Gi }, limits: { memory: 3Gi } }
+          readinessProbe: { tcpSocket: { port: 1433 }, initialDelaySeconds: 25, periodSeconds: 10 }
           volumeMounts: [{ name: data, mountPath: /var/opt/mssql }]
   volumeClaimTemplates:
     - metadata: { name: data }
@@ -125,13 +130,14 @@ spec:
   replicas: 1
   selector: { matchLabels: { app: mongo } }
   template:
-    metadata: { labels: { app: mongo } }
+    metadata: { labels: { app: mongo, tier: data } }
     spec:
       containers:
         - name: mongo
           image: mongo:7
           ports: [{ containerPort: 27017 }]
           readinessProbe: { exec: { command: ["mongosh","--quiet","--eval","db.adminCommand('ping').ok"] }, periodSeconds: 10 }
+          resources: { requests: { cpu: 50m, memory: 256Mi }, limits: { memory: 768Mi } }
           volumeMounts: [{ name: data, mountPath: /data/db }]
   volumeClaimTemplates:
     - metadata: { name: data }

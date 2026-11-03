@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -46,6 +47,7 @@ public static class ClimaExtensions
                 RoleClaimType = "role", NameClaimType = "name"
             };
         });
+        b.WebHost.ConfigureKestrel(o => o.AddServerHeader = false); // no revelar el servidor
         b.Services.AddAuthorization();
         b.Services.AddHttpContextAccessor();
         b.Services.AddHttpClient();
@@ -79,6 +81,7 @@ public static class ClimaExtensions
                     ConflictException => (409, ex.Message),
                     UnauthorizedAccessException => (401, ex.Message),
                     BadHttpRequestException => (400, "Solicitud inválida."),
+                    _ when EsViolacionDeUnicidad(ex) => (409, "Ya existe un registro con esos datos."),
                     _ => (500, "Error interno del servicio.")
                 };
                 if (status == 500) app.Logger.LogError(ex, "Error no controlado en {Path}", ctx.Request.Path);
@@ -90,6 +93,19 @@ public static class ClimaExtensions
         app.UseAuthentication();
         app.UseAuthorization();
         return app;
+    }
+
+    /// <summary>DbUpdateException por índice único (PostgreSQL 23505, SQL Server 2601/2627), sin depender de EF desde la librería.</summary>
+    private static bool EsViolacionDeUnicidad(Exception ex)
+    {
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            var msg = e.Message;
+            if (e.GetType().Name is "PostgresException" or "SqlException" &&
+                (msg.Contains("23505") || msg.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) || msg.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase)))
+                return true;
+        }
+        return false;
     }
 
     public static RouteHandlerBuilder RequireRoles(this RouteHandlerBuilder b, params string[] roles) =>
@@ -147,14 +163,19 @@ public class UpstreamClient(IHttpClientFactory factory, IHttpContextAccessor acc
     /// <summary>GET tolerante a fallos: devuelve default si el servicio no responde (degradación elegante).</summary>
     public async Task<T?> TryGetAsync<T>(string service, string path, bool asService = false, CancellationToken ct = default)
     {
-        try
+        for (var intento = 1; intento <= 2; intento++)   // un reintento ante fallos transitorios (red, 5xx)
         {
-            using var http = factory.CreateClient(); http.Timeout = TimeSpan.FromSeconds(8);
-            using var resp = await http.SendAsync(Req(HttpMethod.Get, service, path, asService), ct);
-            if (!resp.IsSuccessStatusCode) return default;
-            return await resp.Content.ReadFromJsonAsync<T>(Json, ct);
+            try
+            {
+                using var http = factory.CreateClient(); http.Timeout = TimeSpan.FromSeconds(8);
+                using var resp = await http.SendAsync(Req(HttpMethod.Get, service, path, asService), ct);
+                if ((int)resp.StatusCode is >= 400 and < 500) return default;          // error del cliente: no se reintenta
+                if (resp.IsSuccessStatusCode) return await resp.Content.ReadFromJsonAsync<T>(Json, ct);
+            }
+            catch (Exception) when (!ct.IsCancellationRequested) { /* se reintenta */ }
+            if (intento == 1) await Task.Delay(300, ct);
         }
-        catch (Exception) when (!ct.IsCancellationRequested) { return default; }
+        return default;
     }
 
     /// <summary>GET que devuelve el código HTTP (para validar existencia).</summary>
@@ -200,15 +221,21 @@ public class AuditClient(IHttpClientFactory factory, IHttpContextAccessor access
         var token = tokens.Get();
         _ = Task.Run(async () =>
         {
-            try
+            for (var intento = 1; intento <= 3; intento++)   // la bitácora no debe perderse por un fallo momentáneo
             {
-                using var http = factory.CreateClient(); http.Timeout = TimeSpan.FromSeconds(5);
-                using var r = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(payload) };
-                r.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using var resp = await http.SendAsync(r);
-                if (!resp.IsSuccessStatusCode) log.LogWarning("Audit Service respondió {Status}", resp.StatusCode);
+                try
+                {
+                    using var http = factory.CreateClient(); http.Timeout = TimeSpan.FromSeconds(5);
+                    using var r = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(payload) };
+                    r.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    using var resp = await http.SendAsync(r);
+                    if (resp.IsSuccessStatusCode) return;
+                    if ((int)resp.StatusCode is >= 400 and < 500) { log.LogWarning("Audit Service rechazó el registro ({Status}).", resp.StatusCode); return; }
+                }
+                catch (Exception ex) { log.LogWarning("Auditoría: intento {N} fallido: {Msg}", intento, ex.Message); }
+                await Task.Delay(TimeSpan.FromSeconds(intento * 2));
             }
-            catch (Exception ex) { log.LogWarning("No se pudo registrar auditoría: {Msg}", ex.Message); }
+            log.LogError("No se pudo registrar la auditoría tras 3 intentos: {Accion}", payload.accion);
         });
     }
 }

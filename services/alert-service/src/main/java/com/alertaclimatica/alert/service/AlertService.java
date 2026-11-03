@@ -5,9 +5,7 @@ import static com.alertaclimatica.alert.service.Util.*;
 import com.alertaclimatica.alert.client.Upstream;
 import com.alertaclimatica.alert.config.Errors.Conflict;
 import com.alertaclimatica.alert.config.Errors.NotFound;
-import com.alertaclimatica.alert.domain.Alerta;
-import com.alertaclimatica.alert.domain.Evento;
-import com.alertaclimatica.alert.domain.ReglaAlerta;
+import com.alertaclimatica.alert.domain.Entities.*;
 import com.alertaclimatica.alert.domain.Repos.*;
 import com.alertaclimatica.alert.service.Dtos.*;
 import jakarta.persistence.criteria.Predicate;
@@ -69,11 +67,22 @@ public class AlertService {
             a.reglaAlertaId = r.reglaAlertaId; a.fenomeno = r.tipoFenomeno; a.nivelRiesgo = nivel;
             a.mensaje = recortar(r.mensaje + " Valor detectado: " + valorTxt + ".", 500);
             a.fechaEmision = ahora; a.valorDetectado = l.valor(); a.estado = "Activa"; a.eventoId = ev.eventoId;
-            alertas.save(a);
+            a = alertas.save(a);
+            up.notificarAlerta(payloadCorreo(a, r));
             creadas++;
             log.info("Alerta {} generada: sensor {}, regla '{}', valor {}", nivel, l.sensorCodigo(), r.nombre, l.valor());
         }
         return creadas;
+    }
+
+    /** Datos de la alerta para el correo (el Notification Service decide a quién se envía según nivel y comunidad). */
+    private static Map<String, Object> payloadCorreo(Alerta a, ReglaAlerta r) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("alertaId", a.alertaId); m.put("nivelRiesgo", a.nivelRiesgo); m.put("fenomeno", a.fenomeno);
+        m.put("comunidadId", a.comunidadId); m.put("comunidadNombre", a.comunidadNombre); m.put("sensorNombre", a.sensorNombre);
+        m.put("valorDetectado", a.valorDetectado); m.put("unidad", a.unidad); m.put("umbral", umbral(r));
+        m.put("mensaje", a.mensaje); m.put("fechaEmision", a.fechaEmision == null ? null : a.fechaEmision.toString());
+        return m;
     }
 
     // ------------------------------------------------------------------ consultas
@@ -166,6 +175,7 @@ public class AlertService {
         a.reglaAlertaId = regla == null ? null : regla.reglaAlertaId; a.fenomeno = fenomeno; a.nivelRiesgo = oficial; a.mensaje = recortar(mensaje, 500);
         a.fechaEmision = fecha; a.valorDetectado = in.valorDetectado(); a.estado = "Activa"; a.eventoId = ev.eventoId;
         a = alertas.save(a);
+        up.notificarAlerta(payloadCorreo(a, regla));
         up.audit("CREAR_ALERTA", "Se creó la alerta #" + a.alertaId + " (nivel " + oficial + ") para el sensor #" + s.sensorId() + ".", "Alerta", a.alertaId);
         return dto(a, reglasDe(List.of(a)));
     }

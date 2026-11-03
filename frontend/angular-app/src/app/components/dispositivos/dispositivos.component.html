@@ -1,0 +1,64 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-1">Dispositivos IoT (Arduino / ESP32)</h4>
+  <p class="text-muted small">Cada dispositivo recibe su propia clave para enviar lecturas a <code>POST /api/sensors/ingest</code>. Si una clave se filtra, se revoca sin afectar a los demás.</p>
+
+  @if (error) { <div class="alert alert-danger">{{ error }}</div> }
+  @if (mensaje) { <div class="alert alert-success">{{ mensaje }}</div> }
+
+  @if (creado) {
+    <div class="alert alert-warning">
+      <div class="fw-semibold mb-1">Clave de «{{ creado.nombre }}» — cópiela ahora, no se volverá a mostrar</div>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <code class="user-select-all">{{ creado.clave }}</code>
+        <button type="button" class="btn btn-sm btn-outline-dark" (click)="copiar()">{{ copiado ? 'Copiada' : 'Copiar' }}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="ocultarClave()">Ya la guardé</button>
+      </div>
+      <div class="small mt-2">Úsela como valor de la cabecera <code>X-Device-Key</code> (o en <code>bridge.py --clave</code>).</div>
+    </div>
+  }
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Registrar dispositivo</div>
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-5">
+          <label class="form-label small mb-1" for="dNombre">Nombre</label>
+          <input id="dNombre" class="form-control form-control-sm" [(ngModel)]="nombre" placeholder="Arduino laboratorio">
+        </div>
+        <div class="col-8 col-md-3">
+          <label class="form-label small mb-1" for="dPref">Solo sensores con código que empiece por</label>
+          <input id="dPref" class="form-control form-control-sm" [(ngModel)]="prefijo" placeholder="ARD-">
+        </div>
+        <div class="col-4 col-md-auto">
+          <button type="button" class="btn btn-primary btn-sm" (click)="crear()">Generar clave</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Dispositivos registrados</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Nombre</th><th>Alcance</th><th>Estado</th><th>Creado</th><th>Último contacto</th><th></th></tr></thead>
+        <tbody>
+          @for (d of dispositivos; track d.dispositivoId) {
+            <tr>
+              <td>{{ d.nombre }}</td>
+              <td>{{ d.prefijo ? d.prefijo + '…' : 'Cualquier sensor' }}</td>
+              <td><span class="badge" [class.text-bg-success]="d.activo" [class.text-bg-danger]="!d.activo">{{ d.activo ? 'Activo' : 'Revocado' }}</span></td>
+              <td class="text-nowrap">{{ d.creado | date:'yyyy-MM-dd HH:mm' }}</td>
+              <td class="text-nowrap">{{ d.ultimoContacto ? (d.ultimoContacto | date:'yyyy-MM-dd HH:mm:ss') : 'Nunca' }}</td>
+              <td class="text-end text-nowrap">
+                <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="alternar(d)">{{ d.activo ? 'Revocar' : 'Activar' }}</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminar(d)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="text-center text-muted py-3">Aún no hay dispositivos con clave propia. También funciona la clave general <code>DEVICE_API_KEY</code> del <code>.env</code>.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

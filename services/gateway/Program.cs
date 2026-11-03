@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddClimaCommon("gateway"); // validación JWT (Issuer, Audience, firma, expiración), errores JSON y /health
+builder.AddSessionRevocationCheck(); // el logout invalida el token al instante (consulta de sesión en Auth)
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 1_048_576); // 1 MB: la API solo recibe JSON pequeño
 
 // ---------------------------------------------------------------- CORS
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
@@ -39,6 +41,21 @@ builder.Services.AddReverseProxy().LoadFromConfig(builder.Configuration.GetSecti
 
 var app = builder.Build();
 app.UseForwardedHeaders();
+
+// ---------------------------------------------------------------- Cabeceras de seguridad en todas las respuestas
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.OnStarting(() =>
+    {
+        var h = ctx.Response.Headers;
+        h["X-Content-Type-Options"] = "nosniff";
+        h["X-Frame-Options"] = "DENY";
+        h["Referrer-Policy"] = "no-referrer";
+        h["Cache-Control"] = "no-store";
+        return Task.CompletedTask;
+    });
+    await next();
+});
 
 // ---------------------------------------------------------------- Correlación + logging de acceso
 app.Use(async (ctx, next) =>

@@ -5,7 +5,7 @@ import static com.alertaclimatica.alert.service.Util.*;
 import com.alertaclimatica.alert.client.Upstream;
 import com.alertaclimatica.alert.config.Errors.Conflict;
 import com.alertaclimatica.alert.config.Errors.NotFound;
-import com.alertaclimatica.alert.domain.ReglaAlerta;
+import com.alertaclimatica.alert.domain.Entities.ReglaAlerta;
 import com.alertaclimatica.alert.domain.Repos.*;
 import com.alertaclimatica.alert.service.Dtos.*;
 import java.math.BigDecimal;

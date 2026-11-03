@@ -1,10 +1,13 @@
-# K3s incluye Traefik. TLS con cert-manager (ClusterIssuer "letsencrypt") o un Secret TLS propio.
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
+# K3s incluye Traefik. Para HTTPS automático instale cert-manager y cree el ClusterIssuer "letsencrypt".
+# Sin dominio (demostración por IP): elimine `host:` y el bloque `tls:`.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: alerta
   namespace: alerta-climatica
-  annotations: { cert-manager.io/cluster-issuer: letsencrypt }
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   tls: [{ hosts: [sistema-climatico.example], secretName: alerta-tls }]
   rules:

@@ -44,4 +44,6 @@ done
 chk "historial" 200 "$(code $GW/api/reports -H "$H")"
 chk "dashboard" 200 "$(code $GW/api/reports/dashboard/resumen -H "$H")"
 chk "bitácora (Audit)" 200 "$(code $GW/api/audit -H "$H")"
+chk "notificaciones: suscriptores" 200 "$(code $GW/api/notifications/subscribers -H "$H")"
+chk "notificaciones: config SMTP" 200 "$(code $GW/api/notifications/config -H "$H")"
 echo; echo "Resultado: $ok correctas, $fail fallidas"; [ $fail -eq 0 ]
