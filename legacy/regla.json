@@ -1,0 +1,10 @@
+﻿{
+  "nombre": "Temperatura extrema",
+  "tipoSensorId": 1,
+  "valorMinimo": null,
+  "valorMaximo": 40,
+  "nivelPeligro": "Rojo",
+  "tipoFenomeno": "Ola de calor",
+  "mensaje": "Temperatura extrema detectada",
+  "estado": true
+}

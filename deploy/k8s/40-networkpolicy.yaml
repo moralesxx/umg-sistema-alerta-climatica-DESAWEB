@@ -1,0 +1,81 @@
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
+# Todo el tráfico entrante está denegado salvo lo declarado aquí:
+#   Internet -> Ingress(Traefik) -> frontend -> gateway -> servicios -> bases de datos
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny-ingress, namespace: alerta-climatica }
+spec: { podSelector: {}, policyTypes: [Ingress] }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-ingress-controller-to-frontend, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: frontend } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } } }]
+      ports: [{ port: 80 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-frontend-to-gateway, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: gateway } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: frontend } } }]
+      ports: [{ port: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-backend-internal, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { tier: backend } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { tier: backend } } }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-auth-db-from-owners, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: auth-db } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: auth-service } } }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-community-db-from-owners, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: community-db } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: community-service } } }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-alert-db-from-owners, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: alert-db } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: alert-service } } }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-sensor-db-from-owners, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: sensor-db } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: sensor-service } } }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-mongo-from-owners, namespace: alerta-climatica }
+spec:
+  podSelector: { matchLabels: { app: mongo } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: report-service } } }, { podSelector: { matchLabels: { app: audit-service } } }, { podSelector: { matchLabels: { app: notification-service } } }]

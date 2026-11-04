@@ -1,0 +1,95 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-1">Notificaciones por correo</h4>
+  <p class="text-muted small">Cada vez que se genera una alerta, el sistema envía un correo a los destinatarios activos cuyo nivel mínimo se cumpla.</p>
+
+  @if (error) { <div class="alert alert-danger">{{ error }}</div> }
+  @if (mensaje) { <div class="alert alert-success">{{ mensaje }}</div> }
+
+  @if (config) {
+    <div class="small text-muted mb-3">
+      Servidor SMTP: <b>{{ config.host }}:{{ config.port }}</b> ({{ config.seguridad }}) · Remitente: {{ config.remitente }}
+      @if (config.host === 'mailpit') { · <span class="badge text-bg-warning">Modo prueba: los correos se capturan en Mailpit (http://localhost:8025)</span> }
+    </div>
+  }
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Agregar destinatario</div>
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small mb-1" for="nEmail">Correo</label>
+          <input id="nEmail" type="email" class="form-control form-control-sm" [(ngModel)]="nuevoEmail" placeholder="nombre@correo.com">
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="nNombre">Nombre (opcional)</label>
+          <input id="nNombre" class="form-control form-control-sm" [(ngModel)]="nuevoNombre">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1" for="nNivel">Desde el nivel</label>
+          <select id="nNivel" class="form-select form-select-sm" [(ngModel)]="nuevoNivel">
+            <option value="Amarillo">Amarillo</option>
+            <option value="Naranja">Naranja</option>
+            <option value="Rojo">Rojo</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-auto d-flex gap-2">
+          <button type="button" class="btn btn-primary btn-sm" (click)="agregar()">Agregar</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="enviandoPrueba || !suscriptores.length" (click)="probar()">
+            {{ enviandoPrueba ? 'Enviando…' : 'Enviar correo de prueba a todos' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Destinatarios</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Correo</th><th>Nombre</th><th>Desde el nivel</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (s of suscriptores; track s.subId) {
+            <tr>
+              <td>{{ s.email }}</td>
+              <td>{{ s.nombre || '—' }}</td>
+              <td>{{ s.minNivel }}</td>
+              <td><span class="badge" [class.text-bg-success]="s.activo" [class.text-bg-secondary]="!s.activo">{{ s.activo ? 'Activo' : 'Pausado' }}</span></td>
+              <td class="text-end text-nowrap">
+                <button type="button" class="btn btn-outline-primary btn-sm me-1" (click)="probar(s.email)">Probar</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="alternar(s)">{{ s.activo ? 'Pausar' : 'Activar' }}</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminar(s)">Quitar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="text-center text-muted py-3">Aún no hay destinatarios. Agregue un correo para recibir alertas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Últimos envíos</span>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cargar()">Actualizar</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Fecha</th><th>Correo</th><th>Asunto</th><th>Estado</th><th>Detalle</th></tr></thead>
+        <tbody>
+          @for (r of registro; track $index) {
+            <tr>
+              <td class="text-nowrap">{{ r.fecha | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+              <td>{{ r.email }}</td>
+              <td class="small">{{ r.asunto || '—' }}</td>
+              <td><span class="badge" [class.text-bg-success]="r.estado === 'SENT'" [class.text-bg-danger]="r.estado === 'FAILED'" [class.text-bg-warning]="r.estado === 'SKIPPED'">{{ r.estado === 'SENT' ? 'Enviado' : r.estado === 'FAILED' ? 'Falló' : 'Omitido' }}</span></td>
+              <td class="small text-muted">{{ r.error || '' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="text-center text-muted py-3">Sin envíos todavía.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,95 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+
+        <!-- Encabezado y Filtros -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title fw-bold mb-0">Gestión de Lecturas de Sensores</h5>
+          <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1" (click)="cargarLecturas()">Actualizar Todo</button>
+        </div>
+
+        <!-- Barra de Filtros (RF-ADM-26 y RF-ADM-27) -->
+        <div class="row g-2 mb-3 bg-light p-3 rounded">
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">ID Sensor</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="filtroSensorId" placeholder="Ej. 1">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold">ID Comunidad</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="filtroComunidadId" placeholder="Ej. 2">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Fecha Inicio</label>
+            <input type="datetime-local" class="form-control form-control-sm" [(ngModel)]="fechaInicio">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Fecha Fin</label>
+            <input type="datetime-local" class="form-control form-control-sm" [(ngModel)]="fechaFin">
+          </div>
+          <div class="col-md-2 d-flex align-items-end gap-1">
+            <button class="btn btn-primary btn-sm w-100" (click)="buscarPorFiltros()">Filtrar</button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()" title="Limpiar filtros">X</button>
+          </div>
+        </div>
+
+        <!-- Tabla de Datos -->
+        <div class="table-responsive lecturas-feed">
+          <table class="table align-middle mb-0 tabla-fija" *ngIf="lecturas.length > 0">
+            <colgroup>
+              <col style="width: 10%;">
+              <col style="width: 15%;">
+              <col style="width: 20%;">
+              <col style="width: 20%;">
+              <col style="width: 35%;">
+            </colgroup>
+            <thead class="sticky-top bg-white">
+              <tr>
+                <th class="text-muted ps-3 border-bottom">ID</th>
+                <th class="text-muted border-bottom">SENSOR ID</th>
+                <th class="text-muted border-bottom">VALOR</th>
+                <th class="text-muted border-bottom">ESTADO SENSOR</th>
+                <th class="text-muted border-bottom">FECHA Y HORA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let lectura of lecturasPaginadas">
+                <td class="ps-3 fw-bold">#{{ lectura.lecturaId }}</td>
+                <td><span class="badge bg-info text-dark px-2 py-1">Sensor #{{ lectura.sensorId }}</span></td>
+                <td class="fw-bold text-primary">{{ lectura.valor }} {{ lectura.unidad || '' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="lectura.estadoSensor === 'Activo' ? 'bg-success' : 'bg-warning text-dark'">
+                    {{ lectura.estadoSensor || 'Desconocido' }}
+                  </span>
+                </td>
+                <td>{{ lectura.fechaHora | date:'medium' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="text-center py-4" *ngIf="lecturas.length === 0">
+            <p class="text-muted mb-0">No se encontraron lecturas registradas con los criterios seleccionados.</p>
+          </div>
+        </div>
+
+        <!-- Controles de Paginación -->
+        <nav class="d-flex justify-content-between align-items-center mt-3 px-2" *ngIf="lecturas.length > 0">
+          <small class="text-muted">
+            Mostrando página {{ paginaActual }} de {{ totalPaginas }} ({{ lecturas.length }} registros totales)
+          </small>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="paginaActual === 1">
+              <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+            </li>
+            <li class="page-item" *ngFor="let p of [].constructor(totalPaginas); let i = index" [class.active]="paginaActual === (i + 1)">
+              <button class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+              <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
+            </li>
+          </ul>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+</div>

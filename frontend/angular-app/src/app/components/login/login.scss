@@ -1,0 +1,567 @@
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.login-page {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eef7ff 0%,
+      #f8fbff 50%,
+      #edf7f1 100%
+    );
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+
+.login-container {
+  width: 100%;
+  max-width: 1050px;
+  min-height: 620px;
+
+  display: grid;
+  grid-template-columns: 45% 55%;
+
+  background: #ffffff;
+
+  border-radius: 22px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+/* ==========================================
+   PANEL IZQUIERDO
+   ========================================== */
+
+.login-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 55px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #087f5b,
+      #0b9b6d
+    );
+}
+
+.login-info h1 {
+  margin: 0 0 12px;
+
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.login-info > p {
+  max-width: 360px;
+
+  margin: 0 0 45px;
+
+  color: rgba(255, 255, 255, 0.85);
+
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ==========================================
+   INFORMACIÓN DEL SISTEMA
+   ========================================== */
+
+.info-items {
+  display: flex;
+  flex-direction: column;
+
+  gap: 24px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+}
+
+.info-item strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.info-item span {
+  display: block;
+
+  color: rgba(255, 255, 255, 0.75);
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ==========================================
+   PANEL DEL FORMULARIO
+   ========================================== */
+
+.login-form-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 50px;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ==========================================
+   ENCABEZADO
+   ========================================== */
+
+.form-header {
+  margin-bottom: 30px;
+}
+
+.form-header h2 {
+  margin: 0 0 8px;
+
+  color: #212529;
+
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.form-header p {
+  margin: 0;
+
+  color: #6c757d;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   ALERTA DE ERROR
+   ========================================== */
+
+.login-form .alert {
+  margin-bottom: 20px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+}
+
+/* ==========================================
+   GRUPOS DEL FORMULARIO
+   ========================================== */
+
+.form-group {
+  margin-bottom: 22px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #343a40;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==========================================
+   CONTENEDOR DE INPUT
+   ========================================== */
+
+.input-container {
+  position: relative;
+
+  width: 100%;
+}
+
+/* ==========================================
+   INPUT
+   ========================================== */
+
+.input-container .form-control {
+  width: 100%;
+  height: 48px;
+
+  padding: 0 15px;
+
+  border: 1px solid #dee2e6;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #212529;
+
+  font-size: 14px;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.input-container .form-control::placeholder {
+  color: #adb5bd;
+}
+
+.input-container .form-control:hover {
+  border-color: #b8c0c8;
+}
+
+.input-container .form-control:focus {
+  border-color: #087f5b;
+
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(8, 127, 91, 0.12);
+}
+
+.input-container .form-control:disabled {
+  background: #f1f3f5;
+
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   FILA DE ETIQUETA Y RECUPERAR CONTRASEÑA
+   ========================================== */
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+.label-row label {
+  margin-bottom: 8px;
+}
+
+.forgot-button {
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #087f5b;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.forgot-button:hover {
+  color: #066b4c;
+
+  text-decoration: underline;
+}
+
+/* ==========================================
+   BOTÓN MOSTRAR / OCULTAR CONTRASEÑA
+   ========================================== */
+
+.password-button {
+  position: absolute;
+
+  top: 50%;
+  right: 12px;
+
+  transform: translateY(-50%);
+
+  min-width: 65px;
+
+  padding: 5px 8px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #087f5b;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.password-button:hover {
+  color: #066b4c;
+}
+
+.password-button:focus {
+  outline: none;
+}
+
+/*
+ * Dejamos espacio para el botón
+ * Mostrar/Ocultar en los inputs de contraseña.
+ */
+.input-container .form-control[type='password'],
+.input-container .form-control[type='text'] {
+  padding-right: 85px;
+}
+
+/* ==========================================
+   RECORDAR USUARIO
+   ========================================== */
+
+.remember-container {
+  margin-bottom: 22px;
+}
+
+.remember-label {
+  display: flex !important;
+  align-items: center;
+
+  gap: 8px;
+
+  margin: 0 !important;
+
+  color: #6c757d !important;
+
+  font-size: 13px !important;
+  font-weight: 400 !important;
+
+  cursor: pointer;
+}
+
+.remember-label input {
+  margin: 0;
+
+  cursor: pointer;
+}
+
+.remember-label span {
+  line-height: 1;
+}
+
+/* ==========================================
+   BOTÓN INICIAR SESIÓN
+   ========================================== */
+
+.login-button {
+  width: 100%;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 20px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #087f5b;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease,
+    box-shadow 0.2s ease;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #066b4c;
+
+  box-shadow:
+    0 5px 15px rgba(8, 127, 91, 0.2);
+}
+
+.login-button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.login-button:focus {
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(8, 127, 91, 0.2);
+}
+
+.login-button:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+/* ==========================================
+   REGISTRO
+   ========================================== */
+
+.register-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  margin-top: 28px;
+
+  color: #6c757d;
+
+  font-size: 13px;
+}
+
+.register-container button {
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #087f5b;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.register-container button:hover {
+  color: #066b4c;
+
+  text-decoration: underline;
+}
+
+/* ==========================================
+   RESPONSIVE - TABLET
+   ========================================== */
+
+@media (max-width: 850px) {
+
+  .login-page {
+    padding: 15px;
+  }
+
+  .login-container {
+    max-width: 500px;
+
+    grid-template-columns: 1fr;
+
+    min-height: auto;
+  }
+
+  .login-info {
+    display: none;
+  }
+
+  .login-form-container {
+    padding: 45px 35px;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE - MÓVIL
+   ========================================== */
+
+@media (max-width: 500px) {
+
+  .login-page {
+    min-height: 100vh;
+
+    padding: 0;
+  }
+
+  .login-container {
+    width: 100%;
+    min-height: 100vh;
+
+    border-radius: 0;
+
+    box-shadow: none;
+  }
+
+  .login-form-container {
+    padding: 35px 22px;
+  }
+
+  .form-header h2 {
+    font-size: 25px;
+  }
+
+  .label-row {
+    align-items: flex-start;
+    flex-direction: column;
+
+    gap: 2px;
+  }
+
+  .label-row label {
+    margin-bottom: 4px;
+  }
+
+  .forgot-button {
+    margin-bottom: 5px;
+  }
+}
+
+/* ==========================================
+   MÓVIL PEQUEÑO
+   ========================================== */
+
+@media (max-width: 350px) {
+
+  .login-form-container {
+    padding: 30px 18px;
+  }
+
+  .register-container {
+    flex-direction: column;
+
+    gap: 4px;
+  }
+}

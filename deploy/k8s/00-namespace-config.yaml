@@ -1,0 +1,24 @@
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: alerta-climatica
+  labels: { pod-security.kubernetes.io/enforce: baseline }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: alerta-climatica }
+data:
+  JWT_ISSUER: AlertaClimatica.Auth
+  JWT_AUDIENCE: AlertaClimatica.Client
+  JWT_EXPIRATION_MINUTES: "15"
+  REFRESH_TOKEN_DAYS: "7"
+  APP_TZ: America/Guatemala
+  SEED_DEMO: "false"                      # "true" crea datos de demostración en bases vacías
+  PUBLIC_URL: https://sistema-climatico.example
+  RETENCION_DIAS: "30"
+  SMTP_HOST: mailpit                      # SMTP real, p. ej. smtp.gmail.com (y SMTP_SECURITY=starttls, SMTP_PORT=587)
+  SMTP_PORT: "1025"
+  SMTP_SECURITY: none
+  SMTP_FROM: "Alerta Climática <alertas@sistema-climatico.example>"
+  NOTIFY_DEFAULT_RECIPIENTS: ""           # correos separados por coma (solo si no hay suscriptores)

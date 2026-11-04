@@ -1,0 +1,406 @@
+{
+ "info": {
+  "name": "Alerta Climática — Fase 3",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "item": [
+  {
+   "name": "Auth",
+   "item": [
+    {
+     "name": "Login",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{gateway}}/api/auth/login",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"correo\": \"admin@alerta.com\",\n  \"contrasenia\": \"{{adminPassword}}\"\n}"
+      }
+     },
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "const j = pm.response.json();",
+         "pm.environment.set('token', j.token);",
+         "pm.test('login 200', () => pm.response.to.have.status(200));"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "name": "Usuarios",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/auth/usuarios"
+     }
+    },
+    {
+     "name": "Roles",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/auth/roles"
+     }
+    },
+    {
+     "name": "Logout",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/auth/logout"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Communities",
+   "item": [
+    {
+     "name": "Listar",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/communities"
+     }
+    },
+    {
+     "name": "Crear",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{gateway}}/api/communities",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"nombre\": \"Comunidad X\",\n  \"municipio\": \"M\",\n  \"departamento\": \"D\",\n  \"pais\": \"Guatemala\",\n  \"latitud\": 14.6,\n  \"longitud\": -90.5,\n  \"descripcion\": \"demo\",\n  \"estado\": true\n}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Sensors",
+   "item": [
+    {
+     "name": "Sensores",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/sensors"
+     }
+    },
+    {
+     "name": "Tipos",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/sensors/types"
+     }
+    },
+    {
+     "name": "Lecturas recientes",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/sensors/readings"
+     }
+    },
+    {
+     "name": "Estado",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/sensors/status"
+     }
+    },
+    {
+     "name": "Registrar lectura",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{gateway}}/api/sensors/readings",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"sensorId\": 1,\n  \"valor\": 45\n}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Alerts",
+   "item": [
+    {
+     "name": "Alertas",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/alerts"
+     }
+    },
+    {
+     "name": "Reglas",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/alerts/rules"
+     }
+    },
+    {
+     "name": "Eventos",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/alerts/events"
+     }
+    },
+    {
+     "name": "Resumen",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/alerts/summary"
+     }
+    },
+    {
+     "name": "Atender",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/alerts/1/atender"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Reports",
+   "item": [
+    {
+     "name": "Tipos",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/reports/types"
+     }
+    },
+    {
+     "name": "Generar alertas",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{gateway}}/api/reports",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"type\": \"ALERTS\",\n  \"filters\": {\n    \"communityId\": 1,\n    \"from\": \"2026-09-01\",\n    \"to\": \"2026-09-30\"\n  }\n}"
+      }
+     },
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.environment.set('reportId', pm.response.json().reportId);",
+         "pm.test('202', () => pm.response.to.have.status(202));"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "name": "Historial",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/reports"
+     }
+    },
+    {
+     "name": "Detalle",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/reports/{{reportId}}"
+     }
+    },
+    {
+     "name": "Descargar PDF",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/reports/{{reportId}}/download"
+     }
+    },
+    {
+     "name": "Dashboard",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/reports/dashboard/resumen"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Audit",
+   "item": [
+    {
+     "name": "Bitácora",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": "{{gateway}}/api/audit"
+     }
+    }
+   ]
+  }
+ ],
+ "variable": [
+  {
+   "key": "gateway",
+   "value": "http://localhost:8080"
+  },
+  {
+   "key": "adminPassword",
+   "value": ""
+  },
+  {
+   "key": "token",
+   "value": ""
+  },
+  {
+   "key": "reportId",
+   "value": ""
+  }
+ ]
+}

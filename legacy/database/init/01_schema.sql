@@ -1,0 +1,4 @@
+-- OBSOLETO: este script ya no se usa.
+-- El esquema de la base de datos lo crea Entity Framework Core mediante las
+-- migraciones de backend/AlertaClimatica.Infrastructure/Migrations, que la API
+-- aplica automáticamente al arrancar. Ver README.md.

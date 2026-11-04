@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.bg-warning-orange {
+  background-color: #fd7e14 !important;
+  color: #ffffff !important;
+}
+
+.fila-alerta {
+  cursor: pointer;
+}
+
+.mensaje-corto {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast-flotante {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1080;
+}

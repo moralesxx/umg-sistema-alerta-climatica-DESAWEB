@@ -1,0 +1,152 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-3">Reportes</h4>
+
+  @if (error) { <div class="alert alert-danger">{{ error }}</div> }
+  @if (mensaje) { <div class="alert alert-info">{{ mensaje }}</div> }
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Generar reporte PDF</div>
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small mb-1" for="repTipo">Reporte</label>
+          <select id="repTipo" class="form-select form-select-sm" [(ngModel)]="tipoSeleccionado" (change)="cambiarTipo()">
+            @for (t of tipos; track t.type) { <option [value]="t.type">{{ t.label }}</option> }
+          </select>
+        </div>
+
+        @if (usa('communityId')) {
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1" for="repCom">Comunidad</label>
+            <select id="repCom" class="form-select form-select-sm" [(ngModel)]="filtros['communityId']">
+              <option [ngValue]="undefined">Todas</option>
+              @for (c of comunidades; track c.comunidadId) { <option [ngValue]="c.comunidadId">{{ c.nombre }}</option> }
+            </select>
+          </div>
+        }
+        @if (usa('sensorId')) {
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1" for="repSen">Sensor</label>
+            <select id="repSen" class="form-select form-select-sm" [(ngModel)]="filtros['sensorId']">
+              <option [ngValue]="undefined">Todos</option>
+              @for (s of sensores; track s.sensorId) { <option [ngValue]="s.sensorId">{{ s.codigo }} — {{ s.nombreSensor }}</option> }
+            </select>
+          </div>
+        }
+        @if (usa('sensorTypeId')) {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repTip">Tipo de sensor</label>
+            <select id="repTip" class="form-select form-select-sm" [(ngModel)]="filtros['sensorTypeId']">
+              <option [ngValue]="undefined">Todos</option>
+              @for (t of tiposSensor; track t.tipoSensorId) { <option [ngValue]="t.tipoSensorId">{{ t.nombreTipo }}</option> }
+            </select>
+          </div>
+        }
+        @if (usa('phenomenon')) {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repFen">Fenómeno</label>
+            <select id="repFen" class="form-select form-select-sm" [(ngModel)]="filtros['phenomenon']">
+              <option [ngValue]="undefined">Todos</option>
+              @for (f of fenomenos; track f) { <option [value]="f">{{ f }}</option> }
+            </select>
+          </div>
+        }
+        @if (usa('level')) {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repNiv">Nivel</label>
+            <select id="repNiv" class="form-select form-select-sm" [(ngModel)]="filtros['level']">
+              <option [ngValue]="undefined">Todos</option>
+              @for (n of niveles; track n) { <option [value]="n">{{ n }}</option> }
+            </select>
+          </div>
+        }
+        @if (usa('estado') && tipoSeleccionado === 'ALERTS') {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repEst">Estado</label>
+            <select id="repEst" class="form-select form-select-sm" [(ngModel)]="filtros['estado']">
+              <option [ngValue]="undefined">Todos</option>
+              @for (e of estadosAlerta; track e) { <option [value]="e">{{ e }}</option> }
+            </select>
+          </div>
+        }
+        @if (usa('estado') && tipoSeleccionado !== 'ALERTS') {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repAct">Estado</label>
+            <select id="repAct" class="form-select form-select-sm" [(ngModel)]="filtros['estado']">
+              <option [ngValue]="undefined">Todos</option>
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+        }
+        @if (usa('from')) {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repDesde">Desde</label>
+            <input id="repDesde" type="date" class="form-control form-control-sm" [(ngModel)]="filtros['from']">
+          </div>
+        }
+        @if (usa('to')) {
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="repHasta">Hasta</label>
+            <input id="repHasta" type="date" class="form-control form-control-sm" [(ngModel)]="filtros['to']">
+          </div>
+        }
+        <div class="col-12 col-md-auto">
+          <button type="button" class="btn btn-primary btn-sm" [disabled]="generando || !tipoSeleccionado" (click)="generar()">
+            {{ generando ? 'Solicitando…' : 'Generar PDF' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Historial de reportes</span>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cargarHistorial()">Actualizar</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+          <tr><th>Id</th><th>Tipo</th><th>Usuario</th><th>Fecha</th><th>Parámetros</th><th>Estado</th><th>Archivo</th><th>Última descarga</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (r of historial; track r.reportId) {
+            <tr>
+              <td class="text-nowrap">{{ r.reportId }}</td>
+              <td>{{ r.typeLabel }}</td>
+              <td>{{ r.generatedByName || r.generatedBy }}</td>
+              <td class="text-nowrap">{{ r.generatedAt | date:'yyyy-MM-dd HH:mm' }}</td>
+              <td class="small">{{ resumenFiltros(r.filters) }}</td>
+              <td>
+                <span class="badge" [class.text-bg-success]="r.status === 'COMPLETED'" [class.text-bg-danger]="r.status === 'FAILED'"
+                      [class.text-bg-warning]="r.status === 'PENDING' || r.status === 'PROCESSING'" [title]="r.error || ''">
+                  {{ estadoTexto(r.status) }}
+                </span>
+              </td>
+              <td>{{ r.fileName || '—' }}</td>
+              <td class="text-nowrap">{{ r.downloadedAt ? (r.downloadedAt | date:'yyyy-MM-dd HH:mm') : '—' }}</td>
+              <td class="text-end">
+                @if (r.status === 'COMPLETED' && puedeDescargar) {
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="descargar(r)">Descargar</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="text-center text-muted py-3">Aún no hay reportes generados.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (paginas > 1) {
+      <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted">{{ total }} reportes</small>
+        <div class="btn-group btn-group-sm">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="pagina === 1" (click)="irA(pagina - 1)">Anterior</button>
+          <button type="button" class="btn btn-outline-secondary disabled">{{ pagina }} / {{ paginas }}</button>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="pagina === paginas" (click)="irA(pagina + 1)">Siguiente</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

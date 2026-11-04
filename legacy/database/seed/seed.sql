@@ -1,0 +1,3 @@
+-- OBSOLETO: este script ya no se usa.
+-- Los datos iniciales (roles, tipos de sensor, administrador) los siembra la API
+-- con DbInitializer al arrancar sobre una base vacía. Ver README.md.

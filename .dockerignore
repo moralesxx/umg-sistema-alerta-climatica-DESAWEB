@@ -1,0 +1,17 @@
+# Contexto de build en la raíz (frontend, gateway, community-service, sensor-service)
+# Evita copiar obj/bin generados en Windows/Visual Studio (rompen `dotnet publish --no-restore`)
+**/bin
+**/obj
+**/node_modules
+**/.angular
+**/dist
+**/dist-test
+**/target
+**/__pycache__
+**/.pytest_cache
+.git
+.github
+legacy
+backups
+.env
+*.md

@@ -1,0 +1,114 @@
+﻿== DIAGNÓSTICO 10/22/2026 20:15:30
+
+=== Docker ===
+29.8.2
+Docker Compose version v5.6.0
+
+=== Archivos clave ===
+docker-compose.yml : True
+.env : True
+.dockerignore : True
+services\gateway\Dockerfile : True
+services\sensor-service\Dockerfile : True
+services\alert-service\pom.xml : True
+frontend\Dockerfile : True
+
+=== Carpetas obj/bin (deben estar vacías de resultados) ===
+C:\umg-sistema-alerta-climatica-DESAWEB\services\community-service\bin
+C:\umg-sistema-alerta-climatica-DESAWEB\services\community-service\obj
+C:\umg-sistema-alerta-climatica-DESAWEB\services\gateway\bin
+C:\umg-sistema-alerta-climatica-DESAWEB\services\gateway\obj
+C:\umg-sistema-alerta-climatica-DESAWEB\services\sensor-service\bin
+C:\umg-sistema-alerta-climatica-DESAWEB\services\sensor-service\obj
+C:\umg-sistema-alerta-climatica-DESAWEB\services\shared-dotnet\Clima.Shared\bin
+C:\umg-sistema-alerta-climatica-DESAWEB\services\shared-dotnet\Clima.Shared\obj
+
+=== Variables del .env presentes (sin valores) ===
+JWT_KEY, JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRATION_MINUTES, ADMIN_PASSWORD, AUTH_DB_PASSWORD, COMMUNITY_DB_PASSWORD, ALERT_DB_PASSWORD, SA_PASSWORD, PUBLIC_URL, FRONTEND_PORT, GATEWAY_PORT, APP_TZ, SEED_DEMO, SIMULADOR_HABILITADO, SIMULADOR_INTERVALO, REPORT_MAX_ROWS, RATE_LOGIN_PER_MIN, DEVICE_API_KEY
+
+=== Validar compose ===
+
+=== Contenedores y volúmenes ===
+umg_sql_recovery_force_setup | Up 3 minutes
+umg-sistema-alerta-climatica-desaweb-alert-service-1 | Up 43 minutes (healthy)
+umg-sistema-alerta-climatica-desaweb-frontend-1 | Created
+umg-sistema-alerta-climatica-desaweb-gateway-1 | Created
+umg-sistema-alerta-climatica-desaweb-auth-service-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-community-service-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-report-service-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-audit-service-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-sensor-service-1 | Created
+umg-sistema-alerta-climatica-desaweb-auth-db-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-alert-db-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-community-db-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-mongo-1 | Up About an hour (healthy)
+umg-sistema-alerta-climatica-desaweb-sensor-db-1 | Exited (137) 23 minutes ago
+api_alerta_climatica | Exited (255) 3 days ago
+servicio | Exited (1) 2 hours ago
+sqlserver_alerta_climatica | Exited (255) 3 days ago
+practice5-users-1 | Exited (255) 3 weeks ago
+practice5-orders-1 | Exited (255) 3 weeks ago
+practice5-products-1 | Exited (255) 3 weeks ago
+catalog-service | Exited (255) 3 weeks ago
+catalog-mongo | Exited (255) 3 weeks ago
+vigorous_payne | Exited (255) 2 months ago
+2b8f36697e4c31df5c8530b8ba4f879a18eff76a8c92f21d3b7b1881032793f4
+2df5345b4267abb837708492afa54a233381f66d700664cd9b9b9b5e40651848
+3a2cbeb34c955e675d0a52bc352599ec4155f5dedc8b48f40fe4604af742d252
+3ea3efac51dd0f0eeb0b65fad6d2aa627d6eb6f9b16411609615a5dd67c4447a
+3ec5fbcd6cb368ff60798fcfe67eb5ede90666c3f9abbe803634b85bb46233bd
+4fbb0212e0e4190a876dd7f73adfc645c25cf50584882059e864c802e029f69b
+8e4556a8814e6ffcbe9d68015430e4dbd8d4210e3fe21884d469afd5e45d8afe
+10a249b1e84338dfd1c0fa273f7f61c687ac603e4865c6c8699ea371d6e20817
+11a4c31204c3bb6ec2d2a8a4652d091b53ab81e2deb1ed5723da2247d3463b8a
+14b852bdfe7851921a315a45e414af63e63e25f287a954eb35bb1e427ac4b238
+14d29816a95071bda60ea1be29f876c08a1a1ecca85420c06d82ddb73da732e7
+16ec4e23ef891f06975f9c2562c910508eb08c8a8144c2e9a4a6d10c821255ac
+38cab9f898c02a774505b9f65b59189f1d8258ad9275a99185ab01804cc79229
+60de41c27fb00cf5a37e6ada78f62e1eaf750a2e0e8384c1796a421d29fcd577
+64b11b4c4c48fa958321a42b68b7487363abcb4e2a83271ec2c9c8a6daeecf27
+79aa24f3b777aee992bd29f2e318b2b9370c8a81948d5337ffced45e1a73c461
+084e901813aeef0f8f1754551d68947e15521b8a8e033b1cfb5ba6bb9822d396
+94c7fe7c2088cb970c45860ea524517c2af0ba295f8581913749a2cb961627b8
+651b5e1a0d847e730c8a0efdbe59c460e617bdddf21c3b3a4ac40e31c1eefffe
+807cf374ea789c15824e3f007c0e02e0ecf14bf21935090dbb61ae9bcde6da3f
+9051e6c2540fc177eb89164b9784442f95c2c883cf7283b08c353c95a4092c70
+83052ca306cf948258e67afb98f86d0b854103959788c53ea0b6040300911141
+46577476f91c860fdc87cb0371f3e6d970846a5fc13b8cc41ffd764ef4133241
+b059c763e7fae3fca6e2ecaf7e53929a219490552144a6ba8ba0ee0f5cc8383c
+befd98cb419b46065deb594f2f1e708c9ce96b23432acd2fa46e5276c695453c
+c2cfc8fc5af31032a7b8a94f14f090e96ca0fa1bef759e1f20bfd57946c7bc92
+c5a723fdb7581a187caaf937de831f99498132f93037f35ea83d7c4c91fb760d
+c76a30bc228f64dbf8f008455bc64b2e1587bbdba209b7c24aca985ea38f4062
+cbdbfb7c7f02d9fd95deccf36770ae8d97d06c4afe3ccdfabe92f50d295241f3
+cfc49a959fc9a7ff41df9b8abf6138924237eef03a7510727af875691499e693
+d8a1a21158b8693d30ce5f17c4b339bea536eee952fdb08139dce40e0e8d1cc3
+d401f68bf8f909f7589e80a6ffd706afd0a671430a0c38ef681f78da28ac9d00
+ddfb142ddcc6f5aa4113df1a14dcdfdd8321b4b5a00f911f75dfb31b3298194c
+e54640b988094d104279c8efd643d68b5dd04a7ccda7b8d754e9484519337dc4
+eb6cd37e954ad09f64da1b50a97f7d88ae5564e004b92c4298e75aa8142bb89a
+f4759d74c37884790cb06149cb87f93b5044fec8818d8197f281e6dcde16e13e
+jahernandezva_postgres-data
+jhernandezva_db_data
+jhernandezva_mongo-data
+jhernandezva_postgres-data
+mercadolaesperanza-main_postgres_data
+microcredito-p1_credito_vecino_datos
+proyecto_fase3_reingenieria_completa_fase3_alert_data
+proyecto_fase3_reingenieria_completa_fase3_auth_data
+proyecto_fase3_reingenieria_completa_fase3_community_data
+proyecto_fase3_reingenieria_completa_fase3_mongo_audit_data
+proyecto_fase3_reingenieria_completa_fase3_mongo_reports_data
+proyecto_fase3_reingenieria_completa_fase3_mssql_data
+proyecto_fase3_reingenieria_completa_fase3_sensor_data
+proyecto_fase3_reingenieria_completa_mongo_audit_data
+proyecto_fase3_reingenieria_completa_mongo_reports_data
+proyecto_fase3_reingenieria_completa_mssql_data
+umg-sistema-alerta-climatica-desaweb_alert_pg
+umg-sistema-alerta-climatica-desaweb_auth_pg
+umg-sistema-alerta-climatica-desaweb_community_pg
+umg-sistema-alerta-climatica-desaweb_mongo_data
+umg-sistema-alerta-climatica-desaweb_mssql_data
+umg_sql_recovery_test
+
+=== BUILD audit-service ===

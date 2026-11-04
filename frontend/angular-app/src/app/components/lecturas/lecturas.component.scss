@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.lecturas-feed {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  max-height: 55vh;
+}
+
+.tabla-fija {
+  table-layout: fixed;
+  width: 100%;
+}

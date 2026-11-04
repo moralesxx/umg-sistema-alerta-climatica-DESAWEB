@@ -1,0 +1,111 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Bitácora de auditoría</h4>
+    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cargarBitacora()">
+      Actualizar
+    </button>
+  </div>
+
+  @if (errorListado) {
+    <div class="alert alert-danger">{{ errorListado }}</div>
+  }
+
+  <!-- RF-ADM-59: filtros por usuario, acción, fecha y entidad -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1" for="bitFechaInicio">Desde</label>
+          <input id="bitFechaInicio" type="date" class="form-control form-control-sm"
+                 [(ngModel)]="filtroFechaInicio" (change)="aplicarFiltros()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1" for="bitFechaFin">Hasta</label>
+          <input id="bitFechaFin" type="date" class="form-control form-control-sm"
+                 [(ngModel)]="filtroFechaFin" (change)="aplicarFiltros()">
+        </div>
+        <div class="col-12 col-md-2">
+          <label class="form-label small mb-1" for="bitUsuario">Usuario</label>
+          <input id="bitUsuario" type="text" class="form-control form-control-sm"
+                 placeholder="Nombre o id" [(ngModel)]="filtroUsuario" (input)="aplicarFiltros()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1" for="bitAccion">Acción</label>
+          <select id="bitAccion" class="form-select form-select-sm"
+                  [(ngModel)]="filtroAccion" (change)="aplicarFiltros()">
+            <option value="todas">Todas</option>
+            @for (a of accionesDisponibles; track a) {
+              <option [value]="a">{{ a }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1" for="bitEntidad">Entidad</label>
+          <select id="bitEntidad" class="form-select form-select-sm"
+                  [(ngModel)]="filtroEntidad" (change)="aplicarFiltros()">
+            <option value="todas">Todas</option>
+            @for (e of entidadesDisponibles; track e) {
+              <option [value]="e">{{ e }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-12 col-md-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm w-100" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      </div>
+
+      @if (errorFiltros) {
+        <div class="text-danger small mt-2">{{ errorFiltros }}</div>
+      }
+    </div>
+  </div>
+
+  <!-- RF-ADM-57: usuario, acción, fecha, hora, entidad, identificador y descripción -->
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Entidad</th>
+          <th>Id</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of registrosPaginados; track r.bitacoraId) {
+          <tr>
+            <td>{{ r.fechaHora | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ r.fechaHora | date: 'HH:mm:ss' }}</td>
+            <td>{{ nombreUsuario(r) }}</td>
+            <td>
+              <span class="badge {{ getAccionBadgeClass(r.accion) }}">{{ r.accion }}</span>
+            </td>
+            <td>{{ r.entidad || '—' }}</td>
+            <td>{{ r.entidadId ?? '—' }}</td>
+            <td>{{ r.detalle }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">No hay registros para mostrar.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center">
+    <small class="text-muted">{{ registrosFiltrados.length }} registro(s)</small>
+    <div class="btn-group btn-group-sm">
+      <button type="button" class="btn btn-outline-secondary"
+              [disabled]="paginaActual === 1" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+      <span class="btn btn-outline-secondary disabled">{{ paginaActual }} / {{ totalPaginas }}</span>
+      <button type="button" class="btn btn-outline-secondary"
+              [disabled]="paginaActual === totalPaginas" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
+    </div>
+  </div>
+</div>

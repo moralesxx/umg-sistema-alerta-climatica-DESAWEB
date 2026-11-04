@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>{{ r.title }}</title>
+<style>
+  @page { size: A4 landscape; margin: 28mm 14mm 20mm 14mm;
+    @top-left { content: "{{ system }}"; font: 8pt sans-serif; color: #555; border-bottom: .5pt solid #bbb; width: 70%; padding-bottom: 2mm; }
+    @top-right { content: "{{ r.title }}"; text-align: right; white-space: nowrap; width: 30%; font: 8pt sans-serif; color: #555; border-bottom: .5pt solid #bbb; padding-bottom: 2mm; }
+    @bottom-left { content: "ID {{ meta.reportId }} · {{ meta.generatedAtLocal }} · {{ meta.user }}"; font: 7.5pt sans-serif; color: #666; }
+    @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 7.5pt sans-serif; color: #666; } }
+  body { font-family: sans-serif; font-size: 8.5pt; color: #222; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4mm; }
+  .brand svg { width: 34px; height: 34px; }
+  h1 { font-size: 17pt; margin: 0; color: #12355b; } h2 { font-size: 11pt; color: #12355b; margin: 6mm 0 2mm; }
+  .meta { color: #555; font-size: 8pt; margin-bottom: 3mm; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 6px; margin: 3mm 0 2mm; }
+  .kpi { border: .6pt solid #c9d3df; border-radius: 3px; padding: 2mm 4mm; min-width: 32mm; background: #f4f7fb; }
+  .kpi b { display: block; font-size: 13pt; color: #12355b; } .kpi span { font-size: 7.5pt; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1mm; }
+  thead { display: table-header-group; } tr { page-break-inside: avoid; }
+  th { background: #12355b; color: #fff; text-align: left; padding: 1.5mm 2mm; font-size: 8pt; }
+  td { border-bottom: .4pt solid #d5dbe3; padding: 1.2mm 2mm; vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #f7f9fc; }
+  .Rojo { color: #b00020; font-weight: bold; } .Naranja { color: #c65d00; font-weight: bold; } .Amarillo { color: #8a6d00; font-weight: bold; } .Verde { color: #1b7a3a; font-weight: bold; }
+  .note { color: #8a4b00; font-size: 8pt; margin: 1mm 0; } .empty { color: #777; font-style: italic; }
+</style></head><body>
+<div class="brand">
+  <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#12355b"/><path d="M14 30a7 7 0 0 1 1-13.9A9 9 0 0 1 32.5 18 6 6 0 0 1 33 30z" fill="#fff"/><path d="M26 24l-5 8h4l-2 6 7-9h-4l2-5z" fill="#f5b700"/></svg>
+  <div><h1>{{ r.title }}</h1><div class="meta">{{ system }}</div></div>
+</div>
+<div class="meta"><b>Generado:</b> {{ meta.generatedAtLocal }} &nbsp; <b>Usuario:</b> {{ meta.user }} &nbsp; <b>ID:</b> {{ meta.reportId }}
+{% if meta.filtersText %}<br><b>Filtros:</b> {{ meta.filtersText }}{% endif %}</div>
+{% if r.kpis %}<div class="kpis">{% for k, v in r.kpis %}<div class="kpi"><b>{{ v }}</b><span>{{ k }}</span></div>{% endfor %}</div>{% endif %}
+{% for s in r.sections %}
+  <h2>{{ s.title }}</h2>
+  {% if s.note %}<div class="note">{{ s.note }}</div>{% endif %}
+  {% if s.rows %}
+  <table><thead><tr>{% for c in s.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for row in s.rows %}<tr>{% for cell in row %}<td{% if loop.index0 == r.level_col and s.title in ('Alertas','Eventos') %} class="{{ cell }}"{% endif %}>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+  {% else %}<p class="empty">Sin datos para los filtros seleccionados.</p>{% endif %}
+{% endfor %}
+</body></html>
