@@ -153,3 +153,17 @@ El sistema maneja **8 tipos de sensor**. Con los componentes de esta tabla puede
 * **Agua:** nunca moje la electrónica; solo las pistas del sensor, y sin alimentar permanentemente (se corroe).
 * **Fuego:** use un encendedor a distancia y supervisión; nunca cerca de la protoboard ni de materiales inflamables.
 * **Simulador:** con hardware real, desactívelo en `.env` (`SIMULADOR_HABILITADO=false`) para que no «rellene» datos falsos si el Arduino se desconecta más de 2 minutos.
+
+## 12. Sketch actual del proyecto (`Arduino_AlertaClimatica.ino`) — códigos SEN-xx
+Es el que se usa con la conexión directa por USB desde el navegador (Web Serial). Envía un JSON **cada 2 s**:
+
+| Código | Sensor | Pin | Notas |
+|---|---|---|---|
+| `SEN-01` | Temperatura DS18B20 | D3 (+ resistencia 4.7 kΩ a 5 V) | Lectura asíncrona; se ignora el valor de arranque 85 °C |
+| `SEN-02` | Humedad DHT11 | D4 | Se conserva el último valor válido hasta 10 fallos seguidos |
+| `SEN-03` | Viento (potenciómetro) | A0 | Promedio de 8 muestras. Con el pin sin conectar lee ruido |
+| `SEN-05` | Nivel de río HC-SR04 | TRIG D9 / ECHO D10 | Mediana de 5 mediciones. **Ajuste `ALTURA_SENSOR_CM`** (distancia al fondo) |
+
+Los sensores deben existir en *Sensores* con esos códigos exactos; si falta uno, solo esa lectura se rechaza.
+Local: botón de emergencia D2, LED D6, buzzer D7. El navegador reenvía el nivel de alerta cada 5 s; si el Arduino pasa 30 s sin recibirlo, vuelve a Verde.
+Para ver solo datos reales, ponga `SIMULADOR_HABILITADO=false` en `.env`.

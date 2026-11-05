@@ -27,3 +27,9 @@ services/**/bin/
 services/**/obj/
 __pycache__/
 .pytest_cache/
+
+# Respaldos y diagnósticos locales (pueden contener datos o nombres internos)
+respaldo_sql*/
+diagnostico.txt
+*.backup-*
+/docker

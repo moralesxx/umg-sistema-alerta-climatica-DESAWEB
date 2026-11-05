@@ -1,55 +1,267 @@
+
+<!-- ==========================================================
+     PANEL DE CONEXIÓN ARDUINO USB - WEB SERIAL
+========================================================== -->
+
+<div class="row g-2 mb-3" *ngIf="puedeAdministrar">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h5 class="card-title fw-bold mb-1">
+              <i class="bi bi-usb-symbol me-2"></i>
+              Conexión Arduino UNO
+            </h5>
+            <p class="text-muted small mb-0">
+              Recepción de lecturas mediante conexión USB directa.
+            </p>
+          </div>
+
+          <span
+            class="badge rounded-pill px-3 py-2"
+            [ngClass]="{
+              'bg-success': arduinoConectado,
+              'bg-warning text-dark': conectandoArduino || desconectandoArduino,
+              'bg-danger': estadoConexionArduino === 'Error',
+              'bg-secondary': !arduinoConectado && !conectandoArduino && !desconectandoArduino && estadoConexionArduino !== 'Error'
+            }">
+            <i class="bi bi-circle-fill me-1"></i>
+            {{ estadoConexionArduino }}
+          </span>
+        </div>
+
+        <div class="row g-3 align-items-center">
+
+          <div class="col-12 col-lg-7">
+            <div class="d-flex align-items-start gap-3">
+              <div
+                class="rounded-3 p-3"
+                [ngClass]="arduinoConectado ? 'bg-success bg-opacity-10 text-success' : 'bg-primary bg-opacity-10 text-primary'">
+                <i class="bi bi-usb-symbol fs-2"></i>
+              </div>
+
+              <div>
+                <div class="fw-bold mb-1">
+                  Estado de comunicación
+                </div>
+
+                <p class="text-muted small mb-1">
+                  {{ mensajeArduino }}
+                </p>
+
+                <div class="small text-muted">
+                  Velocidad serial: <strong>9600 baudios</strong>
+                  <span class="mx-1">|</span>
+                  Protocolo: <strong>JSON</strong>
+                </div>
+
+                <div class="small text-muted mt-1" *ngIf="ultimaLecturaArduino">
+                  Última recepción: {{ ultimaLecturaArduino }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-5">
+            <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+
+              <button
+                type="button"
+                class="btn btn-primary fw-bold"
+                (click)="conectarArduino()"
+                [disabled]="!webSerialDisponible || arduinoConectado || conectandoArduino || desconectandoArduino">
+                <i class="bi bi-usb-symbol me-1"></i>
+                {{ conectandoArduino ? 'Conectando...' : 'Conectar Arduino' }}
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-outline-danger fw-bold"
+                (click)="desconectarArduino()"
+                [disabled]="!arduinoConectado || desconectandoArduino">
+                <i class="bi bi-plug-fill me-1"></i>
+                {{ desconectandoArduino ? 'Desconectando...' : 'Desconectar' }}
+              </button>
+
+            </div>
+          </div>
+
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row g-2">
+
+          <div class="col-6 col-md-4">
+            <div class="rounded-3 bg-light p-3 text-center h-100">
+              <div class="text-muted small mb-1">
+                Lecturas aceptadas
+              </div>
+              <div class="fs-4 fw-bold text-success">
+                {{ lecturasAceptadas }}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-4">
+            <div class="rounded-3 bg-light p-3 text-center h-100">
+              <div class="text-muted small mb-1">
+                Lecturas rechazadas
+              </div>
+              <div class="fs-4 fw-bold text-danger">
+                {{ lecturasRechazadas }}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <div class="rounded-3 bg-light p-3 text-center h-100">
+              <div class="text-muted small mb-1">
+                Envío al servidor
+              </div>
+              <div class="fs-6 fw-bold"
+                   [ngClass]="enviandoLecturas ? 'text-primary' : 'text-secondary'">
+                <i
+                  class="bi"
+                  [ngClass]="enviandoLecturas ? 'bi-arrow-repeat' : 'bi-cloud-check'">
+                </i>
+                {{ enviandoLecturas ? 'Enviando...' : 'Automático' }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="alert alert-info small mt-3 mb-0" *ngIf="!webSerialDisponible">
+          <i class="bi bi-info-circle me-1"></i>
+          Para utilizar esta función abre el sistema desde Google Chrome o Microsoft Edge
+          en una conexión HTTPS o localhost.
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==========================================================
+     LISTADO Y ADMINISTRACIÓN DE SENSORES
+========================================================== -->
+
 <div class="row g-2 mb-2">
   <div class="col-12">
     <div class="card shadow-sm border-0">
       <div class="card-body py-3">
+
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-          <h5 class="card-title fw-bold mb-0">Sensores Activos en la Comunidad</h5>
+          <h5 class="card-title fw-bold mb-0">
+            Sensores Activos en la Comunidad
+          </h5>
+
           <div class="d-flex gap-2" *ngIf="puedeAdministrar">
-            <button class="btn btn-success btn-sm fw-bold" (click)="onAgregarSensor()">+ Agregar Sensor</button>
-            <button class="btn btn-outline-danger btn-sm fw-bold" (click)="onReiniciarSistema()">Reiniciar Sistema</button>
+            <button
+              class="btn btn-success btn-sm fw-bold"
+              (click)="onAgregarSensor()">
+              + Agregar Sensor
+            </button>
+
+            <button
+              class="btn btn-outline-danger btn-sm fw-bold"
+              (click)="onReiniciarSistema()">
+              Reiniciar Sistema
+            </button>
           </div>
         </div>
 
         <!-- RF-ADM-20: Filtros -->
+
         <div class="row g-2 mb-3 align-items-end">
+
           <div class="col-6 col-md-3">
-            <label class="form-label small text-muted mb-1">Comunidad</label>
-            <select class="form-select form-select-sm" [(ngModel)]="filtroComunidadId">
+            <label class="form-label small text-muted mb-1">
+              Comunidad
+            </label>
+
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroComunidadId">
               <option [ngValue]="null">Todas</option>
-              <option *ngFor="let comunidad of comunidades" [ngValue]="comunidad.comunidadId">
+
+              <option
+                *ngFor="let comunidad of comunidades"
+                [ngValue]="comunidad.comunidadId">
                 {{ comunidad.nombre }}
               </option>
             </select>
           </div>
+
           <div class="col-6 col-md-3">
-            <label class="form-label small text-muted mb-1">Tipo</label>
-            <select class="form-select form-select-sm" [(ngModel)]="filtroTipoSensorId">
+            <label class="form-label small text-muted mb-1">
+              Tipo
+            </label>
+
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroTipoSensorId">
               <option [ngValue]="null">Todos</option>
-              <option *ngFor="let tipo of tiposSensor" [ngValue]="tipo.tipoSensorId">
+
+              <option
+                *ngFor="let tipo of tiposSensor"
+                [ngValue]="tipo.tipoSensorId">
                 {{ tipo.nombreTipo }}
               </option>
             </select>
           </div>
+
           <div class="col-6 col-md-2">
-            <label class="form-label small text-muted mb-1">Estado</label>
-            <select class="form-select form-select-sm" [(ngModel)]="filtroEstado">
+            <label class="form-label small text-muted mb-1">
+              Estado
+            </label>
+
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroEstado">
               <option value="todos">Todos</option>
               <option value="true">Activo</option>
               <option value="false">Inactivo</option>
             </select>
           </div>
+
           <div class="col-6 col-md-2">
-            <label class="form-label small text-muted mb-1">Código</label>
-            <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroCodigo" placeholder="Ej. SEN-01">
+            <label class="form-label small text-muted mb-1">
+              Código
+            </label>
+
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              [(ngModel)]="filtroCodigo"
+              placeholder="Ej. SEN-01">
           </div>
+
           <div class="col-12 col-md-2 d-flex gap-2">
-            <button class="btn btn-primary btn-sm flex-fill" (click)="aplicarFiltros()">Buscar</button>
-            <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">Limpiar</button>
+            <button
+              class="btn btn-primary btn-sm flex-fill"
+              (click)="aplicarFiltros()">
+              Buscar
+            </button>
+
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              (click)="limpiarFiltros()">
+              Limpiar
+            </button>
           </div>
+
         </div>
+
+        <!-- Tabla de sensores -->
 
         <div class="table-responsive sensores-feed">
           <table class="table align-middle mb-0">
+
             <thead class="sticky-top bg-white">
               <tr>
                 <th class="text-muted">ID</th>
@@ -62,149 +274,413 @@
                 <th class="text-muted text-end">ACCIONES</th>
               </tr>
             </thead>
+
             <tbody>
               <tr *ngFor="let sensor of sensores">
-                <td class="fw-bold">#{{ sensor.sensorId }}</td>
+
+                <td class="fw-bold">
+                  #{{ sensor.sensorId }}
+                </td>
+
                 <td>{{ sensor.nombreSensor }}</td>
-                <td class="text-muted">{{ sensor.codigo || '—' }}</td>
-                <td class="text-muted">{{ obtenerNombreTipo(sensor.tipoSensorId) }}</td>
-                <td class="text-muted">{{ obtenerNombreComunidad(sensor.comunidadId) }}</td>
-                <td class="text-muted">{{ sensor.ubicacion }}</td>
+
+                <td class="text-muted">
+                  {{ sensor.codigo || '—' }}
+                </td>
+
+                <td class="text-muted">
+                  {{ obtenerNombreTipo(sensor.tipoSensorId) }}
+                </td>
+
+                <td class="text-muted">
+                  {{ obtenerNombreComunidad(sensor.comunidadId) }}
+                </td>
+
+                <td class="text-muted">
+                  {{ sensor.ubicacion }}
+                </td>
+
                 <td>
-                  <button class="btn btn-sm px-2 py-1 rounded-pill" [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'" [disabled]="!puedeAdministrar" (click)="onToggleEstado(sensor)" [title]="puedeAdministrar ? 'Clic para cambiar estado' : 'Solo Administrador u Operador pueden cambiar el estado'">
+                  <button
+                    class="btn btn-sm px-2 py-1 rounded-pill"
+                    [ngClass]="sensor.estado ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'"
+                    [disabled]="!puedeAdministrar"
+                    (click)="onToggleEstado(sensor)"
+                    [title]="puedeAdministrar ? 'Clic para cambiar estado' : 'Solo Administrador u Operador pueden cambiar el estado'">
+
                     {{ sensor.estado ? 'Activo' : 'Inactivo' }}
+
                   </button>
                 </td>
+
                 <td class="text-end">
-                  <button *ngIf="puedeAdministrar" class="btn btn-outline-primary btn-sm px-2 py-1" [disabled]="!sensor.estado" [title]="sensor.estado ? 'Editar sensor' : 'No se puede editar un sensor inactivo'" (click)="onEditarSensor(sensor)">
+                  <button
+                    *ngIf="puedeAdministrar"
+                    class="btn btn-outline-primary btn-sm px-2 py-1"
+                    [disabled]="!sensor.estado"
+                    [title]="sensor.estado ? 'Editar sensor' : 'No se puede editar un sensor inactivo'"
+                    (click)="onEditarSensor(sensor)">
+
                     <i class="bi bi-pencil-fill"></i> Editar
+
                   </button>
-                  <span *ngIf="!puedeAdministrar" class="text-muted small">—</span>
+
+                  <span
+                    *ngIf="!puedeAdministrar"
+                    class="text-muted small">
+                    —
+                  </span>
                 </td>
+
               </tr>
             </tbody>
+
           </table>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal Agregar Sensor -->
-<div class="app-modal-backdrop" *ngIf="showAddSensorModal" (click)="cancelarAgregarSensor()">
-  <div class="app-modal-box" (click)="$event.stopPropagation()">
-    <h5 class="fw-bold mb-3">Agregar nuevo sensor simulado</h5>
+
+<!-- ==========================================================
+     MODAL AGREGAR SENSOR
+========================================================== -->
+
+<div
+  class="app-modal-backdrop"
+  *ngIf="showAddSensorModal"
+  (click)="cancelarAgregarSensor()">
+
+  <div
+    class="app-modal-box"
+    (click)="$event.stopPropagation()">
+
+    <h5 class="fw-bold mb-3">
+      Agregar nuevo sensor simulado
+    </h5>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Nombre del sensor</label>
-      <input type="text" class="form-control" [(ngModel)]="nuevoSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
+      <label class="form-label small text-muted">
+        Nombre del sensor
+      </label>
+
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="nuevoSensorNombre"
+        placeholder="Ej. Sensor Temperatura - Norte">
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Tipo de sensor</label>
-      <select class="form-select" [(ngModel)]="nuevoSensorTipoId">
-        <option [ngValue]="null" disabled>Selecciona un tipo...</option>
-        <option *ngFor="let tipo of tiposSensor" [ngValue]="tipo.tipoSensorId">
+      <label class="form-label small text-muted">
+        Tipo de sensor
+      </label>
+
+      <select
+        class="form-select"
+        [(ngModel)]="nuevoSensorTipoId">
+
+        <option [ngValue]="null" disabled>
+          Selecciona un tipo...
+        </option>
+
+        <option
+          *ngFor="let tipo of tiposSensor"
+          [ngValue]="tipo.tipoSensorId">
           {{ tipo.nombreTipo }} ({{ tipo.unidadMedida }})
         </option>
+
       </select>
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Comunidad (opcional por ahora)</label>
-      <select class="form-select" [(ngModel)]="nuevoSensorComunidadId">
-        <option [ngValue]="null">Sin comunidad asignada</option>
-        <option *ngFor="let comunidad of comunidades" [ngValue]="comunidad.comunidadId">
+      <label class="form-label small text-muted">
+        Comunidad (opcional por ahora)
+      </label>
+
+      <select
+        class="form-select"
+        [(ngModel)]="nuevoSensorComunidadId">
+
+        <option [ngValue]="null">
+          Sin comunidad asignada
+        </option>
+
+        <option
+          *ngFor="let comunidad of comunidades"
+          [ngValue]="comunidad.comunidadId">
           {{ comunidad.nombre }}
         </option>
+
       </select>
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Ubicación</label>
-      <input type="text" class="form-control" [(ngModel)]="nuevoSensorUbicacion" placeholder="Ej. Comunidad Norte">
+      <label class="form-label small text-muted">
+        Ubicación
+      </label>
+
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="nuevoSensorUbicacion"
+        placeholder="Ej. Comunidad Norte">
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Fecha de instalación</label>
-      <input type="date" class="form-control" [(ngModel)]="nuevoSensorFechaInstalacion">
+      <label class="form-label small text-muted">
+        Fecha de instalación
+      </label>
+
+      <input
+        type="date"
+        class="form-control"
+        [(ngModel)]="nuevoSensorFechaInstalacion">
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Descripción</label>
-      <textarea class="form-control" rows="2" [(ngModel)]="nuevoSensorDescripcion" placeholder="Breve descripción del sensor"></textarea>
+      <label class="form-label small text-muted">
+        Descripción
+      </label>
+
+      <textarea
+        class="form-control"
+        rows="2"
+        [(ngModel)]="nuevoSensorDescripcion"
+        placeholder="Breve descripción del sensor">
+      </textarea>
     </div>
+
     <div class="mb-3">
-      <label class="form-label small text-muted">Código (opcional)</label>
-      <input type="text" class="form-control" [(ngModel)]="nuevoSensorCodigo" placeholder="Ej. SENS-NORTE-01. Si lo dejas vacío se genera automático">
+      <label class="form-label small text-muted">
+        Código (opcional)
+      </label>
+
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="nuevoSensorCodigo"
+        placeholder="Ej. SENS-NORTE-01. Si lo dejas vacío se genera automático">
     </div>
+
     <div class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarAgregarSensor()">Cancelar</button>
-      <button class="btn btn-success btn-sm fw-bold" (click)="confirmarAgregarSensor()" [disabled]="!nuevoSensorNombre || !nuevoSensorUbicacion || !nuevoSensorTipoId || !nuevoSensorFechaInstalacion || !nuevoSensorDescripcion">Agregar</button>
+      <button
+        class="btn btn-outline-secondary btn-sm"
+        (click)="cancelarAgregarSensor()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn-success btn-sm fw-bold"
+        (click)="confirmarAgregarSensor()"
+        [disabled]="!nuevoSensorNombre || !nuevoSensorUbicacion || !nuevoSensorTipoId || !nuevoSensorFechaInstalacion || !nuevoSensorDescripcion">
+        Agregar
+      </button>
     </div>
+
   </div>
 </div>
 
-<!-- Modal Editar Sensor -->
-<div class="app-modal-backdrop" *ngIf="showEditSensorModal" (click)="cancelarEdicionSensor()">
-  <div class="app-modal-box" (click)="$event.stopPropagation()">
-    <h5 class="fw-bold mb-3">Editar Sensor #{{ sensorEnEdicionId }}</h5>
+
+<!-- ==========================================================
+     MODAL EDITAR SENSOR
+========================================================== -->
+
+<div
+  class="app-modal-backdrop"
+  *ngIf="showEditSensorModal"
+  (click)="cancelarEdicionSensor()">
+
+  <div
+    class="app-modal-box"
+    (click)="$event.stopPropagation()">
+
+    <h5 class="fw-bold mb-3">
+      Editar Sensor #{{ sensorEnEdicionId }}
+    </h5>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Nombre del sensor</label>
-      <input type="text" class="form-control" [(ngModel)]="editSensorNombre" placeholder="Ej. Sensor Temperatura - Norte">
+      <label class="form-label small text-muted">
+        Nombre del sensor
+      </label>
+
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="editSensorNombre"
+        placeholder="Ej. Sensor Temperatura - Norte">
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Tipo de sensor</label>
-      <select class="form-select" [(ngModel)]="editSensorTipoId">
-        <option *ngFor="let tipo of tiposSensor" [ngValue]="tipo.tipoSensorId">
+      <label class="form-label small text-muted">
+        Tipo de sensor
+      </label>
+
+      <select
+        class="form-select"
+        [(ngModel)]="editSensorTipoId">
+
+        <option
+          *ngFor="let tipo of tiposSensor"
+          [ngValue]="tipo.tipoSensorId">
           {{ tipo.nombreTipo }} ({{ tipo.unidadMedida }})
         </option>
+
       </select>
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Comunidad (opcional por ahora)</label>
-      <select class="form-select" [(ngModel)]="editSensorComunidadId">
-        <option [ngValue]="null">Sin comunidad asignada</option>
-        <option *ngFor="let comunidad of comunidades" [ngValue]="comunidad.comunidadId">
+      <label class="form-label small text-muted">
+        Comunidad (opcional por ahora)
+      </label>
+
+      <select
+        class="form-select"
+        [(ngModel)]="editSensorComunidadId">
+
+        <option [ngValue]="null">
+          Sin comunidad asignada
+        </option>
+
+        <option
+          *ngFor="let comunidad of comunidades"
+          [ngValue]="comunidad.comunidadId">
           {{ comunidad.nombre }}
         </option>
+
       </select>
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Ubicación</label>
-      <input type="text" class="form-control" [(ngModel)]="editSensorUbicacion" placeholder="Ej. Comunidad Norte">
+      <label class="form-label small text-muted">
+        Ubicación
+      </label>
+
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="editSensorUbicacion"
+        placeholder="Ej. Comunidad Norte">
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Fecha de instalación</label>
-      <input type="date" class="form-control" [(ngModel)]="editSensorFechaInstalacion">
+      <label class="form-label small text-muted">
+        Fecha de instalación
+      </label>
+
+      <input
+        type="date"
+        class="form-control"
+        [(ngModel)]="editSensorFechaInstalacion">
     </div>
+
     <div class="mb-2">
-      <label class="form-label small text-muted">Descripción</label>
-      <textarea class="form-control" rows="2" [(ngModel)]="editSensorDescripcion" placeholder="Breve descripción del sensor"></textarea>
+      <label class="form-label small text-muted">
+        Descripción
+      </label>
+
+      <textarea
+        class="form-control"
+        rows="2"
+        [(ngModel)]="editSensorDescripcion"
+        placeholder="Breve descripción del sensor">
+      </textarea>
     </div>
+
     <div class="mb-3">
-      <label class="form-label small text-muted">Código (opcional)</label>
-      <input type="text" class="form-control" [(ngModel)]="editSensorCodigo" placeholder="Ej. SENS-NORTE-01. Si lo dejas vacío se conserva el actual">
+      <label class="form-label small text-muted">
+        Código (opcional)
+      </label>
+
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="editSensorCodigo"
+        placeholder="Ej. SENS-NORTE-01. Si lo dejas vacío se conserva el actual">
     </div>
+
     <div class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarEdicionSensor()">Cancelar</button>
-      <button class="btn btn-primary btn-sm fw-bold" (click)="confirmarEdicionSensor()" [disabled]="!editSensorNombre || !editSensorUbicacion">Guardar Cambios</button>
+      <button
+        class="btn btn-outline-secondary btn-sm"
+        (click)="cancelarEdicionSensor()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn-primary btn-sm fw-bold"
+        (click)="confirmarEdicionSensor()"
+        [disabled]="!editSensorNombre || !editSensorUbicacion">
+        Guardar Cambios
+      </button>
     </div>
+
   </div>
 </div>
 
-<!-- Modal de Confirmación (usado por Reiniciar Sistema) -->
-<div class="app-modal-backdrop" *ngIf="showConfirmModal" (click)="cancelarConfirmacion()">
-  <div class="app-modal-box" (click)="$event.stopPropagation()">
-    <h5 class="fw-bold mb-3">Confirmar acción</h5>
-    <p class="mb-4">{{ confirmMessage }}</p>
+
+<!-- ==========================================================
+     MODAL DE CONFIRMACIÓN
+========================================================== -->
+
+<div
+  class="app-modal-backdrop"
+  *ngIf="showConfirmModal"
+  (click)="cancelarConfirmacion()">
+
+  <div
+    class="app-modal-box"
+    (click)="$event.stopPropagation()">
+
+    <h5 class="fw-bold mb-3">
+      Confirmar acción
+    </h5>
+
+    <p class="mb-4">
+      {{ confirmMessage }}
+    </p>
+
     <div class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary btn-sm" (click)="cancelarConfirmacion()">Cancelar</button>
-      <button class="btn btn-danger btn-sm fw-bold" (click)="ejecutarConfirmacion()">Confirmar</button>
+      <button
+        class="btn btn-outline-secondary btn-sm"
+        (click)="cancelarConfirmacion()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn-danger btn-sm fw-bold"
+        (click)="ejecutarConfirmacion()">
+        Confirmar
+      </button>
     </div>
+
   </div>
 </div>
 
-<!-- Toast de confirmación -->
-<div *ngIf="showToast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+
+<!-- ==========================================================
+     TOAST DE CONFIRMACIÓN
+========================================================== -->
+
+<div
+  *ngIf="showToast"
+  class="position-fixed bottom-0 end-0 p-3"
+  style="z-index: 1100;">
+
   <div class="toast show align-items-center text-white bg-success border-0">
+
     <div class="d-flex">
-      <div class="toast-body">{{ toastMessage }}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="showToast = false"></button>
+      <div class="toast-body">
+        {{ toastMessage }}
+      </div>
+
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        (click)="showToast = false">
+      </button>
     </div>
+
   </div>
 </div>

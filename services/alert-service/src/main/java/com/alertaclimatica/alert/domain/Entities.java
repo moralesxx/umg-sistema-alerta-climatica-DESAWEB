@@ -5,10 +5,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Entidades del Alert Service. Sensores y comunidades se referencian por id (otros microservicios), con nombres desnormalizados. */
+// Al ser clases anidadas, Hibernate nombraría las entidades "Entities$Alerta", etc.; por eso cada @Entity declara su nombre
+// explícito (así las consultas JPQL "from Alerta" de Repos las encuentran).
 public final class Entities {
     private Entities() {}
 
-    @Entity @Table(name = "reglas_alerta")
+    @Entity(name = "ReglaAlerta") @Table(name = "reglas_alerta")
     public static class ReglaAlerta {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Integer reglaAlertaId;
         @Column(nullable = false) public String nombre;
@@ -21,7 +23,7 @@ public final class Entities {
         public boolean estado = true;
     }
 
-    @Entity @Table(name = "eventos")
+    @Entity(name = "Evento") @Table(name = "eventos")
     public static class Evento {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Integer eventoId;
         @Column(nullable = false) public String tipoFenomeno;
@@ -38,7 +40,7 @@ public final class Entities {
         public String usuarioResponsableNombre;
     }
 
-    @Entity @Table(name = "alertas")
+    @Entity(name = "Alerta") @Table(name = "alertas")
     public static class Alerta {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Integer alertaId;
         public int sensorId;
