@@ -46,55 +46,64 @@ public static class Endpoints
     {
         // ------------------------------------------------------------------ ingesta desde dispositivos (Arduino/ESP32)
         // Sin JWT de usuario: el dispositivo se identifica con la clave del header X-Device-Key (variable Devices__ApiKey).
-        app.MapPost("/api/sensors/ingest", async (IngestInput input, HttpRequest req, SensorDb db, UpstreamClient up, IConfiguration cfg) =>
+       
+        // ------------------------------------------------------------------ ingesta desde dispositivos (Arduino/ESP32)
+        // Sin JWT de usuario: el dispositivo se identifica con X-Device-Key.
+        app.MapPost("/api/sensors/ingest", async (
+            IngestInput input,
+            HttpRequest req,
+            SensorDb db,
+            UpstreamClient up,
+            IConfiguration cfg) =>
         {
-            // Dos formas de autenticarse: la clave maestra del entorno (Devices__ApiKey) o la clave propia de un dispositivo registrado (revocable).
+            // Autenticación mediante clave maestra o clave individual del dispositivo.
             var expected = cfg["Devices:ApiKey"];
             var maestraActiva = !string.IsNullOrWhiteSpace(expected) && expected.Length >= 16;
+
             if (!maestraActiva && !await db.DispositivosIot.AnyAsync(d => d.Activo))
-                return Results.Json(new { mensaje = "La ingesta de dispositivos no está habilitada." }, statusCode: 503);
+                return Results.Json(
+                    new { mensaje = "La ingesta de dispositivos no está habilitada." },
+                    statusCode: 503);
+
             var given = req.Headers["X-Device-Key"].ToString();
             DispositivoIot? disp = null;
-            var esMaestra = maestraActiva && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(given), Encoding.UTF8.GetBytes(expected!));
+
+            var esMaestra = maestraActiva &&
+                CryptographicOperations.FixedTimeEquals(
+                    Encoding.UTF8.GetBytes(given),
+                    Encoding.UTF8.GetBytes(expected!));
+
             if (!esMaestra && given.Length >= 16 && given.Length <= 200)
             {
                 var hash = HashClave(given);
-                disp = await db.DispositivosIot.FirstOrDefaultAsync(d => d.KeyHash == hash && d.Activo);
+                disp = await db.DispositivosIot.FirstOrDefaultAsync(
+                    d => d.KeyHash == hash && d.Activo);
             }
+
             if (!esMaestra && disp == null)
-                return Results.Json(new { mensaje = "Clave de dispositivo no válida." }, statusCode: 401);
+                return Results.Json(
+                    new { mensaje = "Clave de dispositivo no válida." },
+                    statusCode: 401);
 
-            var items = input.Lecturas ?? new List<IngestItem>();
-            if (input.Codigo != null) items.Add(new IngestItem { Codigo = input.Codigo, Valor = input.Valor });
-            if (items.Count == 0) throw new ArgumentException("No se enviaron lecturas.");
-            if (items.Count > 50) throw new ArgumentException("Máximo 50 lecturas por solicitud.");
+            // El procesamiento se comparte con la ingesta desde el navegador.
+            return await ProcesarLecturasAsync(input, disp, db, up);
 
-            var ahora = DateTime.UtcNow;
-            var aceptadas = new List<(LecturaClimatica L, Sensor S)>();
-            var rechazadas = new List<object>();
-            foreach (var it in items)
-            {
-                var codigo = it.Codigo?.Trim();
-                if (string.IsNullOrEmpty(codigo) || it.Valor is null) { rechazadas.Add(new { codigo, motivo = "Falta codigo o valor." }); continue; }
-                if (disp?.Prefijo is { Length: > 0 } pref && !codigo.StartsWith(pref, StringComparison.OrdinalIgnoreCase))
-                { rechazadas.Add(new { codigo, motivo = "El dispositivo no tiene permiso para ese sensor." }); continue; }
-                if (Math.Abs(it.Valor.Value) > 1_000_000m) { rechazadas.Add(new { codigo, motivo = "Valor fuera de rango." }); continue; }
-                var sensor = await db.Sensores.Include(x => x.TipoSensor).FirstOrDefaultAsync(x => x.Codigo == codigo);
-                if (sensor == null) { rechazadas.Add(new { codigo, motivo = "Sensor no registrado en el sistema." }); continue; }
-                if (!sensor.Estado) { rechazadas.Add(new { codigo, motivo = "Sensor inactivo." }); continue; }
-                // La hora la pone el servidor (el Arduino no tiene reloj confiable).
-                var l = new LecturaClimatica { SensorId = sensor.SensorId, Valor = Math.Round(it.Valor.Value, 2), FechaHora = ahora };
-                db.Lecturas.Add(l); aceptadas.Add((l, sensor));
-            }
-            if (aceptadas.Count == 0) return Results.BadRequest(new { mensaje = "Ninguna lectura fue aceptada.", rechazadas });
-            await db.SaveChangesAsync();
-            foreach (var (_, s) in aceptadas) Dispositivos.Marcar(s.SensorId);
-            if (disp != null) { disp.UltimoContacto = ahora; await db.SaveChangesAsync(); }
-            await Evaluacion.EnviarAsync(up, aceptadas.Select(a => Evaluacion.Map(a.L, a.S)));
-            return Results.Ok(new { aceptadas = aceptadas.Count, rechazadas, fechaHora = ahora });
         }).AllowAnonymous();
 
         var g = app.MapGroup("/api/sensors").RequireAuthorization();
+
+        
+        // ------------------------------------------------------------------ ingesta desde navegador (Arduino Web Serial)
+        // Requiere JWT de usuario con rol Administrador u Operador.
+        g.MapPost("/ingest/browser", async (
+            IngestInput input,
+            SensorDb db,
+            UpstreamClient up) =>
+        {
+            return await ProcesarLecturasAsync(input, null, db, up);
+
+        }).RequireRoles(AdminOper);
+
 
         // ------------------------------------------------------------------ dispositivos IoT (claves individuales, revocables)
         g.MapPost("/devices", async (DispositivoInput i, SensorDb db, AuditClient audit) =>
@@ -324,7 +333,7 @@ public static class Endpoints
                 return new { tipoSensorId = x.Key, tipo = t?.NombreTipo ?? "Sensor", unidad = t?.UnidadMedida ?? "", valor = Math.Round(x.Average(v => v.Valor), 2),
                     sensores = x.Count(), fecha = x.Max(v => v.FechaHora) };
             }).OrderBy(v => v.tipoSensorId).ToList();
-            var ticks = TimeSpan.FromMinutes(horas <= 1 ? 1 : horas <= 6 ? 5 : 15).Ticks;
+            var ticks = (horas <= 1 ? TimeSpan.FromSeconds(10) : horas <= 6 ? TimeSpan.FromMinutes(1) : TimeSpan.FromMinutes(5)).Ticks;
             var evolucion = lecturas.GroupBy(l => l.TipoSensorId).Select(x =>
             {
                 var t = tipos.FirstOrDefault(y => y.TipoSensorId == x.Key);
@@ -337,6 +346,118 @@ public static class Endpoints
     }
 
     // ---------------------------------------------------------------------- helpers
+    
+    // Procesamiento compartido de lecturas provenientes de hardware.
+    // Se utiliza tanto para dispositivos IoT como para Arduino mediante Web Serial.
+    private static async Task<IResult> ProcesarLecturasAsync(
+        IngestInput input,
+        DispositivoIot? disp,
+        SensorDb db,
+        UpstreamClient up)
+    {
+        var items = input.Lecturas?.ToList() ?? new List<IngestItem>();
+
+        if (input.Codigo != null)
+            items.Add(new IngestItem { Codigo = input.Codigo, Valor = input.Valor });
+
+        if (items.Count == 0)
+            throw new ArgumentException("No se enviaron lecturas.");
+
+        if (items.Count > 50)
+            throw new ArgumentException("Máximo 50 lecturas por solicitud.");
+
+        var ahora = DateTime.UtcNow;
+        var aceptadas = new List<(LecturaClimatica L, Sensor S)>();
+        var rechazadas = new List<object>();
+
+        // Una sola consulta para todos los códigos del lote (antes: una consulta por lectura).
+        var codigos = items.Select(x => x.Codigo?.Trim()).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+        var sensoresPorCodigo = (await db.Sensores.Include(x => x.TipoSensor)
+                .Where(x => codigos.Contains(x.Codigo)).ToListAsync())
+            .GroupBy(x => x.Codigo, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var it in items)
+        {
+            var codigo = it.Codigo?.Trim();
+
+            if (string.IsNullOrEmpty(codigo) || it.Valor is null)
+            {
+                rechazadas.Add(new { codigo, motivo = "Falta codigo o valor." });
+                continue;
+            }
+
+            if (disp?.Prefijo is { Length: > 0 } pref &&
+                !codigo.StartsWith(pref, StringComparison.OrdinalIgnoreCase))
+            {
+                rechazadas.Add(new { codigo, motivo = "El dispositivo no tiene permiso para ese sensor." });
+                continue;
+            }
+
+            if (Math.Abs(it.Valor.Value) > 1_000_000m)
+            {
+                rechazadas.Add(new { codigo, motivo = "Valor fuera de rango." });
+                continue;
+            }
+
+            sensoresPorCodigo.TryGetValue(codigo, out var sensor);
+
+            if (sensor == null)
+            {
+                rechazadas.Add(new { codigo, motivo = "Sensor no registrado en el sistema." });
+                continue;
+            }
+
+            if (!sensor.Estado)
+            {
+                rechazadas.Add(new { codigo, motivo = "Sensor inactivo." });
+                continue;
+            }
+
+            var lectura = new LecturaClimatica
+            {
+                SensorId = sensor.SensorId,
+                Valor = Math.Round(it.Valor.Value, 2),
+                FechaHora = ahora
+            };
+
+            db.Lecturas.Add(lectura);
+            aceptadas.Add((lectura, sensor));
+        }
+
+        if (aceptadas.Count == 0)
+            return Results.BadRequest(new
+            {
+                mensaje = "Ninguna lectura fue aceptada.",
+                rechazadas
+            });
+
+        if (disp != null)
+            disp.UltimoContacto = ahora;   // se guarda junto con las lecturas (una sola ida a la base de datos)
+
+        await db.SaveChangesAsync();
+
+        foreach (var (_, sensor) in aceptadas)
+            Dispositivos.Marcar(sensor.SensorId);
+
+        // La evaluación de reglas se hace en segundo plano: el dispositivo/navegador ya no espera
+        // la llamada al Alert Service (si falla, Evaluacion la deja en cola y la reintenta).
+        var lote = aceptadas.Select(a => Evaluacion.Map(a.L, a.S)).ToArray();
+        _ = Task.Run(async () =>
+        {
+            try { await Evaluacion.EnviarAsync(up, lote); }
+            catch (Exception) { /* la cola de pendientes ya conserva el lote si el Alert Service no respondió */ }
+        });
+
+        return Results.Ok(new
+        {
+            aceptadas = aceptadas.Count,
+            rechazadas,
+            fechaHora = ahora
+        });
+    }
+
+
     private static DateTime? Utc(DateTime? d) =>
         d == null ? null : d.Value.Kind == DateTimeKind.Local ? d.Value.ToUniversalTime() : DateTime.SpecifyKind(d.Value, DateTimeKind.Utc);
 

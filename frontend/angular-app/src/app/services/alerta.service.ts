@@ -60,6 +60,10 @@ export class AlertaService {
 
   constructor(private http: HttpClient) { }
 
+  get nivelActual(): string {
+    return this.nivelAlertaSource.value;
+  }
+
   setNivelAlerta(nivel: string): void {
     this.nivelAlertaSource.next(nivel);
   }

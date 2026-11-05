@@ -5,6 +5,7 @@ import { Subscription, interval } from 'rxjs';
 import { AlertaService } from '../../services/alerta.service';
 import { ComunidadService, Comunidad } from '../../services/comunidad.service';
 import { DashboardService, DashboardResumen, SerieLecturas } from '../../services/dashboard.service';
+import { ArduinoSerialService, EstadoArduino } from '../../services/arduino-serial.service';
 
 // Dashboard con datos reales de la API (RF-ADM-60 a 68). Se actualiza solo.
 @Component({
@@ -41,33 +42,58 @@ export class OverviewComponent implements OnInit, OnDestroy {
   readonly altoGrafica = 150;
 
   private refrescoSub?: Subscription;
+  private arduinoSub?: Subscription;
+
+  // Estado de la conexión Arduino (servicio global Web Serial)
+  arduino!: EstadoArduino;   // se inicializa en ngOnInit (el servicio se inyecta por constructor)
+  readonly webSerialDisponible = typeof navigator !== 'undefined' && !!navigator.serial;
 
   constructor(
     private dashboardService: DashboardService,
     private comunidadService: ComunidadService,
     private alertaService: AlertaService,
+    private arduinoService: ArduinoSerialService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.arduino = this.arduinoService.estado;
     this.comunidadService.getComunidades().subscribe({
       next: (c) => { this.comunidades = c; this.cdr.detectChanges(); },
       error: () => {}
     });
 
+    this.arduinoSub = this.arduinoService.estado$.subscribe((e) => {
+      const eraEnviando = this.arduino.enviandoLecturas;
+      this.arduino = e;
+      this.cdr.detectChanges();
+      // Al aceptarse lecturas nuevas se refresca el dashboard de inmediato (sin esperar el ciclo).
+      if (eraEnviando && !e.enviandoLecturas) this.cargar();
+    });
+
     this.cargar();
-    // RF-ADM-68: actualización dinámica cada 10 s.
-    this.refrescoSub = interval(10000).subscribe(() => this.cargar());
+    // RF-ADM-68: actualización dinámica cada 3 s (la ingesta llega cada ~2 s).
+    this.refrescoSub = interval(3000).subscribe(() => this.cargar());
   }
 
   ngOnDestroy(): void {
     this.refrescoSub?.unsubscribe();
+    this.arduinoSub?.unsubscribe();
   }
 
+  conectarArduino(): void { void this.arduinoService.conectar(); }
+
+  desconectarArduino(): void { void this.arduinoService.desconectar(); }
+
+  private consultando = false;
+
   cargar(): void {
+    if (this.consultando) return;   // evita solapar consultas si el servidor tarda más que el refresco
+    this.consultando = true;
     const comunidadId = this.filtroComunidad ? Number(this.filtroComunidad) : undefined;
     this.dashboardService.getResumen(comunidadId, this.horas).subscribe({
       next: (data) => {
+        this.consultando = false;
         this.datos = data;
         this.error = '';
         this.cargando = false;
@@ -84,6 +110,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: () => {
+        this.consultando = false;
         this.error = 'No se pudo cargar el dashboard.';
         this.cargando = false;
         this.cdr.detectChanges();

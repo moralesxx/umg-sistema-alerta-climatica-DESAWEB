@@ -5,7 +5,7 @@
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
           <h3 class="fw-bold mb-1 text-dark">Monitoreo Climático y Alerta Temprana</h3>
-          <p class="text-muted mb-0 small">Panel de Control para Comunidades Rurales — se actualiza cada 10 s</p>
+          <p class="text-muted mb-0 small">Panel de Control para Comunidades Rurales — se actualiza cada 3 s</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="filtroComunidad" (change)="cargar()">
@@ -21,6 +21,33 @@
           </span>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Conexión Arduino en vivo: las lecturas que llegan por USB aparecen en este panel -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card shadow-sm border-0 px-4 py-2">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="fw-bold small">Arduino USB</span>
+          <span class="badge rounded-pill"
+                [ngClass]="arduino.arduinoConectado ? 'bg-success' : arduino.estadoConexionArduino === 'Error' ? 'bg-danger' : 'bg-secondary'">
+            {{ arduino.estadoConexionArduino }}
+          </span>
+          <span class="small text-muted">{{ arduino.mensajeArduino }}</span>
+          <span class="small text-muted" *ngIf="arduino.ultimaLecturaArduino">· Última señal: {{ arduino.ultimaLecturaArduino }}</span>
+          <span class="small text-muted" *ngIf="arduino.arduinoConectado">· Aceptadas: {{ arduino.lecturasAceptadas }} · Rechazadas: {{ arduino.lecturasRechazadas }}</span>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-primary" (click)="conectarArduino()"
+                  [disabled]="!webSerialDisponible || arduino.arduinoConectado || arduino.conectandoArduino">Conectar Arduino</button>
+          <button class="btn btn-sm btn-outline-secondary" (click)="desconectarArduino()"
+                  [disabled]="!arduino.arduinoConectado || arduino.desconectandoArduino">Desconectar</button>
+        </div>
+      </div>
+      <div class="small text-danger mt-1" *ngIf="!webSerialDisponible">Este navegador no soporta Web Serial; use Chrome o Edge.</div>
     </div>
   </div>
 </div>
