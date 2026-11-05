@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Esto soluciona el ModuleNotFoundError en GitHub Actions y en local
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import os, time, threading
 os.environ.update(NOTIFY_WORKER="0", NOTIFY_RETRY_BASE_SECONDS="0", NOTIFY_MAX_TRIES="3", JWT_KEY="k" * 40, JWT_ISSUER="iss", JWT_AUDIENCE="aud", SMTP_HOST="127.0.0.1", SMTP_SECURITY="none", SMTP_FROM="Alertas <alertas@test.local>")
 import jwt, mongomock
