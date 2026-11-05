@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import os, time
 os.environ.update(JWT_KEY="k"*40, JWT_ISSUER="iss", JWT_AUDIENCE="aud")
 import jwt, mongomock
