@@ -4,8 +4,8 @@ kind: HorizontalPodAutoscaler
 metadata: { name: gateway, namespace: alerta-climatica }
 spec:
   scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: gateway }
-  minReplicas: 2
-  maxReplicas: 6
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
@@ -15,8 +15,8 @@ kind: HorizontalPodAutoscaler
 metadata: { name: frontend, namespace: alerta-climatica }
 spec:
   scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: frontend }
-  minReplicas: 2
-  maxReplicas: 4
+  minReplicas: 1
+  maxReplicas: 2
   metrics:
     - type: Resource
       resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
@@ -26,8 +26,8 @@ kind: HorizontalPodAutoscaler
 metadata: { name: report-service, namespace: alerta-climatica }
 spec:
   scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: report-service }
-  minReplicas: 2
-  maxReplicas: 5
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
@@ -37,8 +37,8 @@ kind: HorizontalPodAutoscaler
 metadata: { name: alert-service, namespace: alerta-climatica }
 spec:
   scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: alert-service }
-  minReplicas: 2
-  maxReplicas: 4
+  minReplicas: 1
+  maxReplicas: 2
   metrics:
     - type: Resource
       resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
@@ -47,12 +47,12 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata: { name: gateway, namespace: alerta-climatica }
 spec:
-  minAvailable: 1
+  maxUnavailable: 1        # con 1 réplica permite drenar el nodo sin bloquear el mantenimiento
   selector: { matchLabels: { app: gateway } }
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata: { name: frontend, namespace: alerta-climatica }
 spec:
-  minAvailable: 1
+  maxUnavailable: 1        # con 1 réplica permite drenar el nodo sin bloquear el mantenimiento
   selector: { matchLabels: { app: frontend } }

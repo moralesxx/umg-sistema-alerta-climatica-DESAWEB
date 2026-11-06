@@ -1,0 +1,16 @@
+# Generado por _generar.py — editar el generador y volver a ejecutarlo
+# Emisor ACME de Let's Encrypt usado por el Ingress de miguate.lat.
+# Requiere cert-manager instalado:  ./deploy.sh lo instala automáticamente.
+# Cambie el correo si lo desea (solo se usa para avisos de expiración).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: { name: letsencrypt }
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@miguate.lat
+    privateKeySecretRef: { name: letsencrypt-account-key }
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik

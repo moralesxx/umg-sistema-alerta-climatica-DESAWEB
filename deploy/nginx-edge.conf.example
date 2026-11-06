@@ -1,15 +1,15 @@
 # Nginx "de borde" en el VPS (fuera de Docker). Termina HTTPS y reenvía al contenedor frontend (puerto 4200).
-# Certificado:  sudo certbot --nginx -d sistema-climatico.example
+# Certificado:  sudo certbot --nginx -d miguate.lat
 server {
     listen 80;
-    server_name sistema-climatico.example;
+    server_name miguate.lat;
     return 301 https://$host$request_uri;
 }
 server {
     listen 443 ssl http2;
-    server_name sistema-climatico.example;
-    ssl_certificate     /etc/letsencrypt/live/sistema-climatico.example/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/sistema-climatico.example/privkey.pem;
+    server_name miguate.lat;
+    ssl_certificate     /etc/letsencrypt/live/miguate.lat/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/miguate.lat/privkey.pem;
     add_header Strict-Transport-Security "max-age=31536000" always;
     client_max_body_size 2m;
 

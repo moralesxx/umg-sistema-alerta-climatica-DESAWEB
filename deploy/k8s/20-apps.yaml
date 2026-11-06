@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: gateway, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: gateway } }
   template:
     metadata: { labels: { app: gateway, tier: backend } }
@@ -36,7 +36,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: auth-service, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: auth-service } }
   template:
     metadata: { labels: { app: auth-service, tier: backend } }
@@ -73,7 +73,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: community-service, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: community-service } }
   template:
     metadata: { labels: { app: community-service, tier: backend } }
@@ -149,7 +149,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: alert-service, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: alert-service } }
   template:
     metadata: { labels: { app: alert-service, tier: backend } }
@@ -189,7 +189,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: report-service, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: report-service } }
   template:
     metadata: { labels: { app: report-service, tier: backend } }
@@ -227,7 +227,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: audit-service, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: audit-service } }
   template:
     metadata: { labels: { app: audit-service, tier: backend } }
@@ -300,7 +300,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: { name: frontend, namespace: alerta-climatica }
 spec:
-  replicas: 2
+  replicas: 1
   selector: { matchLabels: { app: frontend } }
   template:
     metadata: { labels: { app: frontend, tier: edge } }
@@ -310,8 +310,14 @@ spec:
           image: alerta/frontend:latest
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 80 }]
+          volumeMounts:
+            # ConfigMap generado por kustomization.yaml a partir de frontend-nginx.conf
+            # (resuelve los Services con el DNS de Kubernetes, no con el de Docker).
+            - { name: nginx-config, mountPath: /etc/nginx/conf.d/default.conf, subPath: default.conf, readOnly: true }
           readinessProbe: { httpGet: { path: /index.html, port: 80 }, periodSeconds: 10 }
           resources: { requests: { cpu: 20m, memory: 32Mi }, limits: { memory: 128Mi } }
+      volumes:
+        - { name: nginx-config, configMap: { name: frontend-nginx } }
 ---
 apiVersion: v1
 kind: Service

@@ -15,10 +15,10 @@ data:
   REFRESH_TOKEN_DAYS: "7"
   APP_TZ: America/Guatemala
   SEED_DEMO: "false"                      # "true" crea datos de demostración en bases vacías
-  PUBLIC_URL: https://sistema-climatico.example
+  PUBLIC_URL: https://miguate.lat
   RETENCION_DIAS: "30"
   SMTP_HOST: mailpit                      # SMTP real, p. ej. smtp.gmail.com (y SMTP_SECURITY=starttls, SMTP_PORT=587)
   SMTP_PORT: "1025"
   SMTP_SECURITY: none
-  SMTP_FROM: "Alerta Climática <alertas@sistema-climatico.example>"
+  SMTP_FROM: "Alerta Climática <alertas@miguate.lat>"
   NOTIFY_DEFAULT_RECIPIENTS: ""           # correos separados por coma (solo si no hay suscriptores)

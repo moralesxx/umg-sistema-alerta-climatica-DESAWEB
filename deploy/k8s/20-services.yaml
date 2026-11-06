@@ -1,3 +1,6 @@
+# ⚠️ OBSOLETO — no aplicar este archivo.
+# Es una versión antigua con imágenes "REGISTRY/..." que no existen. El despliegue usa 20-apps.yaml
+# a través de kustomization.yaml (kubectl apply -k deploy/k8s). Se conserva solo como referencia.
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: gateway, namespace: alerta-climatica }

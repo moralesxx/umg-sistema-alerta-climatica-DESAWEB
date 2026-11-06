@@ -21,12 +21,12 @@ data:
   REFRESH_TOKEN_DAYS: "7"
   APP_TZ: America/Guatemala
   SEED_DEMO: "false"                      # "true" crea datos de demostración en bases vacías
-  PUBLIC_URL: https://sistema-climatico.example
+  PUBLIC_URL: https://miguate.lat
   RETENCION_DIAS: "30"
   SMTP_HOST: mailpit                      # SMTP real, p. ej. smtp.gmail.com (y SMTP_SECURITY=starttls, SMTP_PORT=587)
   SMTP_PORT: "1025"
   SMTP_SECURITY: none
-  SMTP_FROM: "Alerta Climática <alertas@sistema-climatico.example>"
+  SMTP_FROM: "Alerta Climática <alertas@miguate.lat>"
   NOTIFY_DEFAULT_RECIPIENTS: ""           # correos separados por coma (solo si no hay suscriptores)
 """
 
@@ -83,7 +83,7 @@ spec:
             - {{ name: MSSQL_MEMORY_LIMIT_MB, value: "1536" }}
             - {{ name: MSSQL_SA_PASSWORD, valueFrom: {{ secretKeyRef: {{ name: app-secrets, key: SA_PASSWORD }} }} }}
           ports: [{{ containerPort: 1433 }}]
-          resources: {{ requests: {{ cpu: 200m, memory: 2Gi }}, limits: {{ memory: 3Gi }} }}
+          resources: {{ requests: {{ cpu: 200m, memory: 1Gi }}, limits: {{ memory: 2560Mi }} }}
           readinessProbe: {{ tcpSocket: {{ port: 1433 }}, initialDelaySeconds: 25, periodSeconds: 10 }}
           volumeMounts: [{{ name: data, mountPath: /var/opt/mssql }}]
   volumeClaimTemplates:
@@ -140,25 +140,27 @@ JWT_PY = [("JWT_KEY", ("sec", "JWT_KEY")), ("JWT_ISSUER", ("cm", "JWT_ISSUER")),
 SMTP = [("SMTP_HOST", ("cm", "SMTP_HOST")), ("SMTP_PORT", ("cm", "SMTP_PORT")), ("SMTP_SECURITY", ("cm", "SMTP_SECURITY")), ("SMTP_FROM", ("cm", "SMTP_FROM")),
         ("SMTP_USER", ("sec", "SMTP_USER")), ("SMTP_PASSWORD", ("sec", "SMTP_PASSWORD")), ("NOTIFY_DEFAULT_RECIPIENTS", ("cm", "NOTIFY_DEFAULT_RECIPIENTS"))]
 # nombre, puerto, sondaReadiness, sondaLiveness, env, réplicas, uid, memoria(Mi)
+# Réplicas = 1: pensado para un VPS de un solo nodo. Suba las réplicas si tiene más capacidad
+# (el HPA de 25-autoscaling.yaml mantiene el mínimo en 1 y escala según CPU).
 SVC = [
- ("gateway", 8080, "/health", "/health", JWT_NET + [("Cors__AllowedOrigins__0", ("cm", "PUBLIC_URL")), ("APP_TZ", ("cm", "APP_TZ"))], 2, 1654, 384),
+ ("gateway", 8080, "/health", "/health", JWT_NET + [("Cors__AllowedOrigins__0", ("cm", "PUBLIC_URL")), ("APP_TZ", ("cm", "APP_TZ"))], 1, 1654, 384),
  ("auth-service", 8080, "/health", "/health", JWT_PY + [("JWT_EXPIRATION_MINUTES", ("cm", "JWT_EXPIRATION_MINUTES")), ("REFRESH_TOKEN_DAYS", ("cm", "REFRESH_TOKEN_DAYS")),
      ("AUTH_DB_PASSWORD", ("sec", "AUTH_DB_PASSWORD")), ("DATABASE_URL", "postgres://auth:$(AUTH_DB_PASSWORD)@auth-db:5432/auth_db"),
-     ("ADMIN_PASSWORD", ("sec", "ADMIN_PASSWORD")), ("AUDIT_SERVICE_URL", "http://audit-service:8000")], 2, 1000, 384),
+     ("ADMIN_PASSWORD", ("sec", "ADMIN_PASSWORD")), ("AUDIT_SERVICE_URL", "http://audit-service:8000")], 1, 1000, 384),
  ("community-service", 8080, "/health", "/health", JWT_NET + [("COMMUNITY_DB_PASSWORD", ("sec", "COMMUNITY_DB_PASSWORD")),
      ("ConnectionStrings__Default", "Host=community-db;Database=community_db;Username=community;Password=$(COMMUNITY_DB_PASSWORD)"),
-     ("Services__Sensor", "http://sensor-service:8080"), ("Services__Audit", "http://audit-service:8000"), ("Seed__Demo", ("cm", "SEED_DEMO"))], 2, 1654, 384),
+     ("Services__Sensor", "http://sensor-service:8080"), ("Services__Audit", "http://audit-service:8000"), ("Seed__Demo", ("cm", "SEED_DEMO"))], 1, 1654, 384),
  ("sensor-service", 8080, "/health", "/health", JWT_NET + [("SA_PASSWORD", ("sec", "SA_PASSWORD")),
      ("ConnectionStrings__Default", "Server=sensor-db;Database=SensorDb;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;"),
      ("Services__Community", "http://community-service:8080"), ("Services__Alert", "http://alert-service:8080"), ("Services__Audit", "http://audit-service:8000"),
      ("Devices__ApiKey", ("sec", "DEVICE_API_KEY")), ("Retencion__Dias", ("cm", "RETENCION_DIAS")), ("Seed__Demo", ("cm", "SEED_DEMO")), ("APP_TZ", ("cm", "APP_TZ"))], 1, 1654, 512),
  ("alert-service", 8080, "/actuator/health/readiness", "/actuator/health/liveness", JWT_PY + [("DATABASE_URL", "jdbc:postgresql://alert-db:5432/alert_db"), ("DATABASE_USER", "alert"),
      ("DATABASE_PASSWORD", ("sec", "ALERT_DB_PASSWORD")), ("COMMUNITY_SERVICE_URL", "http://community-service:8080"), ("SENSOR_SERVICE_URL", "http://sensor-service:8080"),
-     ("AUDIT_SERVICE_URL", "http://audit-service:8000"), ("NOTIFICATION_SERVICE_URL", "http://notification-service:8000"), ("SEED_DEMO", ("cm", "SEED_DEMO")), ("APP_TZ", ("cm", "APP_TZ"))], 2, 10001, 768),
+     ("AUDIT_SERVICE_URL", "http://audit-service:8000"), ("NOTIFICATION_SERVICE_URL", "http://notification-service:8000"), ("SEED_DEMO", ("cm", "SEED_DEMO")), ("APP_TZ", ("cm", "APP_TZ"))], 1, 10001, 768),
  ("report-service", 8000, "/health/ready", "/health", JWT_PY + [("MONGO_URI", "mongodb://mongo:27017"), ("MONGO_DB", "report_db"),
      ("COMMUNITY_SERVICE_URL", "http://community-service:8080"), ("SENSOR_SERVICE_URL", "http://sensor-service:8080"), ("ALERT_SERVICE_URL", "http://alert-service:8080"),
-     ("AUDIT_SERVICE_URL", "http://audit-service:8000"), ("REPORT_TZ", ("cm", "APP_TZ"))], 2, 10001, 512),
- ("audit-service", 8000, "/health/ready", "/health", JWT_PY + [("MONGO_URI", "mongodb://mongo:27017"), ("MONGO_DB", "audit_db")], 2, 10001, 256),
+     ("AUDIT_SERVICE_URL", "http://audit-service:8000"), ("REPORT_TZ", ("cm", "APP_TZ"))], 1, 10001, 512),
+ ("audit-service", 8000, "/health/ready", "/health", JWT_PY + [("MONGO_URI", "mongodb://mongo:27017"), ("MONGO_DB", "audit_db")], 1, 10001, 256),
  ("notification-service", 8000, "/health/ready", "/health", JWT_PY + [("MONGO_URI", "mongodb://mongo:27017"), ("MONGO_DB", "notification_db")] + SMTP, 1, 10001, 256),
 ]
 apps = H
@@ -197,7 +199,7 @@ apps += f"""apiVersion: apps/v1
 kind: Deployment
 metadata: {{ name: frontend, namespace: {NS} }}
 spec:
-  replicas: 2
+  replicas: 1
   selector: {{ matchLabels: {{ app: frontend }} }}
   template:
     metadata: {{ labels: {{ app: frontend, tier: edge }} }}
@@ -207,8 +209,14 @@ spec:
           image: alerta/frontend:latest
           imagePullPolicy: IfNotPresent
           ports: [{{ containerPort: 80 }}]
+          volumeMounts:
+            # ConfigMap generado por kustomization.yaml a partir de frontend-nginx.conf
+            # (resuelve los Services con el DNS de Kubernetes, no con el de Docker).
+            - {{ name: nginx-config, mountPath: /etc/nginx/conf.d/default.conf, subPath: default.conf, readOnly: true }}
           readinessProbe: {{ httpGet: {{ path: /index.html, port: 80 }}, periodSeconds: 10 }}
           resources: {{ requests: {{ cpu: 20m, memory: 32Mi }}, limits: {{ memory: 128Mi }} }}
+      volumes:
+        - {{ name: nginx-config, configMap: {{ name: frontend-nginx }} }}
 ---
 apiVersion: v1
 kind: Service
@@ -219,7 +227,7 @@ out["20-apps.yaml"] = apps
 
 # ---------------------------------------------------------------- autoescalado y disponibilidad
 auto = H
-for name, mn, mx in [("gateway", 2, 6), ("frontend", 2, 4), ("report-service", 2, 5), ("alert-service", 2, 4)]:
+for name, mn, mx in [("gateway", 1, 3), ("frontend", 1, 2), ("report-service", 1, 3), ("alert-service", 1, 2)]:
     auto += f"""apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata: {{ name: {name}, namespace: {NS} }}
@@ -237,14 +245,17 @@ for name in ["gateway", "frontend"]:
 kind: PodDisruptionBudget
 metadata: {{ name: {name}, namespace: {NS} }}
 spec:
-  minAvailable: 1
+  maxUnavailable: 1        # con 1 réplica permite drenar el nodo sin bloquear el mantenimiento
   selector: {{ matchLabels: {{ app: {name} }} }}
 ---
 """
 out["25-autoscaling.yaml"] = auto.rstrip("-\n") + "\n"
 
 # ---------------------------------------------------------------- ingress
-out["30-ingress.yaml"] = H + f"""# K3s incluye Traefik. Para HTTPS automático instale cert-manager y cree el ClusterIssuer "letsencrypt".
+out["30-ingress.yaml"] = H + f"""# Ingress de Traefik (incluido en K3s) para el dominio miguate.lat.
+# Requisitos: 1) registro DNS A  miguate.lat -> IP del VPS
+#             2) cert-manager instalado (deploy.sh lo instala) y el ClusterIssuer "letsencrypt"
+#                (deploy/k8s/31-clusterissuer.yaml). El certificado se emite solo.
 # Sin dominio (demostración por IP): elimine `host:` y el bloque `tls:`.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -254,9 +265,10 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
-  tls: [{{ hosts: [sistema-climatico.example], secretName: alerta-tls }}]
+  ingressClassName: traefik
+  tls: [{{ hosts: [miguate.lat], secretName: miguate-lat-tls }}]
   rules:
-    - host: sistema-climatico.example
+    - host: miguate.lat
       http:
         paths:
           - {{ path: /, pathType: Prefix, backend: {{ service: {{ name: frontend, port: {{ number: 80 }} }} }} }}
@@ -277,7 +289,7 @@ spec:
   podSelector: {{ matchLabels: {{ app: frontend }} }}
   policyTypes: [Ingress]
   ingress:
-    - from: [{{ namespaceSelector: {{ matchLabels: {{ kubernetes.io/metadata.name: kube-system }} }} }}]
+    - from: [{{ namespaceSelector: {{ matchLabels: {{ kubernetes.io/metadata.name: kube-system }} }} }}, {{ namespaceSelector: {{ matchLabels: {{ kubernetes.io/metadata.name: traefik }} }} }}, {{ namespaceSelector: {{ matchLabels: {{ kubernetes.io/metadata.name: ingress-nginx }} }} }}]
       ports: [{{ port: 80 }}]
 ---
 apiVersion: networking.k8s.io/v1
@@ -315,6 +327,24 @@ spec:
 """
 out["40-networkpolicy.yaml"] = np.rstrip("-\n") + "\n"
 
+# ---------------------------------------------------------------- certificado TLS (cert-manager)
+out["31-clusterissuer.yaml"] = H + f"""# Emisor ACME de Let's Encrypt usado por el Ingress de miguate.lat.
+# Requiere cert-manager instalado:  ./deploy.sh lo instala automáticamente.
+# Cambie el correo si lo desea (solo se usa para avisos de expiración).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {{ name: letsencrypt }}
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@miguate.lat
+    privateKeySecretRef: {{ name: letsencrypt-account-key }}
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik
+"""
+
 # ---------------------------------------------------------------- kustomization
 out["kustomization.yaml"] = H + f"""# Aplicar todo:  kubectl apply -k deploy/k8s     (los Secrets se crean aparte con crear-secretos.sh)
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -326,7 +356,13 @@ resources:
   - 20-apps.yaml
   - 25-autoscaling.yaml
   - 30-ingress.yaml
+  - 31-clusterissuer.yaml
   - 40-networkpolicy.yaml
+# Nginx del frontend adaptado a Kubernetes (DNS de Services en lugar del DNS de Docker).
+configMapGenerator:
+  - name: frontend-nginx
+    files:
+      - default.conf=frontend-nginx.conf
 # Para un registro propio:  kustomize edit set image alerta/gateway=ghcr.io/USUARIO/alerta-gateway:1.0 (una por servicio)
 images:
 """ + "".join(f"  - {{ name: alerta/{n}, newName: alerta/{n}, newTag: latest }}\n" for n in [s[0] for s in SVC] + ["frontend"])

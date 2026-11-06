@@ -110,7 +110,7 @@ spec:
             - { name: MSSQL_MEMORY_LIMIT_MB, value: "1536" }
             - { name: MSSQL_SA_PASSWORD, valueFrom: { secretKeyRef: { name: app-secrets, key: SA_PASSWORD } } }
           ports: [{ containerPort: 1433 }]
-          resources: { requests: { cpu: 200m, memory: 2Gi }, limits: { memory: 3Gi } }
+          resources: { requests: { cpu: 200m, memory: 1Gi }, limits: { memory: 2560Mi } }
           readinessProbe: { tcpSocket: { port: 1433 }, initialDelaySeconds: 25, periodSeconds: 10 }
           volumeMounts: [{ name: data, mountPath: /var/opt/mssql }]
   volumeClaimTemplates:

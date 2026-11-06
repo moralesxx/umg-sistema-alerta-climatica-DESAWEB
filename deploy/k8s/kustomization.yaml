@@ -9,7 +9,13 @@ resources:
   - 20-apps.yaml
   - 25-autoscaling.yaml
   - 30-ingress.yaml
+  - 31-clusterissuer.yaml
   - 40-networkpolicy.yaml
+# Nginx del frontend adaptado a Kubernetes (DNS de Services en lugar del DNS de Docker).
+configMapGenerator:
+  - name: frontend-nginx
+    files:
+      - default.conf=frontend-nginx.conf
 # Para un registro propio:  kustomize edit set image alerta/gateway=ghcr.io/USUARIO/alerta-gateway:1.0 (una por servicio)
 images:
   - { name: alerta/gateway, newName: alerta/gateway, newTag: latest }

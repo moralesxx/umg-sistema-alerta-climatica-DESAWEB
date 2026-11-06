@@ -81,7 +81,7 @@ curl -X POST http://localhost:8080/api/sensors/ingest \
 cd iot/bridge && pip install -r requirements.txt
 python bridge.py --simular --clave SU_CLAVE                       # 1) pruebe todo SIN Arduino
 python bridge.py --puerto COM3 --clave SU_CLAVE                   # 2) con el Arduino (Linux/Mac: --puerto /dev/ttyACM0)
-# si la API no está en localhost:  --url https://sistema-climatico.example/api/sensors/ingest
+# si la API no está en localhost:  --url https://miguate.lat/api/sensors/ingest
 ```
 Verá `[OK] aceptadas=4` cada 10 s. Si se cae la red, el puente guarda hasta 200 envíos y los reintenta.
 

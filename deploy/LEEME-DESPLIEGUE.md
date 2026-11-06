@@ -10,7 +10,7 @@ Requisitos de memoria: ~4 GB (SQL Server 2022 necesita ≥ 2 GB).
 ## 2. Código y secretos
 ```bash
 git clone <repositorio> /opt/alerta && cd /opt/alerta
-cp .env.example .env && nano .env      # JWT_KEY (openssl rand -base64 48), contraseñas, PUBLIC_URL=https://sistema-climatico.example
+cp .env.example .env && nano .env      # JWT_KEY (openssl rand -base64 48), contraseñas, PUBLIC_URL=https://miguate.lat
 chmod 600 .env
 ```
 Para producción use `SEED_DEMO=false`.
@@ -23,11 +23,11 @@ curl -s http://127.0.0.1:8080/health/services
 ```
 
 ## 4. DNS + HTTPS
-Cree el registro A de `sistema-climatico.example` hacia la IP del VPS. Copie `deploy/nginx-edge.conf.example` a
+Cree el registro A de `miguate.lat` hacia la IP del VPS. Copie `deploy/nginx-edge.conf.example` a
 `/etc/nginx/sites-available/alerta`, actívelo y emita el certificado:
 ```bash
 sudo ln -s /etc/nginx/sites-available/alerta /etc/nginx/sites-enabled/ && sudo nginx -t
-sudo certbot --nginx -d sistema-climatico.example && sudo systemctl reload nginx
+sudo certbot --nginx -d miguate.lat && sudo systemctl reload nginx
 ```
 
 ## 5. Actualizar una versión
@@ -47,4 +47,6 @@ docker compose exec -T mongo mongorestore --archive --gzip --drop < backups/<fec
 Si un servicio no está sano: `docker compose restart <servicio>`; las bases de datos conservan los datos en volúmenes.
 
 ## 8. Kubernetes / K3s (Fase 4)
-Manifiestos base en `deploy/k8s/` (`kubectl apply -f deploy/k8s/`). Ver `deploy/k8s/LEEME.md`.
+Manifiestos en `deploy/k8s/`. Despliegue con `./deploy/k8s/deploy.sh` (o `kubectl apply -k deploy/k8s`,
+nunca `-f`, porque kustomization genera el ConfigMap del Nginx). Dominio público: `https://miguate.lat`.
+Ver `deploy/k8s/LEEME.md`.

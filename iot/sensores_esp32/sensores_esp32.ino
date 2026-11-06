@@ -12,7 +12,7 @@
 const char* WIFI_SSID = "SU_WIFI";
 const char* WIFI_PASS = "SU_CLAVE_WIFI";
 // Use HTTPS en producción. Para pruebas locales por HTTP, ponga http://IP_PC:8080/api/sensors/ingest
-const char* URL       = "https://sistema-climatico.example/api/sensors/ingest";
+const char* URL       = "https://miguate.lat/api/sensors/ingest";
 const char* DEVICE_KEY = "PEGUE_AQUI_DEVICE_API_KEY";
 
 #define DHTPIN 4

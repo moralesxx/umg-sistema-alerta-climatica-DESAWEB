@@ -1,5 +1,8 @@
 # Generado por _generar.py — editar el generador y volver a ejecutarlo
-# K3s incluye Traefik. Para HTTPS automático instale cert-manager y cree el ClusterIssuer "letsencrypt".
+# Ingress de Traefik (incluido en K3s) para el dominio miguate.lat.
+# Requisitos: 1) registro DNS A  miguate.lat -> IP del VPS
+#             2) cert-manager instalado (deploy.sh lo instala) y el ClusterIssuer "letsencrypt"
+#                (deploy/k8s/31-clusterissuer.yaml). El certificado se emite solo.
 # Sin dominio (demostración por IP): elimine `host:` y el bloque `tls:`.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -9,9 +12,10 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
-  tls: [{ hosts: [sistema-climatico.example], secretName: alerta-tls }]
+  ingressClassName: traefik
+  tls: [{ hosts: [miguate.lat], secretName: miguate-lat-tls }]
   rules:
-    - host: sistema-climatico.example
+    - host: miguate.lat
       http:
         paths:
           - { path: /, pathType: Prefix, backend: { service: { name: frontend, port: { number: 80 } } } }
