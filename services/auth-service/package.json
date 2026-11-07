@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "test": "tsc -p tsconfig.test.json && node dist-test/test/smoke.js"
+    "test": "tsc -p tsconfig.test.json && node dist-test/test/smoke.js && node dist-test/test/oauth.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.2.0",

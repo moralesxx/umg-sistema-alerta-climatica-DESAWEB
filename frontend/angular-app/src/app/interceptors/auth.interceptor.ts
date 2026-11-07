@@ -7,7 +7,7 @@ import { AuthService } from '../services/auth.service';
 // Endpoints de autenticación: no llevan token ni disparan renovación (evita bucles).
 const esRutaDeAuth = (url: string) =>
   url.includes('/api/auth/login') || url.includes('/api/auth/register') ||
-  url.includes('/api/auth/refresh') || url.includes('/api/auth/logout');
+  url.includes('/api/auth/refresh') || url.includes('/api/auth/logout') || url.includes('/api/auth/oauth');
 
 const conToken = (req: HttpRequest<unknown>, token: string | null) =>
   token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;

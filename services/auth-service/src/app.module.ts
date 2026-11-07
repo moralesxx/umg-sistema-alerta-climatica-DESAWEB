@@ -3,7 +3,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditClient } from './audit.client';
-import { AuthController, HealthController } from './auth.controller';
+import { AuthController, HealthController, OAuthController } from './auth.controller';
+import { OAuthService } from './oauth.service';
 import { IdentidadExterna, RefreshToken, Rol, Sesion, Usuario } from './entities';
 import { JwtAuthGuard } from './security';
 import { UsersService } from './users.service';
@@ -21,7 +22,7 @@ import { UsersService } from './users.service';
     TypeOrmModule.forFeature([Rol, Usuario, IdentidadExterna, RefreshToken, Sesion]),
     JwtModule.register({}),
   ],
-  controllers: [AuthController, HealthController],
-  providers: [UsersService, AuditClient, { provide: APP_GUARD, useClass: JwtAuthGuard }],
+  controllers: [AuthController, OAuthController, HealthController],
+  providers: [UsersService, OAuthService, AuditClient, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}

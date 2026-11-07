@@ -16,6 +16,7 @@ data:
   APP_TZ: America/Guatemala
   SEED_DEMO: "false"                      # "true" crea datos de demostración en bases vacías
   PUBLIC_URL: https://miguate.lat
+  OAUTH_AUTO_ACTIVATE: "false"            # "true": las cuentas nuevas de Google/GitHub se activan solas (rol mínimo); "false": quedan pendientes de aprobación
   RETENCION_DIAS: "30"
   SMTP_HOST: mailpit                      # SMTP real, p. ej. smtp.gmail.com (y SMTP_SECURITY=starttls, SMTP_PORT=587)
   SMTP_PORT: "1025"

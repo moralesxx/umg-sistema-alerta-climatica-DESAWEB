@@ -73,6 +73,44 @@ none_alg = base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').rstrip(b"=").
                                           "exp": int(time.time()) + 3600, "sid": "x"}).encode()).rstrip(b"=").decode() + "."
 check("token con alg=none -> 401", req("GET", "/api/auth/usuarios", token=none_alg)[0] == 401)
 
+print("== 1b. Login con Google/GitHub (OAuth 2.0 / OIDC): el flujo es público pero no explotable")
+
+
+class _SinRedireccion(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None   # queremos VER la redirección (302), no seguirla
+
+
+def get_sin_redireccion(path):
+    try:
+        r = urllib.request.build_opener(_SinRedireccion).open(URL + path, timeout=20)
+        return r.status, r.headers
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers
+    except (urllib.error.URLError, OSError):
+        return 0, {}
+
+
+s, b, h = req("GET", "/api/auth/oauth/providers")
+check("la lista de proveedores es pública (sin token) y no contiene secretos", s == 200 and isinstance(b, dict) and "providers" in b and "secret" not in json.dumps(b).lower(), f"(HTTP {s}: {b})")
+habilitados = b.get("providers", []) if isinstance(b, dict) else []
+s, h = get_sin_redireccion("/api/auth/oauth/proveedor-inexistente/start")
+check("proveedor desconocido -> redirige al login con código de error (no 500)", s == 302 and "oauth_error=proveedor_no_disponible" in (h.get("Location") or ""), f"(HTTP {s} {h.get('Location')})")
+s, h = get_sin_redireccion("/api/auth/oauth/google/callback?code=falso&state=falso")
+check("callback sin cookie/state válido -> rechazado con código (protección CSRF)", s == 302 and "oauth_error=" in (h.get("Location") or ""), f"(HTTP {s} {h.get('Location')})")
+check("el rechazo no revela detalles internos en la URL", "stack" not in (h.get("Location") or "").lower() and len(h.get("Location") or "") < 120)
+s, _, _ = req("POST", "/api/auth/oauth/google/start", {})
+check("el flujo OAuth solo acepta GET (POST -> 404/405)", s in (404, 405), f"(HTTP {s})")
+for prov, host in (("google", "accounts.google.com"), ("github", "github.com")):
+    if prov in habilitados:
+        s, h = get_sin_redireccion(f"/api/auth/oauth/{prov}/start")
+        loc = h.get("Location") or ""
+        cookie = h.get("Set-Cookie") or ""
+        check(f"{prov}: redirige al proveedor con state, PKCE S256 y SIN client_secret", s == 302 and host in loc and "state=" in loc and "code_challenge_method=S256" in loc and "client_secret" not in loc, f"(HTTP {s} {loc[:120]})")
+        check(f"{prov}: la cookie de contexto es HttpOnly y SameSite", "HttpOnly" in cookie and "SameSite=Lax" in cookie, cookie[:80])
+if not habilitados:
+    print("  (info) Ningún proveedor OAuth configurado (GOOGLE_*/GITHUB_* vacíos): se omiten las pruebas de /start")
+
 print("== 2. Login, fuerza bruta e inyección")
 s, adm = login(A.admin_email, A.admin_password)
 check("login del administrador", s == 200 and adm.get("token"), f"(HTTP {s}: {adm})")

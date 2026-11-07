@@ -32,7 +32,7 @@ aplica los manifiestos (`kubectl apply -k deploy/k8s`) y espera a que el certifi
 | `40-networkpolicy.yaml` | Red de confianza cero: solo Ingress→frontend→gateway→servicios→BD |
 | `frontend-nginx.conf` | Nginx del frontend adaptado a Kubernetes (DNS de Services, no el de Docker) |
 | `kustomization.yaml` | Une todo, genera el `ConfigMap` del Nginx y permite cambiar el registro/etiqueta de las imágenes |
-| `crear-secretos.sh` | Crea `app-secrets` desde `.env` (los secretos nunca están en Git) |
+| `crear-secretos.sh` | Crea `app-secrets` desde `.env` (los secretos nunca están en Git). Incluye `GOOGLE_*` y `GITHUB_*` del login OAuth (opcionales; ver `docs/OAUTH-OIDC.md`) |
 | `mailpit.yaml.opcional` | Buzón de pruebas para los correos de alertas |
 | `_generar.py` | Genera los `.yaml` (editar aquí y ejecutar `python3 deploy/k8s/_generar.py`) |
 

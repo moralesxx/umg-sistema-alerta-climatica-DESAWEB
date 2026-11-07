@@ -44,7 +44,7 @@ JWT HS256 de 15 min emitido por Auth (`iss`, `aud`, `sub`, `sid`, `name`, `email
 * Health: `GET /health` en todos (liveness/readiness); Report añade `/health/ready` (ping a Mongo); gateway `/health/services`.
 * Graceful shutdown: `stop_grace_period`/`ShutdownTimeout` 30 s, `server.shutdown=graceful`, `--timeout-graceful-shutdown`, `enableShutdownHooks()`.
 * Volúmenes nombrados ↔ `PersistentVolumeClaim`. Direcciones de servicios por DNS (`http://<servicio>:8080`) ↔ `Service` de K8s.
-* Auth: tabla `identidades_externas (proveedor, subject, usuario)`, endpoint de vinculación y un único punto de emisión de token (`UsersService.emitirToken`) para que la Fase 4 intercambie el login local por OIDC (Google/GitHub/Facebook) y/o pase a RS256 + JWKS.
+* Auth: **login con Google (OpenID Connect) y GitHub (OAuth 2.0)** con Authorization Code + PKCE (`OAuthService`, `OAuthController`). La identidad verificada por el proveedor se asocia en `identidades_externas (proveedor, subject, usuario)` y se canjea por la **misma sesión propia** (`UsersService.emitirSesion`: JWT + `sid` + refresh rotativo), así gateway y servicios no cambian. Guía, flujo y seguridad: `docs/OAUTH-OIDC.md`. Pasar a RS256 + JWKS propio queda como mejora independiente.
 
 ## Limitaciones conocidas
 * El simulador corre dentro de Sensor Service: con varias réplicas, habilitarlo en una sola (`Simulador__Habilitado=false` en las demás).

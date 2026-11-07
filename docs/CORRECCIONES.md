@@ -52,9 +52,10 @@
 
 ## Decisiones y pendientes conocidos
 
-* **Firma de tokens:** HS256 con clave compartida. Se mantiene a propósito hasta la Fase 4: con un proveedor OIDC los tokens serán RS256 y se validarán con JWKS; cambiarlo ahora exige tocar la validación de los siete servicios sin poder probarlo en Docker.
+* **Firma de tokens:** HS256 con clave compartida. Se mantiene a propósito: el login con Google/GitHub (implementado, `docs/OAUTH-OIDC.md`) canjea la identidad externa por el JWT propio, por lo que los servicios no validan tokens de terceros. Pasar a RS256 + JWKS propio exige tocar la validación de los siete servicios y queda como mejora.
 * **Revocación de sesión:** Se aplica en el gateway (único punto de entrada); los servicios internos se protegen por la red privada. Si el Auth Service cae, el gateway tolera 60 s lo último que sabía y luego deniega.
-* **Tokens en el navegador:** Se guardan en `localStorage` (mitigado con token corto y revocación). Alternativa: cookies `HttpOnly` con OIDC.
+* **Tokens en el navegador:** Se guardan en `localStorage` (mitigado con token corto y revocación). Alternativa: cookies `HttpOnly`.
+* **Cuentas nuevas por Google/GitHub:** quedan pendientes de aprobación (coherente con el registro público). `OAUTH_AUTO_ACTIVATE=true` las activa al instante con el rol mínimo.
 * **Migraciones de base de datos:** Las tablas se crean al arrancar (`EnsureCreated`, `synchronize`, `ddl-auto`). Para producción: migraciones versionadas.
 * **Mensajería:** La evaluación de lecturas y la auditoría usan reintentos en memoria, no un broker persistente.
 * **Verificación en Docker:** El gateway, Community, Sensor y Alert (Java) se validaron por sintaxis y CI, no compilados en el entorno de desarrollo; deben probarse al levantar el sistema (`security_check.py` y `smoke.sh`).

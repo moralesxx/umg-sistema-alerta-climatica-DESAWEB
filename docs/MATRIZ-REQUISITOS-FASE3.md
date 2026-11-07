@@ -22,12 +22,17 @@ Estado: ✅ implementado y probado automáticamente · 🟡 implementado, pendie
 | 16 | Persistencia por servicio (Auth/Community/Alert PG, Sensor SQL Server, Report/Audit Mongo) | compose | 🟡 |
 | 17 | Despliegue en VPS con Docker Compose + HTTPS | `docker-compose.yml`, `deploy/` | ⬜ (requiere su VPS y dominio) |
 | 18 | Preparación K8s/K3s (stateless, health, env, Secrets, ConfigMaps, PVC, graceful shutdown) | `deploy/k8s/`, Dockerfiles | ✅ manifiestos válidos (YAML) · 🟡 no aplicados a un clúster |
-| 19 | Auth listo para OAuth2/OIDC | `identidades_externas`, `emitirToken` | ✅ |
+| 19 | Auth listo para OAuth2/OIDC | `identidades_externas`, `emitirSesion` | ✅ (ahora implementado: ver 25–28) |
 | 21 | (Adicional) Cierre de sesión que invalida el token | `auth-service` (sesiones), `SessionRevocation.cs`, `docs/SEGURIDAD.md` | ✅ Auth probado · 🟡 gateway |
 | 22 | (Adicional) Notificaciones de alertas por correo | `services/notification-service`, pantalla *Notificaciones* | ✅ probado con SMTP real de prueba · 🟡 integración Alert→Notification |
 | 23 | (Adicional) API y kit para Arduino | `/api/sensors/ingest`, `iot/`, `scripts/demo_alertas.py` | ✅ puente · 🟡 hardware |
 | 24 | (Adicional) Kubernetes listo para desplegar | `deploy/k8s/` (`deploy.sh`) | ✅ 46 recursos válidos (kustomize + kubeconform) · 🟡 clúster real |
-| 20 | Pruebas | pytest (Audit, Report), smoke Auth, JUnit (motor de alertas), `scripts/smoke.sh` E2E | ✅ las que corren aquí · 🟡 JUnit/E2E |
+| 25 | OAuth 2.0 / OIDC: login con Google (OIDC) y GitHub (OAuth 2.0), Authorization Code + PKCE | `auth-service/src/oauth.service.ts`, `OAuthController`, `docs/OAUTH-OIDC.md` | ✅ probado contra proveedores simulados y contra Auth + PostgreSQL reales · 🟡 con credenciales reales de Google/GitHub |
+| 26 | Flujo Google/GitHub → Auth Service → JWT propio (mismo `sid`, roles, permisos y revocación) | `UsersService.accederConIdentidadExterna` → `emitirSesion` | ✅ |
+| 27 | Vinculación identidad externa ↔ usuario local (`identidades_externas`), alta pendiente de aprobación, sin toma de cuentas (solo correo verificado) | `users.service.ts`, `entities.ts` | ✅ |
+| 28 | Secretos OAuth en Secrets (`GOOGLE_*`, `GITHUB_*`), nunca en código/imagen/frontend/logs | `.env.example`, `docker-compose.yml`, `deploy/k8s/crear-secretos.sh`, `app-secrets` | ✅ |
+| 29 | Login con Google/GitHub funcional en la interfaz (botones, retorno, errores) | `frontend/.../login`, `oauth-callback`, rutas del gateway | ✅ `ng build` · 🟡 recorrido manual con credenciales reales |
+| 20 | Pruebas | pytest (Audit, Report), smoke Auth, OAuth (`test/oauth.ts`), JUnit (motor de alertas), `scripts/smoke.sh` E2E | ✅ las que corren aquí · 🟡 JUnit/E2E |
 
 ## Pendientes de la Fase 2 detectados y resueltos
 * Guía y scripts de despliegue/respaldo citados en el README de Fase 2 pero ausentes → `deploy/LEEME-DESPLIEGUE.md`, `deploy/backup.sh`, `deploy/nginx-edge.conf.example`.
@@ -38,6 +43,7 @@ Estado: ✅ implementado y probado automáticamente · 🟡 implementado, pendie
 0. Suba el repositorio a GitHub: `.github/workflows/ci.yml` compila y prueba automáticamente .NET, Java, Node, Python y Angular.
 1. `docker compose up -d --build` y corregir cualquier error de compilación.
 2. `ADMIN_PASSWORD=... ./scripts/smoke.sh` (debe terminar con 0 fallidas).
+2b. Registrar las apps en Google y GitHub y completar `GOOGLE_*`/`GITHUB_*` en `.env` (`docs/OAUTH-OIDC.md`); probar el login externo.
 3. Desplegar en el VPS (`deploy/LEEME-DESPLIEGUE.md`) y tomar capturas.
 4. Entregables: README, diagramas (en `docs/ARQUITECTURA-FASE3.md`), colección Postman (`docs/postman_collection.json`).
 

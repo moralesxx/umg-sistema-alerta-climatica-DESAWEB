@@ -16,5 +16,9 @@ kubectl -n "$NS" create secret generic app-secrets \
   --from-literal=DEVICE_API_KEY="$(get DEVICE_API_KEY)" \
   --from-literal=SMTP_USER="$(get SMTP_USER)" \
   --from-literal=SMTP_PASSWORD="$(get SMTP_PASSWORD)" \
+  --from-literal=GOOGLE_CLIENT_ID="$(get GOOGLE_CLIENT_ID)" \
+  --from-literal=GOOGLE_CLIENT_SECRET="$(get GOOGLE_CLIENT_SECRET)" \
+  --from-literal=GITHUB_CLIENT_ID="$(get GITHUB_CLIENT_ID)" \
+  --from-literal=GITHUB_CLIENT_SECRET="$(get GITHUB_CLIENT_SECRET)" \
   --dry-run=client -o yaml | kubectl apply -f -
 echo "Secret app-secrets listo en el namespace $NS"

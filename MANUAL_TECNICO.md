@@ -338,6 +338,20 @@ Desde el proyecto API:
 dotnet add AlertaClimatica.Api package Microsoft.AspNetCore.Authentication.JwtBearer
 ```
 
+## Login con Google y GitHub (OAuth 2.0 / OpenID Connect)
+
+Además del usuario y la contraseña, el **Auth Service** permite iniciar sesión con **Google (OIDC)** y **GitHub (OAuth 2.0)**
+mediante *Authorization Code + PKCE*. La identidad verificada por el proveedor se vincula a un usuario local
+(`identidades_externas`) y se canjea por el **mismo JWT** del sistema, por lo que el gateway, los servicios y los roles no cambian.
+
+```text
+Navegador → /api/auth/oauth/{google|github}/start → Proveedor → /api/auth/oauth/{proveedor}/callback
+         → Auth Service valida state + id_token → emite JWT propio → /oauth/callback#rt=… → /dashboard
+```
+
+Los secretos (`GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_SECRET`) solo existen en `.env` / Secret de Kubernetes.
+Registro de las aplicaciones, variables, seguridad y solución de problemas: **`docs/OAUTH-OIDC.md`**.
+
 ---
 
 # 12. Autorización mediante Roles

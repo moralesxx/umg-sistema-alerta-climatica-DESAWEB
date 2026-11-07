@@ -22,6 +22,7 @@ Resultado de revisar el sistema como lo haría un atacante o un revisor con Post
 | 14 | Sin política de seguridad de contenido (CSP) en el frontend | Medio | CSP estricta en Nginx: solo scripts propios, sin `eval`, sin `frame`, `object-src 'none'` |
 | 15 | Una sola clave compartida para todos los dispositivos IoT | Medio | Claves individuales por dispositivo (hash SHA-256, revocables, con alcance por prefijo y último contacto); pantalla *Dispositivos* |
 | 16 | Los avisos por correo podían perderse si el servicio se reiniciaba | Bajo | Cola persistente en MongoDB con reintentos (5 con espera creciente), arrendamiento de envíos huérfanos y motivo del fallo registrado |
+| 17 | Login solo con usuario/contraseña local | Mejora | Login con Google (OIDC) y GitHub (OAuth 2.0): Authorization Code + PKCE, `state` anti-CSRF en cookie `HttpOnly` firmada, `id_token` validado (RS256/JWKS, `iss`, `aud`, `exp`, `nonce`), vínculo solo por correo verificado, cuentas nuevas pendientes de aprobación y secretos solo en `.env`/Secret. Ver `docs/OAUTH-OIDC.md` |
 
 > **Postman y CORS:** CORS es una protección del *navegador*; Postman no la aplica. La seguridad real está en el servidor:
 > sin token válido y con sesión vigente, o sin el rol adecuado, la petición se rechaza (401/403) venga de donde venga.
@@ -42,6 +43,7 @@ Resultado de revisar el sistema como lo haría un atacante o un revisor con Post
 
 ## 3. Controles por capa
 * **Entrada (gateway):** única superficie pública; JWT + sesión vigente; CORS por lista; límites 10/min (login, registro, refresh, logout), 300/min (ingesta), 600/min global por IP; 1 MB por solicitud; rutas `/internal/` ocultas; errores JSON sin detalles.
+* **Identidad externa (Auth):** PKCE S256, `state` y `nonce`, cookie de contexto `HttpOnly; SameSite=Lax` firmada y de un solo uso, validación completa del `id_token`, `client_secret` solo servidor→proveedor, auditoría `LOGIN_OAUTH`/`LOGIN_OAUTH_FALLIDO`/`VINCULAR_IDENTIDAD`.
 * **Identidad (Auth):** bcrypt, bloqueo de cuenta, refresh token rotativo con detección de reutilización, política de contraseñas, auditoría de eventos de seguridad (`LOGIN`, `LOGOUT`, `CUENTA_BLOQUEADA`, `REFRESH_REUTILIZADO`, `REGISTRO_PENDIENTE`…).
 * **Servicios:** cada uno valida firma, emisor, audiencia, expiración (solo HS256), rol y permiso; endpoints internos exigen rol `Servicio`; ORMs parametrizados (sin SQL concatenado); PDF con autoescape (sin inyección HTML).
 * **Ingesta Arduino:** clave comparada en tiempo constante, límite de solicitudes, validación de sensor/valor, máx. 50 lecturas por petición; deshabilitada si no hay clave.
@@ -49,7 +51,7 @@ Resultado de revisar el sistema como lo haría un atacante o un revisor con Post
 * **Infraestructura:** secretos solo en `.env`/Secret de Kubernetes; contenedores sin privilegios; bases de datos sin puertos publicados; el gateway solo en loopback; HTTPS en el Nginx de borde; Kubernetes con NetworkPolicy de confianza cero.
 
 ## 4. Riesgos residuales (conocidos y aceptados para esta fase)
-1. **HS256 con clave compartida:** cualquiera que conozca `JWT_KEY` puede firmar tokens. Fase 4: RS256 + JWKS o validación del proveedor OIDC.
+1. **HS256 con clave compartida:** cualquiera que conozca `JWT_KEY` puede firmar tokens. Mejora pendiente: RS256 + JWKS propio (el login con Google/GitHub ya se canjea por la sesión propia, no requiere que los servicios validen tokens de terceros).
 2. **Revocación en el gateway:** los servicios internos no la consultan; se protegen porque solo son alcanzables por la red privada (en Kubernetes, NetworkPolicy). Si el Auth Service cae, el gateway tolera hasta 60 s lo último que sabía y luego deniega.
 3. **Tokens en `localStorage`:** expuestos ante un XSS; mitigado con token corto y revocación. Alternativa: cookies `HttpOnly`.
 4. **La CSP permite estilos en línea** (`style-src 'unsafe-inline'`), necesarios para los estilos de componentes de Angular; los scripts sí están restringidos a los propios.

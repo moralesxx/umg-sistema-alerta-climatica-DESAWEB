@@ -565,3 +565,78 @@
     gap: 4px;
   }
 }
+
+/* ==========================================
+   LOGIN CON GOOGLE / GITHUB (OAuth 2.0 / OIDC)
+   ========================================== */
+
+.oauth-container {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  margin-top: 22px;
+}
+
+.oauth-divider {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  color: #868e96;
+
+  font-size: 12px;
+
+  &::before,
+  &::after {
+    content: '';
+
+    flex: 1;
+
+    height: 1px;
+
+    background: #dee2e6;
+  }
+}
+
+.oauth-button {
+  width: 100%;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  border: 1px solid #dee2e6;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #343a40;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #b8c0c8;
+
+    background: #f8f9fa;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+  }
+}

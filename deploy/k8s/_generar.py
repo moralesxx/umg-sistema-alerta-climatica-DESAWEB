@@ -22,6 +22,7 @@ data:
   APP_TZ: America/Guatemala
   SEED_DEMO: "false"                      # "true" crea datos de demostración en bases vacías
   PUBLIC_URL: https://miguate.lat
+  OAUTH_AUTO_ACTIVATE: "false"            # "true": las cuentas nuevas de Google/GitHub se activan solas (rol mínimo); "false": quedan pendientes de aprobación
   RETENCION_DIAS: "30"
   SMTP_HOST: mailpit                      # SMTP real, p. ej. smtp.gmail.com (y SMTP_SECURITY=starttls, SMTP_PORT=587)
   SMTP_PORT: "1025"
@@ -130,7 +131,8 @@ def env(items):
         if isinstance(v, tuple):
             kind, key = v
             ref, src = ("configMapKeyRef", "app-config") if kind == "cm" else ("secretKeyRef", "app-secrets")
-            L.append(f"            - {{ name: {n}, valueFrom: {{ {ref}: {{ name: {src}, key: {key} }} }} }}")
+            opt = ", optional: true" if kind == "seco" else ""   # "seco" = secreto opcional (p. ej. OAuth: sin clave, el proveedor queda deshabilitado)
+            L.append(f"            - {{ name: {n}, valueFrom: {{ {ref}: {{ name: {src}, key: {key}{opt} }} }} }}")
         else:
             L.append(f'            - {{ name: {n}, value: "{v}" }}')
     return "\n".join(L)
@@ -139,6 +141,10 @@ JWT_NET = [("Jwt__Key", ("sec", "JWT_KEY")), ("Jwt__Issuer", ("cm", "JWT_ISSUER"
 JWT_PY = [("JWT_KEY", ("sec", "JWT_KEY")), ("JWT_ISSUER", ("cm", "JWT_ISSUER")), ("JWT_AUDIENCE", ("cm", "JWT_AUDIENCE"))]
 SMTP = [("SMTP_HOST", ("cm", "SMTP_HOST")), ("SMTP_PORT", ("cm", "SMTP_PORT")), ("SMTP_SECURITY", ("cm", "SMTP_SECURITY")), ("SMTP_FROM", ("cm", "SMTP_FROM")),
         ("SMTP_USER", ("sec", "SMTP_USER")), ("SMTP_PASSWORD", ("sec", "SMTP_PASSWORD")), ("NOTIFY_DEFAULT_RECIPIENTS", ("cm", "NOTIFY_DEFAULT_RECIPIENTS"))]
+# Login con Google/GitHub (OAuth 2.0 / OIDC). RNF-OAUTH-01/02: los client_id/client_secret viven SOLO en el Secret app-secrets.
+OAUTH = [("PUBLIC_URL", ("cm", "PUBLIC_URL")), ("OAUTH_AUTO_ACTIVATE", ("cm", "OAUTH_AUTO_ACTIVATE")),
+         ("GOOGLE_CLIENT_ID", ("seco", "GOOGLE_CLIENT_ID")), ("GOOGLE_CLIENT_SECRET", ("seco", "GOOGLE_CLIENT_SECRET")),
+         ("GITHUB_CLIENT_ID", ("seco", "GITHUB_CLIENT_ID")), ("GITHUB_CLIENT_SECRET", ("seco", "GITHUB_CLIENT_SECRET"))]
 # nombre, puerto, sondaReadiness, sondaLiveness, env, réplicas, uid, memoria(Mi)
 # Réplicas = 1: pensado para un VPS de un solo nodo. Suba las réplicas si tiene más capacidad
 # (el HPA de 25-autoscaling.yaml mantiene el mínimo en 1 y escala según CPU).
@@ -146,7 +152,7 @@ SVC = [
  ("gateway", 8080, "/health", "/health", JWT_NET + [("Cors__AllowedOrigins__0", ("cm", "PUBLIC_URL")), ("APP_TZ", ("cm", "APP_TZ"))], 1, 1654, 384),
  ("auth-service", 8080, "/health", "/health", JWT_PY + [("JWT_EXPIRATION_MINUTES", ("cm", "JWT_EXPIRATION_MINUTES")), ("REFRESH_TOKEN_DAYS", ("cm", "REFRESH_TOKEN_DAYS")),
      ("AUTH_DB_PASSWORD", ("sec", "AUTH_DB_PASSWORD")), ("DATABASE_URL", "postgres://auth:$(AUTH_DB_PASSWORD)@auth-db:5432/auth_db"),
-     ("ADMIN_PASSWORD", ("sec", "ADMIN_PASSWORD")), ("AUDIT_SERVICE_URL", "http://audit-service:8000")], 1, 1000, 384),
+     ("ADMIN_PASSWORD", ("sec", "ADMIN_PASSWORD")), ("AUDIT_SERVICE_URL", "http://audit-service:8000")] + OAUTH, 1, 1000, 384),
  ("community-service", 8080, "/health", "/health", JWT_NET + [("COMMUNITY_DB_PASSWORD", ("sec", "COMMUNITY_DB_PASSWORD")),
      ("ConnectionStrings__Default", "Host=community-db;Database=community_db;Username=community;Password=$(COMMUNITY_DB_PASSWORD)"),
      ("Services__Sensor", "http://sensor-service:8080"), ("Services__Audit", "http://audit-service:8000"), ("Seed__Demo", ("cm", "SEED_DEMO"))], 1, 1654, 384),
@@ -414,6 +420,10 @@ stringData:
   DEVICE_API_KEY: "..."
   SMTP_USER: ""
   SMTP_PASSWORD: ""
+  GOOGLE_CLIENT_ID: ""        # OAuth/OIDC — opcional (vacío = proveedor deshabilitado). Ver docs/OAUTH-OIDC.md
+  GOOGLE_CLIENT_SECRET: ""
+  GITHUB_CLIENT_ID: ""
+  GITHUB_CLIENT_SECRET: ""
 """
 import pathlib
 here = pathlib.Path(__file__).parent

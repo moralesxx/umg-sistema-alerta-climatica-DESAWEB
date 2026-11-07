@@ -12,6 +12,8 @@ Requisitos de memoria: ~4 GB (SQL Server 2022 necesita ≥ 2 GB).
 git clone <repositorio> /opt/alerta && cd /opt/alerta
 cp .env.example .env && nano .env      # JWT_KEY (openssl rand -base64 48), contraseñas, PUBLIC_URL=https://miguate.lat
 chmod 600 .env
+# Login con Google/GitHub (opcional): registre las apps con el redirect URI https://miguate.lat/api/auth/oauth/<google|github>/callback
+# y complete GOOGLE_CLIENT_ID/SECRET y GITHUB_CLIENT_ID/SECRET en .env  → docs/OAUTH-OIDC.md
 ```
 Para producción use `SEED_DEMO=false`.
 

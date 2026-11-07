@@ -19,6 +19,8 @@ export interface LoginResponse {
   usuario: Usuario;
 }
 
+export type ProveedorOAuth = 'google' | 'github';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -36,6 +38,31 @@ export class AuthService {
         contrasenia
       }
     );
+  }
+
+  // ---------------------------------------------------------------------------------
+  // Login con Google (OpenID Connect) y GitHub (OAuth 2.0) — Authorization Code + PKCE.
+  // Todo el protocolo (secretos, state, nonce, validación) ocurre en el Auth Service; el
+  // navegador solo navega a /start y, al volver, canjea un ticket de un solo uso.
+  // ---------------------------------------------------------------------------------
+
+  /** Proveedores que el servidor tiene configurados (para mostrar solo los botones que funcionan). */
+  oauthProveedores(): Observable<ProveedorOAuth[]> {
+    return this.http
+      .get<{ providers: ProveedorOAuth[] }>(`${this.apiUrl}/oauth/providers`)
+      .pipe(map((r) => r.providers ?? []));
+  }
+
+  /** Redirige (navegación completa, no XHR) al proveedor a través del Auth Service. */
+  iniciarOAuth(proveedor: ProveedorOAuth): void {
+    window.location.assign(`${this.apiUrl}/oauth/${proveedor}/start`);
+  }
+
+  /** Canjea el ticket de un solo uso (refresh token rotativo) que dejó el callback por la sesión completa. */
+  completarOAuth(ticket: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${this.apiUrl}/refresh`, { refreshToken: ticket })
+      .pipe(tap((r) => this.guardarSesion(r)));
   }
 
   registrar(

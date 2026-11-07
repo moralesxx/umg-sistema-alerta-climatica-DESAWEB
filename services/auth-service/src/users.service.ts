@@ -7,6 +7,7 @@ import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { AuditClient } from './audit.client';
 import { cfg } from './config';
 import { IdentidadExterna, RefreshToken, Rol, Sesion, Usuario } from './entities';
+import { OAuthError, PerfilExterno } from './oauth.service';
 import { Principal } from './security';
 
 const resumen = (u: Usuario) => ({
@@ -146,6 +147,44 @@ export class UsersService {
     if (!u.estado) throw new UnauthorizedException({ mensaje: 'La cuenta está desactivada o pendiente de aprobación por un administrador.' });
     await this.users.update(u.usuarioId, { ultimoAcceso: ahora, intentosFallidos: 0, bloqueadoHasta: null });
     this.audit.registrar({ name: u.nombre }, 'LOGIN', `El usuario ${u.correo} inició sesión.`, undefined, undefined, u.usuarioId);
+    return { mensaje: 'Inicio de sesión exitoso.', ...(await this.emitirSesion(u)) };
+  }
+
+  // ------------------------------------------------------------------ login externo (OAuth 2.0 / OIDC)
+  /**
+   * Convierte una identidad ya verificada por Google/GitHub en una sesión PROPIA del sistema (mismo JWT, `sid` y refresh que el login local).
+   *  1) (proveedor, subject) ya vinculado            -> ese usuario.
+   *  2) correo verificado igual al de una cuenta     -> se vincula automáticamente (auditado).
+   *  3) ninguna coincidencia                         -> se crea una cuenta de rol mínimo ('Usuario de consulta'),
+   *                                                     pendiente de aprobación salvo OAUTH_AUTO_ACTIVATE=true.
+   * Nunca se enlaza por un correo que el proveedor no haya verificado (evita toma de cuentas).
+   */
+  async accederConIdentidadExterna(p: PerfilExterno) {
+    let u: Usuario | null = null;
+    const ident = await this.ids.findOne({ where: { proveedor: p.proveedor, subject: p.subject } });
+    if (ident) u = await this.users.findOne({ where: { usuarioId: ident.usuarioId } });
+
+    if (!u) {
+      if (!p.email || !p.emailVerificado) throw new OAuthError('email_no_verificado', 'El proveedor no entregó un correo verificado.');
+      const correo = normalizarCorreo(p.email);
+      u = await this.users.findOne({ where: { correo } });
+      if (u) {
+        this.audit.registrar({ name: u.nombre }, 'VINCULAR_IDENTIDAD', `Se vinculó automáticamente la identidad ${p.proveedor} a ${u.correo} (correo verificado por el proveedor).`, 'Usuario', u.usuarioId, u.usuarioId);
+      } else {
+        const rol = await this.roles.findOne({ where: { nombreRol: 'Usuario de consulta' } });
+        if (!rol) throw new Error("No existe el rol 'Usuario de consulta'.");
+        const nombre = (p.nombre?.trim() || correo.split('@')[0]).slice(0, 120);
+        u = await this.users.save(this.users.create({ nombre, correo, rolId: rol.rolId, estado: cfg.oauth.autoActivate, contraseniaHash: '' }));
+        u = (await this.users.findOne({ where: { usuarioId: u.usuarioId } })) ?? u; // recarga con el rol
+        this.audit.registrar({ name: u.nombre }, cfg.oauth.autoActivate ? 'REGISTRO_OAUTH' : 'REGISTRO_PENDIENTE',
+          `Cuenta creada por ${p.proveedor} para ${u.correo}${cfg.oauth.autoActivate ? '.' : '; pendiente de aprobación.'}`, 'Usuario', u.usuarioId, u.usuarioId);
+      }
+      await this.ids.save(this.ids.create({ proveedor: p.proveedor, subject: p.subject, usuarioId: u.usuarioId }));
+    }
+
+    if (!u.estado) throw new OAuthError('cuenta_inactiva', `Cuenta ${u.correo} inactiva o pendiente de aprobación.`);
+    await this.users.update(u.usuarioId, { ultimoAcceso: new Date(), intentosFallidos: 0, bloqueadoHasta: null });
+    this.audit.registrar({ name: u.nombre }, 'LOGIN_OAUTH', `El usuario ${u.correo} inició sesión con ${p.proveedor}.`, undefined, undefined, u.usuarioId);
     return { mensaje: 'Inicio de sesión exitoso.', ...(await this.emitirSesion(u)) };
   }
 

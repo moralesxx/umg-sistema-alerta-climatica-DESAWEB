@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, NotFoundException, Param, ParseIntPipe, Patch, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { AuditClient } from './audit.client';
+import { OAuthError, OAuthService } from './oauth.service';
 import { Public, Roles } from './security';
 import { UsersService } from './users.service';
 
@@ -40,4 +42,53 @@ export class AuthController {
   @Roles('Administrador') @Put('usuarios/:id') upd(@Param('id', ParseIntPipe) id: number, @Body() b: any, @Req() r: any) { return this.svc.actualizar(id, b, r.user); }
   @Roles('Administrador') @Patch('usuarios/:id/estado') estado(@Param('id', ParseIntPipe) id: number, @Body() b: any, @Req() r: any) { return this.svc.cambiarEstado(id, b, r.user); }
   @Roles('Administrador') @Post('usuarios/:id/identidades') vincular(@Param('id', ParseIntPipe) id: number, @Body() b: any, @Req() r: any) { return this.svc.vincularIdentidad(id, b, r.user); }
+}
+
+
+/**
+ * Login con Google (OpenID Connect) y GitHub (OAuth 2.0) — Authorization Code + PKCE.
+ *   GET /api/auth/oauth/providers            proveedores habilitados (para mostrar los botones)
+ *   GET /api/auth/oauth/:proveedor/start     redirige al proveedor
+ *   GET /api/auth/oauth/:proveedor/callback  recibe el code, valida, crea/vincula el usuario y emite NUESTRO JWT
+ * Al terminar, el navegador vuelve al frontend con un refresh token de un solo uso en el fragmento (#rt=...),
+ * que la SPA canjea por la sesión en POST /api/auth/refresh (nunca viaja en query ni se registra en servidores).
+ */
+@Controller('api/auth/oauth')
+export class OAuthController {
+  private log = new Logger('OAuth');
+  constructor(private oauth: OAuthService, private users: UsersService, private audit: AuditClient) {}
+
+  @Public() @Get('providers')
+  providers() { return { providers: this.oauth.proveedoresHabilitados() }; }
+
+  @Public() @Get(':proveedor/start')
+  async start(@Param('proveedor') prov: string, @Res() res: any) {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!this.oauth.habilitado(prov)) return res.redirect(302, '/login?oauth_error=proveedor_no_disponible');
+    try {
+      const { url, cookie } = await this.oauth.iniciar(prov);
+      res.setHeader('Set-Cookie', cookie);
+      return res.redirect(302, url);
+    } catch (e) {
+      this.log.error(`No se pudo iniciar el login con ${prov}: ${(e as Error).message}`);
+      return res.redirect(302, '/login?oauth_error=proveedor_error');
+    }
+  }
+
+  @Public() @Get(':proveedor/callback')
+  async callback(@Param('proveedor') prov: string, @Query() q: any, @Req() req: any, @Res() res: any) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Set-Cookie', this.oauth.limpiarCookie());   // el contexto del intento es de un solo uso
+    if (!this.oauth.habilitado(prov)) return res.redirect(302, '/login?oauth_error=proveedor_no_disponible');
+    try {
+      const perfil = await this.oauth.completar(prov, q ?? {}, req.headers['cookie']);
+      const sesion = await this.users.accederConIdentidadExterna(perfil);
+      return res.redirect(302, `/oauth/callback#rt=${encodeURIComponent(sesion.refreshToken)}`);
+    } catch (e) {
+      const codigo = e instanceof OAuthError ? e.codigo : 'error';
+      this.log.warn(`Login con ${prov} rechazado (${codigo}): ${(e as Error).message}`);
+      this.audit.registrar(null, 'LOGIN_OAUTH_FALLIDO', `Intento de login con ${prov} rechazado: ${codigo}.`);
+      return res.redirect(302, `/login?oauth_error=${encodeURIComponent(codigo)}`);
+    }
+  }
 }

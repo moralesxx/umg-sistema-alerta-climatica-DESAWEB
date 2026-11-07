@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { LoginComponent } from './components/login/login';
 import { RegistroComponent } from './components/registro/registro';
+import { OauthCallbackComponent } from './components/oauth-callback/oauth-callback';
 import { MainLayoutComponent } from './components/main-layout/main-layout';
 import { Dashboard } from './components/dashboard/dashboard';
 import { SensoresComponent } from './components/sensores/sensores';
@@ -32,6 +33,11 @@ export const routes: Routes = [
   {
     path: 'registro',
     component: RegistroComponent
+  },
+  {
+    // Destino del login con Google/GitHub: canjea el ticket del fragmento (#rt=...) por la sesión.
+    path: 'oauth/callback',
+    component: OauthCallbackComponent
   },
   {
     path: '',

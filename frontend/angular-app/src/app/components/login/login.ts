@@ -1,8 +1,18 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService, ProveedorOAuth } from '../../services/auth.service';
+
+// Códigos que devuelve el Auth Service en ?oauth_error=... (nunca texto libre del proveedor).
+const MENSAJES_OAUTH: Record<string, string> = {
+  acceso_denegado: 'Cancelaste el acceso con el proveedor externo.',
+  estado_invalido: 'La solicitud de inicio de sesión expiró o no es válida. Inténtalo de nuevo.',
+  cuenta_inactiva: 'Tu cuenta fue registrada, pero está pendiente de aprobación por un administrador (o está desactivada).',
+  email_no_verificado: 'El proveedor no entregó un correo verificado. Verifica tu correo en Google/GitHub e inténtalo de nuevo.',
+  proveedor_no_disponible: 'Ese método de acceso no está habilitado en este momento.',
+  proveedor_error: 'No se pudo completar el inicio de sesión con el proveedor. Inténtalo de nuevo.'
+};
 
 @Component({
   selector: 'app-login',
@@ -14,7 +24,10 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
+
+  /** Proveedores OAuth habilitados en el servidor (vacío = no se muestran botones). */
+  proveedoresOAuth: ProveedorOAuth[] = [];
 
   correo = '';
   contrasenia = '';
@@ -26,9 +39,43 @@ export class LoginComponent {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  ngOnInit(): void {
+    // Si volvemos de un intento fallido con Google/GitHub, se explica el motivo.
+    const codigo = this.route.snapshot.queryParamMap.get('oauth_error');
+    if (codigo) {
+      this.error = MENSAJES_OAUTH[codigo] ?? 'No se pudo iniciar sesión con el proveedor externo.';
+    }
+
+    this.authService.oauthProveedores().subscribe({
+      next: (lista) => {
+        this.proveedoresOAuth = lista;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Sin conexión con el Auth Service: simplemente no se ofrecen los botones externos.
+        this.proveedoresOAuth = [];
+      }
+    });
+  }
+
+  // Si el usuario vuelve atrás desde la página del proveedor (caché del navegador), se rehabilitan los botones.
+  @HostListener('window:pageshow')
+  alMostrarPagina(): void {
+    this.cargando = false;
+  }
+
+  iniciarConProveedor(proveedor: ProveedorOAuth): void {
+    if (this.cargando) {
+      return;
+    }
+    this.cargando = true;
+    this.authService.iniciarOAuth(proveedor);
+  }
 
   iniciarSesion(): void {
 

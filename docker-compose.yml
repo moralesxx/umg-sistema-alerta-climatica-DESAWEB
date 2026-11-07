@@ -69,6 +69,13 @@ services:
       DATABASE_URL: postgres://auth:${AUTH_DB_PASSWORD:?}@auth-db:5432/auth_db
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD en .env}
       AUDIT_SERVICE_URL: http://audit-service:8000
+      # Login con Google (OIDC) y GitHub (OAuth 2.0). Vacío = proveedor deshabilitado. Los secretos solo viven en .env / Secret.
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4200}     # de aquí salen los redirect URI: <PUBLIC_URL>/api/auth/oauth/<proveedor>/callback
+      OAUTH_AUTO_ACTIVATE: ${OAUTH_AUTO_ACTIVATE:-false}   # false: cuentas nuevas por Google/GitHub quedan pendientes de aprobación
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
     depends_on: { auth-db: { condition: service_healthy } }
     networks: [backend]
 
